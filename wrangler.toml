@@ -1,3 +1,13 @@
 name = "kaiano-wcs-website"
 compatibility_date = "2024-01-01"
 pages_build_output_dir = "dist"
+
+[vars]
+PUBLIC_LEGACY_API_URL = "https://api.kaianolevine.com"
+PUBLIC_TURNSTILE_SITE_KEY = "0x4AAAAAACXUS6RYhJCvPzZg"
+
+[env.production.vars]
+PUBLIC_API_URL = "courteous-purpose-production.up.railway.app"
+
+[env.preview.vars]
+PUBLIC_API_URL = "courteous-purpose-production.up.railway.app"
