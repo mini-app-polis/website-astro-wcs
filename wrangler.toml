@@ -7,7 +7,7 @@ PUBLIC_LEGACY_API_URL = "https://api.kaianolevine.com"
 PUBLIC_TURNSTILE_SITE_KEY = "0x4AAAAAACXUS6RYhJCvPzZg"
 
 [env.production.vars]
-PUBLIC_API_URL = "courteous-purpose-production.up.railway.app"
+PUBLIC_API_URL = "https://courteous-purpose-production.up.railway.app"
 
 [env.preview.vars]
-PUBLIC_API_URL = "courteous-purpose-production.up.railway.app"
+PUBLIC_API_URL = "https://courteous-purpose-production.up.railway.app"
