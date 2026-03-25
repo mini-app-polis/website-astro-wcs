@@ -1,0 +1,131 @@
+---
+interface Props {
+  limit?: number;
+}
+
+const { limit = 50 } = Astro.props;
+---
+
+<section data-live-root data-limit={limit} class="space-y-5">
+  <div class="flex flex-wrap items-end justify-between gap-4">
+    <div>
+      <h2 class="font-display text-xl tracking-tight">Now Playing</h2>
+      <p class="mt-1 text-sm text-slate-400">
+        Last {limit} songs from the most recent DJ session
+      </p>
+    </div>
+    <span
+      id="liveIndicator"
+      class="hidden items-center gap-1.5 font-mono text-xs text-slate-400"
+    >
+      <span class="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-accent"></span>
+      live
+    </span>
+  </div>
+
+  <div
+    id="liveList"
+    class="space-y-1 rounded-2xl border border-white/10 bg-white/[0.02] p-4"
+  ></div>
+
+  <p id="liveStatus" class="text-sm text-slate-400"></p>
+
+  <script type="module">
+    const root = document.querySelector("[data-live-root]");
+    if (!root) throw new Error("Live root not found");
+
+    const limit = Number(root.getAttribute("data-limit") ?? 50);
+    const listEl = root.querySelector("#liveList");
+    const statusEl = root.querySelector("#liveStatus");
+    const indicator = root.querySelector("#liveIndicator");
+
+    const timeFmt = new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+
+    async function getLivePlays() {
+      const BASE = document.documentElement.dataset.apiUrl || "";
+      if (!BASE) return [];
+      try {
+        const res = await fetch(
+          `${String(BASE).replace(/\/$/, "")}/v1/live-plays/recent?limit=${limit}`,
+          { cache: "no-store" },
+        );
+        if (!res.ok) return [];
+        const json = await res.json();
+        return json?.data ?? [];
+      } catch {
+        return [];
+      }
+    }
+
+    function render(plays) {
+      if (!listEl) return;
+      listEl.innerHTML = "";
+
+      if (!plays.length) {
+        const empty = document.createElement("p");
+        empty.className = "py-2 px-1 text-sm text-slate-400";
+        empty.textContent = "No plays recorded yet.";
+        listEl.appendChild(empty);
+        return;
+      }
+
+      plays.forEach((play, i) => {
+        const row = document.createElement("div");
+        row.className =
+          "grid grid-cols-[auto_1fr_auto] items-center gap-4 rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 reveal";
+        row.style.setProperty("--d", `${i * 40}ms`);
+
+        const num = document.createElement("span");
+        num.className = "w-5 text-right font-mono text-xs text-slate-500";
+        num.textContent = String(i + 1);
+
+        const middle = document.createElement("div");
+        middle.className = "min-w-0";
+
+        const title = document.createElement("div");
+        title.className = "truncate text-sm font-medium text-slate-100";
+        title.textContent = play.title;
+
+        const artist = document.createElement("div");
+        artist.className = "mt-0.5 truncate text-xs text-slate-400";
+        artist.textContent = play.artist;
+
+        middle.appendChild(title);
+        middle.appendChild(artist);
+
+        const time = document.createElement("div");
+        time.className = "whitespace-nowrap font-mono text-xs text-slate-500";
+        time.textContent = timeFmt.format(new Date(play.played_at));
+
+        row.appendChild(num);
+        row.appendChild(middle);
+        row.appendChild(time);
+        listEl.appendChild(row);
+      });
+
+      if (indicator) {
+        indicator.classList.remove("hidden");
+        indicator.classList.add("flex");
+      }
+    }
+
+    async function load() {
+      if (statusEl) statusEl.textContent = "Loading…";
+      const plays = await getLivePlays();
+      render(plays);
+      if (statusEl) {
+        statusEl.textContent = plays.length
+          ? `${plays.length} play${plays.length === 1 ? "" : "s"} · updates every 5 min`
+          : "";
+      }
+    }
+
+    load();
+  </script>
+</section>

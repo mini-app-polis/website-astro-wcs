@@ -1,0 +1,91 @@
+---
+---
+
+<section
+  class="rounded-2xl border border-white/10 bg-white/[0.02] p-6 shadow-soft"
+  data-top-tracks
+>
+  <h2 class="font-display text-xl tracking-tight">Top Tracks</h2>
+  <p class="mt-1 text-sm text-slate-400">Ranked by total plays</p>
+
+  <ol class="mt-5 space-y-3" data-top-tracks-list>
+    {Array.from({ length: 5 }).map((_, i) => (
+      <li class="flex items-center justify-between gap-4 opacity-80">
+        <div class="flex min-w-0 items-baseline gap-3">
+          <div class="h-4 w-6 animate-pulse rounded bg-white/10 font-mono text-sm" />
+          <div class="min-w-0">
+            <div class="h-4 w-48 animate-pulse rounded bg-white/10" />
+            <div class="mt-2 h-3 w-36 animate-pulse rounded bg-white/10" />
+          </div>
+        </div>
+        <div class="h-4 w-16 animate-pulse rounded bg-white/10 font-mono text-sm" />
+      </li>
+    ))}
+  </ol>
+
+  <p data-top-tracks-error class="mt-4 hidden text-sm text-slate-400">
+    Unable to load live data
+  </p>
+
+  <script type="module">
+    const root = document.querySelector("[data-top-tracks]");
+    if (!root) throw new Error("TopTracks root not found");
+
+    const listEl = root.querySelector("[data-top-tracks-list]");
+    const errorEl = root.querySelector("[data-top-tracks-error]");
+    const BASE = document.documentElement.dataset.apiUrl || "";
+
+    function showError() {
+      if (!listEl || !errorEl) return;
+      listEl.innerHTML = "";
+      errorEl.classList.remove("hidden");
+    }
+
+    if (!BASE) {
+      showError();
+    } else {
+      const nf = new Intl.NumberFormat("en-US");
+      const url = `${String(BASE).replace(/\/$/, "")}/v1/stats/top-tracks?limit=20`;
+
+      const load = async () => {
+        try {
+          errorEl?.classList.add("hidden");
+          const res = await fetch(url, { cache: "no-store" });
+          if (!res.ok) throw new Error(`Bad response: ${res.status}`);
+          const json = await res.json();
+          const data = json?.data ?? json;
+          if (!Array.isArray(data) || data.length === 0) throw new Error("Empty");
+
+          listEl.innerHTML = "";
+
+          data.slice(0, 20).forEach((t, idx) => {
+            const li = document.createElement("li");
+            li.className = "flex items-center justify-between gap-4 reveal";
+            li.style.setProperty("--d", `${idx * 60}ms`);
+
+            const position = String(idx + 1).padStart(2, "0");
+            const playText = Number.isFinite(Number(t.play_count))
+              ? nf.format(Number(t.play_count))
+              : "—";
+
+            li.innerHTML = `
+              <div class="flex min-w-0 items-baseline gap-3">
+                <div class="font-mono text-sm text-slate-500">${position}</div>
+                <div class="min-w-0">
+                  <div class="truncate font-medium text-slate-100">${String(t.title ?? "—")}</div>
+                  <div class="truncate text-sm text-slate-400">${String(t.artist ?? "—")}</div>
+                </div>
+              </div>
+              <div class="font-mono text-sm text-accent">${playText}</div>
+            `;
+            listEl.appendChild(li);
+          });
+        } catch {
+          showError();
+        }
+      };
+
+      void load();
+    }
+  </script>
+</section>

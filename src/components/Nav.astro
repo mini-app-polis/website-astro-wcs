@@ -1,0 +1,187 @@
+---
+const { pathname } = Astro.url;
+
+type SubItem = { href: string; label: string };
+type NavItem = { href?: string; label: string; submenu?: SubItem[] };
+
+const items: NavItem[] = [
+  {
+    label: "Booking",
+    submenu: [
+      { href: "/booking/lessons", label: "WCS Lessons" },
+      { href: "/booking/press-kit", label: "Press Kit" },
+    ],
+  },
+  { href: "/dj-marvel", label: "DJ Marvel" },
+  {
+    label: "Resources",
+    submenu: [
+      { href: "/sets", label: "Set History" },
+      { href: "/live", label: "Recently Played" },
+    ],
+  },
+  { href: "/catalog", label: "Catalog" },
+  { href: "/locate", label: "Locate" },
+  { href: "/contact", label: "Contact" },
+  {
+    label: "More",
+    submenu: [
+      { href: "/about", label: "About" },
+      { href: "/spotify", label: "Spotify" },
+    ],
+  },
+];
+
+// Flatten all hrefs for the mobile drawer
+const allLinks: SubItem[] = items.flatMap((item) =>
+  item.submenu
+    ? item.submenu
+    : [{ href: item.href!, label: item.label }],
+);
+
+function isActive(href: string) {
+  if (href === "/") return pathname === "/";
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+---
+
+<nav class="mx-auto flex max-w-5xl items-center justify-between px-6 py-5">
+  <!-- Logo -->
+  <a href="/" class="group flex items-baseline gap-3">
+    <span class="font-display text-lg tracking-tight text-slate-100 transition-colors group-hover:text-accent">
+      Kaiano Levine
+    </span>
+    <span class="hidden font-mono text-xs text-slate-500 sm:inline">wcs</span>
+  </a>
+
+  <!-- Desktop links -->
+  <div class="hidden items-center gap-1 text-sm md:flex">
+    {items.map((item) => {
+      if (item.submenu) {
+        const anyActive = item.submenu.some((s) => isActive(s.href));
+        return (
+          <div class="group relative">
+            <button
+              type="button"
+              class={`flex items-center gap-1 rounded-full px-3 py-1.5 transition-colors ${
+                anyActive ? "text-accent" : "text-slate-300 hover:text-slate-100"
+              }`}
+            >
+              {item.label}
+              <svg class="h-3 w-3 opacity-50 transition-transform group-hover:rotate-180" viewBox="0 0 12 12" fill="none">
+                <path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+            <div class="invisible absolute right-0 top-full z-50 mt-1.5 min-w-[160px] rounded-xl border border-white/10 bg-surface2/95 p-1.5 opacity-0 shadow-soft backdrop-blur transition-all group-hover:visible group-hover:opacity-100">
+              {item.submenu.map((sub) => (
+                <a
+                  href={sub.href}
+                  class={`block rounded-lg px-3 py-2 text-sm transition-colors ${
+                    isActive(sub.href)
+                      ? "text-accent"
+                      : "text-slate-300 hover:bg-white/5 hover:text-slate-100"
+                  }`}
+                >
+                  {sub.label}
+                </a>
+              ))}
+            </div>
+          </div>
+        );
+      }
+      const active = isActive(item.href!);
+      return (
+        <a
+          href={item.href}
+          class={`rounded-full px-3 py-1.5 transition-colors ${
+            active ? "text-accent" : "text-slate-300 hover:text-slate-100"
+          }`}
+          aria-current={active ? "page" : undefined}
+        >
+          {item.label}
+        </a>
+      );
+    })}
+  </div>
+
+  <!-- Mobile hamburger -->
+  <button
+    id="nav-open"
+    type="button"
+    aria-label="Open menu"
+    class="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 text-slate-300 transition-colors hover:border-white/20 hover:text-slate-100 md:hidden"
+  >
+    <svg viewBox="0 0 20 20" fill="none" class="h-5 w-5">
+      <path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+  </button>
+</nav>
+
+<!-- Mobile drawer -->
+<div
+  id="nav-drawer"
+  class="fixed inset-0 z-50 flex translate-x-full flex-col bg-surface2 transition-transform duration-300 md:hidden"
+  aria-hidden="true"
+>
+  <div class="flex items-center justify-between border-b border-white/10 px-6 py-5">
+    <a href="/" class="font-display text-lg tracking-tight text-slate-100">
+      Kaiano Levine
+    </a>
+    <button
+      id="nav-close"
+      type="button"
+      aria-label="Close menu"
+      class="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 text-slate-300 transition-colors hover:border-white/20 hover:text-slate-100"
+    >
+      <svg viewBox="0 0 20 20" fill="none" class="h-5 w-5">
+        <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </button>
+  </div>
+
+  <nav class="flex flex-col gap-1 overflow-y-auto p-4">
+    {allLinks.map((link) => (
+      <a
+        href={link.href}
+        class={`rounded-xl px-4 py-3 text-sm font-medium transition-colors ${
+          isActive(link.href)
+            ? "bg-accent/10 text-accent"
+            : "text-slate-300 hover:bg-white/5 hover:text-slate-100"
+        }`}
+      >
+        {link.label}
+      </a>
+    ))}
+  </nav>
+</div>
+
+<script>
+  const openBtn = document.getElementById("nav-open");
+  const closeBtn = document.getElementById("nav-close");
+  const drawer = document.getElementById("nav-drawer");
+
+  function openDrawer() {
+    drawer?.classList.remove("translate-x-full");
+    drawer?.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
+  }
+
+  function closeDrawer() {
+    drawer?.classList.add("translate-x-full");
+    drawer?.setAttribute("aria-hidden", "true");
+    document.body.style.overflow = "";
+  }
+
+  openBtn?.addEventListener("click", openDrawer);
+  closeBtn?.addEventListener("click", closeDrawer);
+
+  // Close on backdrop click (clicking outside the drawer content area)
+  drawer?.addEventListener("click", (e) => {
+    if (e.target === drawer) closeDrawer();
+  });
+
+  // Close on Escape
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeDrawer();
+  });
+</script>

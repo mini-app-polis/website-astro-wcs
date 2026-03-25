@@ -1,0 +1,204 @@
+---
+import YearFilter from "./YearFilter.astro";
+
+interface Props {
+  years?: number[];
+  initialYear?: number;
+  pageSize?: number;
+}
+
+const {
+  years = [],
+  initialYear = new Date().getFullYear(),
+  pageSize = 50,
+} = Astro.props;
+---
+
+<section
+  data-sets-root
+  data-initial-year={initialYear}
+  data-page-size={pageSize}
+  class="space-y-5"
+>
+  <div class="flex flex-wrap items-end justify-between gap-4">
+    <div>
+      <h2 class="font-display text-xl tracking-tight">Browse Sets</h2>
+      <p class="mt-1 text-sm text-slate-400">
+        Filter by year · open a set for its full track list
+      </p>
+    </div>
+    <YearFilter years={years} selectedYear={initialYear} />
+  </div>
+
+  <div
+    id="setsList"
+    class="space-y-3 rounded-2xl border border-white/10 bg-white/[0.02] p-4"
+  ></div>
+
+  <div class="flex items-center justify-between gap-4">
+    <p id="setsStatusText" class="text-sm text-slate-400"></p>
+    <button
+      id="setsLoadMore"
+      type="button"
+      class="rounded-full border border-white/10 bg-white/[0.02] px-5 py-2 text-sm font-medium text-slate-200 transition-colors hover:border-white/20 hover:text-slate-100 disabled:opacity-50"
+    >
+      Load more
+    </button>
+  </div>
+
+  <script type="module">
+    async function fetchSets(params = {}) {
+      const BASE = document.documentElement.dataset.apiUrl || "";
+      if (!BASE) return [];
+      try {
+        const qs = new URLSearchParams(
+          Object.entries(params).map(([k, v]) => [k, String(v)]),
+        ).toString();
+        const res = await fetch(
+          `${String(BASE).replace(/\/$/, "")}/v1/sets${qs ? `?${qs}` : ""}`,
+          { cache: "no-store" },
+        );
+        if (!res.ok) return [];
+        const json = await res.json();
+        return json?.data ?? [];
+      } catch {
+        return [];
+      }
+    }
+
+    const root = document.querySelector("[data-sets-root]");
+    if (!root) throw new Error("Sets root not found");
+
+    const pageSize = Number(root.getAttribute("data-page-size") ?? 50);
+    const initialYear = root.getAttribute("data-initial-year");
+    const listEl = root.querySelector("#setsList");
+    const statusText = root.querySelector("#setsStatusText");
+    const loadMoreBtn = root.querySelector("#setsLoadMore");
+    if (!listEl || !statusText || !loadMoreBtn) throw new Error("SetsList: required elements missing");
+
+    const dateFmt = new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+
+    let selectedYear = Number(initialYear);
+    let offset = 0;
+    let loading = false;
+    let done = false;
+    let items = [];
+
+    function setYear(newYear) {
+      root.querySelectorAll("button[data-year]").forEach((btn) => {
+        const y = btn.getAttribute("data-year");
+        const sel =
+          (newYear === "all" && y === "all") ||
+          (typeof newYear === "number" && y === String(newYear));
+        btn.setAttribute("aria-pressed", String(sel));
+        btn.dataset.selected = String(sel);
+      });
+    }
+
+    function renderSets(nextItems) {
+      listEl.innerHTML = "";
+      for (const s of nextItems) {
+        const a = document.createElement("a");
+        a.href = `/sets/${s.id}`;
+        a.className =
+          "group grid grid-cols-[1fr_auto] items-center gap-4 rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 transition-colors hover:border-white/20 hover:bg-white/[0.03]";
+
+        const left = document.createElement("div");
+        left.className = "min-w-0";
+
+        const row = document.createElement("div");
+        row.className = "flex items-baseline gap-3";
+
+        const date = document.createElement("div");
+        date.className = "font-mono text-sm text-slate-400";
+        date.textContent = dateFmt.format(new Date(s.set_date));
+
+        const venue = document.createElement("div");
+        venue.className = "truncate text-sm font-medium text-slate-100";
+        venue.textContent = s.venue;
+
+        row.appendChild(date);
+        row.appendChild(venue);
+        left.appendChild(row);
+
+        const right = document.createElement("div");
+        right.className = "font-mono text-sm";
+
+        const tc = document.createElement("span");
+        tc.className = "text-accent";
+        tc.textContent = s.track_count == null ? "—" : String(s.track_count);
+        right.appendChild(tc);
+
+        const label = document.createElement("span");
+        label.className = "ml-1 text-slate-500";
+        label.textContent = "tracks";
+        right.appendChild(label);
+
+        a.appendChild(left);
+        a.appendChild(right);
+        listEl.appendChild(a);
+      }
+    }
+
+    async function load(reset = false) {
+      if (loading || done) return;
+      loading = true;
+      loadMoreBtn.disabled = true;
+
+      if (reset) {
+        offset = 0;
+        items = [];
+        listEl.innerHTML = "";
+      }
+
+      const params = { limit: pageSize, offset };
+      if (!Number.isNaN(selectedYear)) params.year = selectedYear;
+
+      statusText.textContent = "Loading…";
+      try {
+        const res = await fetchSets(params);
+        if (!Array.isArray(res) || res.length === 0) {
+          renderSets(items);
+          statusText.textContent = reset ? "No sets found." : "";
+          done = true;
+          return;
+        }
+        items = reset ? res : [...items, ...res];
+        renderSets(items);
+        offset += res.length;
+        if (res.length < pageSize) {
+          done = true;
+          statusText.textContent = "End of results.";
+        } else {
+          statusText.textContent = "";
+          loadMoreBtn.disabled = false;
+        }
+      } catch {
+        statusText.textContent = "Failed to load sets.";
+      } finally {
+        loading = false;
+        loadMoreBtn.disabled = done;
+      }
+    }
+
+    load(true);
+
+    root.addEventListener("click", (e) => {
+      const btn = e.target?.closest?.("button[data-year]");
+      if (!btn) return;
+      const raw = btn.getAttribute("data-year");
+      if (!raw) return;
+      const newYear = raw === "all" ? "all" : Number(raw);
+      selectedYear = newYear === "all" ? NaN : newYear;
+      setYear(newYear);
+      done = false;
+      load(true);
+    });
+
+    loadMoreBtn.addEventListener("click", () => load(false));
+  </script>
+</section>

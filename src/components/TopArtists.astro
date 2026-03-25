@@ -1,0 +1,87 @@
+---
+---
+
+<section
+  class="rounded-2xl border border-white/10 bg-white/[0.02] p-6 shadow-soft"
+  data-top-artists
+>
+  <h2 class="font-display text-xl tracking-tight">Top Artists</h2>
+  <p class="mt-1 text-sm text-slate-400">Bar length proportional to play count</p>
+
+  <div class="mt-5 space-y-4" data-top-artists-list>
+    {Array.from({ length: 5 }).map((_, i) => (
+      <div class="opacity-80">
+        <div class="flex items-center justify-between gap-4">
+          <div class="h-4 w-2/3 animate-pulse rounded bg-white/10" />
+          <div class="h-4 w-14 animate-pulse rounded bg-white/10" />
+        </div>
+        <div class="mt-2 h-2 w-full overflow-hidden rounded-full bg-white/10">
+          <div class="h-full w-1/2 animate-pulse bg-accent/20" />
+        </div>
+      </div>
+    ))}
+  </div>
+
+  <p data-top-artists-error class="mt-4 hidden text-sm text-slate-400">
+    Unable to load live data
+  </p>
+
+  <script type="module">
+    const root = document.querySelector("[data-top-artists]");
+    if (!root) throw new Error("TopArtists root not found");
+
+    const listEl = root.querySelector("[data-top-artists-list]");
+    const errorEl = root.querySelector("[data-top-artists-error]");
+    const BASE = document.documentElement.dataset.apiUrl || "";
+
+    function showError() {
+      if (!listEl || !errorEl) return;
+      listEl.innerHTML = "";
+      errorEl.classList.remove("hidden");
+    }
+
+    if (!BASE) {
+      showError();
+    } else {
+      const nf = new Intl.NumberFormat("en-US");
+      const url = `${String(BASE).replace(/\/$/, "")}/v1/stats/top-artists?limit=15`;
+
+      const load = async () => {
+        try {
+          errorEl?.classList.add("hidden");
+          const res = await fetch(url, { cache: "no-store" });
+          if (!res.ok) throw new Error(`Bad response: ${res.status}`);
+          const json = await res.json();
+          const data = json?.data ?? json;
+          if (!Array.isArray(data) || data.length === 0) throw new Error("Empty");
+
+          const max = Math.max(...data.map((a) => Number(a.play_count) || 0), 1);
+          listEl.innerHTML = "";
+
+          data.slice(0, 15).forEach((a, idx) => {
+            const pct = (Number(a.play_count) / max) * 100;
+            const row = document.createElement("div");
+            row.className = "group reveal";
+            row.style.setProperty("--d", `${idx * 60}ms`);
+            row.innerHTML = `
+              <div class="flex items-center justify-between gap-4">
+                <div class="min-w-0">
+                  <div class="truncate font-medium text-slate-100">${String(a.artist ?? "—")}</div>
+                </div>
+                <div class="font-mono text-sm text-accent">${nf.format(Number(a.play_count) || 0)}</div>
+              </div>
+              <div class="mt-2 h-2 w-full overflow-hidden rounded-full bg-white/10">
+                <div class="h-full bg-accent transition-[width] duration-500" style="width:${pct}%"></div>
+              </div>
+            `;
+            listEl.appendChild(row);
+          });
+        } catch {
+          showError();
+        }
+      };
+
+      void load();
+    }
+  </script>
+</section>

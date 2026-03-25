@@ -1,0 +1,38 @@
+---
+import Page from "../../layouts/Page.astro";
+import TrackTable from "../../components/TrackTable.astro";
+import { getSetDetail } from "../../lib/api";
+
+export const prerender = false;
+
+const { id } = Astro.params;
+const set = await getSetDetail(String(id));
+
+if (!set) {
+  return Astro.redirect("/sets");
+}
+
+const dateFmt = new Intl.DateTimeFormat("en-US", {
+  month: "long",
+  day: "numeric",
+  year: "numeric",
+});
+---
+
+<Page title={set.venue} subtitle={`${set.tracks.length} tracks`}>
+  <div class="space-y-4">
+    <a
+      href="/sets"
+      class="inline-flex items-center gap-2 text-sm font-medium text-slate-400 transition-colors hover:text-accent"
+    >
+      <span class="font-mono">←</span>
+      Set History
+    </a>
+
+    <p class="font-mono text-sm text-slate-400">
+      {dateFmt.format(new Date(set.set_date))}
+    </p>
+
+    <TrackTable tracks={set.tracks} />
+  </div>
+</Page>

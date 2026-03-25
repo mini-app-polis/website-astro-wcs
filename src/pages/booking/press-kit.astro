@@ -1,0 +1,40 @@
+---
+import Page from "../../layouts/Page.astro";
+
+const assets = [
+  {
+    label: "Photos",
+    icon: "📷",
+    href: "https://drive.google.com/drive/folders/1ymvh7ryLPMKT1Gp-8PfWFmBXzez_LQRF?usp=sharing",
+  },
+  {
+    label: "Bios",
+    icon: "📄",
+    href: "https://drive.google.com/drive/folders/1V-EDrQqJ2-IZhbOl5A__CCdcFqTz8vVH?usp=drive_link",
+  },
+  {
+    label: "Videos",
+    icon: "🎬",
+    href: "https://drive.google.com/drive/folders/17JeqgduhsLKlNLrErSqOFm4PbaQR3DTi?usp=sharing",
+  },
+] as const;
+---
+
+<Page title="Press Kit" subtitle="Official media assets — Google Drive">
+  <div class="flex flex-wrap gap-4">
+    {assets.map((asset) => (
+      <a
+        href={asset.href}
+        target="_blank"
+        rel="noreferrer"
+        class="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.02] px-5 py-4 transition-colors hover:border-white/20 hover:bg-white/[0.04]"
+      >
+        <span class="text-xl">{asset.icon}</span>
+        <div>
+          <div class="text-sm font-medium">{asset.label}</div>
+          <div class="font-mono text-xs text-slate-500">Google Drive ↗</div>
+        </div>
+      </a>
+    ))}
+  </div>
+</Page>

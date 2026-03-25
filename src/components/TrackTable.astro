@@ -1,0 +1,62 @@
+---
+import type { TrackListItem } from "../lib/api";
+
+interface Props {
+  tracks?: TrackListItem[];
+}
+
+const { tracks = [] } = Astro.props;
+
+function formatLength(secs: number | null) {
+  if (!secs) return "—";
+  const m = Math.floor(secs / 60);
+  const s = secs % 60;
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
+function formatBpm(bpm: number | null) {
+  if (bpm == null) return "—";
+  return String(Math.round(bpm));
+}
+---
+
+<div class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]">
+  <div class="border-b border-white/10 px-5 py-4">
+    <h2 class="font-display text-lg tracking-tight">Track List</h2>
+    <p class="mt-1 text-xs text-slate-400">
+      {tracks.length} tracks · null fields shown as <span class="font-mono">—</span>
+    </p>
+  </div>
+
+  <table class="w-full border-collapse text-sm">
+    <thead>
+      <tr class="bg-white/[0.02] text-left text-xs uppercase tracking-widest text-slate-400">
+        <th class="px-5 py-3 font-mono">#</th>
+        <th class="px-5 py-3">Title</th>
+        <th class="px-5 py-3">Artist</th>
+        <th class="px-5 py-3 font-mono">BPM</th>
+        <th class="px-5 py-3">Genre</th>
+        <th class="px-5 py-3 font-mono">Length</th>
+      </tr>
+    </thead>
+    <tbody>
+      {tracks.length === 0 && (
+        <tr>
+          <td colspan="6" class="py-8 text-center text-sm text-slate-400">
+            No tracks found for this set.
+          </td>
+        </tr>
+      )}
+      {tracks.map((t, idx) => (
+        <tr class={idx % 2 === 0 ? "" : "bg-white/[0.02]"}>
+          <td class="px-5 py-3 font-mono text-slate-500">{idx + 1}</td>
+          <td class="px-5 py-3 font-medium text-slate-100">{t.title}</td>
+          <td class="px-5 py-3 text-slate-300">{t.artist}</td>
+          <td class="px-5 py-3 font-mono text-slate-400">{formatBpm(t.bpm)}</td>
+          <td class="px-5 py-3 text-slate-400">{t.genre ?? "—"}</td>
+          <td class="px-5 py-3 font-mono text-slate-400">{formatLength(t.length_secs)}</td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>

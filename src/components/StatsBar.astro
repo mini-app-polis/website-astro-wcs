@@ -1,0 +1,108 @@
+---
+const stats = [
+  { key: "total_sets", label: "Sets" },
+  { key: "total_plays", label: "Plays" },
+  { key: "unique_tracks", label: "Tracks" },
+  { key: "years_active", label: "Years" },
+  { key: "most_played_artist", label: "Top Artist" },
+] as const;
+---
+
+<section
+  class="rounded-2xl border border-white/10 bg-white/[0.02] p-6 shadow-soft"
+  data-statsbar
+>
+  <div class="grid grid-cols-2 gap-4 sm:grid-cols-5">
+    {stats.map((s, i) => (
+      <div
+        class="stat text-center opacity-60"
+        data-stat
+        data-stat-key={s.key}
+        style={{ ["--d" as any]: `${i * 140}ms` }}
+      >
+        <div class="stat-value font-mono text-3xl font-semibold tracking-tight text-slate-50 sm:text-4xl">
+          —
+        </div>
+        <div class="mt-1 text-xs font-medium uppercase tracking-widest text-slate-400">
+          {s.label}
+        </div>
+      </div>
+    ))}
+  </div>
+
+  <p class="mt-5 text-center text-sm text-slate-300">
+    <span class="font-mono text-accent">Live data</span> · deejay-marvel-api
+  </p>
+
+  <p data-stats-error class="mt-4 hidden text-center text-sm text-slate-400">
+    Unable to load live data
+  </p>
+
+  <script type="module">
+    const root = document.querySelector("[data-statsbar]");
+    if (!root) throw new Error("StatsBar root not found");
+
+    const statEls = Array.from(root.querySelectorAll("[data-stat-key]"));
+    const errorEl = root.querySelector("[data-stats-error]");
+
+    function setError() {
+      if (errorEl) errorEl.classList.remove("hidden");
+    }
+
+    const BASE = document.documentElement.dataset.apiUrl || "";
+
+    if (!BASE) {
+      setError();
+    } else {
+      const nf = new Intl.NumberFormat("en-US");
+      const baseUrl = String(BASE).replace(/\/$/, "");
+
+      const load = async () => {
+        try {
+          const res = await fetch(baseUrl + "/v1/stats/overview", {
+            cache: "no-store",
+          });
+          if (!res.ok) throw new Error(`Bad response: ${res.status}`);
+
+          const json = await res.json();
+          const data = json?.data ?? json;
+          if (!data) throw new Error("No data");
+
+          if (errorEl) errorEl.classList.add("hidden");
+
+          for (const el of statEls) {
+            const key = el.getAttribute("data-stat-key");
+            const valueEl = el.querySelector(".stat-value");
+            if (!key || !valueEl) continue;
+
+            const v = data[key];
+            if (v == null || v === "") {
+              valueEl.textContent = "—";
+              continue;
+            }
+
+            if (
+              key === "total_sets" ||
+              key === "total_plays" ||
+              key === "unique_tracks" ||
+              key === "years_active"
+            ) {
+              valueEl.textContent = nf.format(Number(v));
+            } else {
+              valueEl.textContent = String(v);
+            }
+          }
+
+          statEls.forEach((el) => {
+            el.classList.remove("opacity-60");
+            el.classList.add("reveal");
+          });
+        } catch {
+          setError();
+        }
+      };
+
+      void load();
+    }
+  </script>
+</section>

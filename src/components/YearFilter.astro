@@ -1,0 +1,32 @@
+---
+interface Props {
+  years?: number[];
+  selectedYear?: number | "all";
+}
+
+const { years = [], selectedYear = "all" } = Astro.props;
+---
+
+<div class="flex flex-wrap items-center gap-2">
+  <button
+    type="button"
+    data-year="all"
+    data-selected={selectedYear === "all" ? "true" : "false"}
+    aria-pressed={selectedYear === "all"}
+    class="rounded-full border border-white/10 bg-white/[0.02] px-3 py-1 text-xs font-mono transition-colors hover:border-white/20 hover:text-slate-100 data-[selected=true]:border-accent data-[selected=true]:bg-accent/15 data-[selected=true]:text-accent"
+  >
+    All
+  </button>
+
+  {years.map((y) => (
+    <button
+      type="button"
+      data-year={y}
+      data-selected={selectedYear === y ? "true" : "false"}
+      aria-pressed={selectedYear === y}
+      class="rounded-full border border-white/10 bg-white/[0.02] px-3 py-1 text-xs font-mono transition-colors hover:border-white/20 hover:text-slate-100 data-[selected=true]:border-accent data-[selected=true]:bg-accent/15 data-[selected=true]:text-accent"
+    >
+      {y}
+    </button>
+  ))}
+</div>

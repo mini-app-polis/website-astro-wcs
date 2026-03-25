@@ -1,0 +1,131 @@
+---
+import Page from "../../layouts/Page.astro";
+
+const bookingLinks = [
+  {
+    label: "I Come To You — Twin Cities Area",
+    href: "https://kaiano-wcs-icometoyou.youcanbook.me/",
+  },
+  {
+    label: "You Come To Me — Minneapolis",
+    href: "https://kaiano-wcs-youcometome.youcanbook.me/",
+  },
+  {
+    label: "@ SWINGesota — Wednesdays",
+    href: "https://kaiano-wcs-swingesota.youcanbook.me/",
+  },
+  {
+    label: "@ Weekend Conventions",
+    href: "https://kaiano-wcs-convention.youcanbook.me/",
+  },
+] as const;
+
+// Lesson info docs — add/edit content here directly or migrate to Astro content collections later
+const lessonDocs = [
+  {
+    title: "Pricing",
+    body: "Lesson rates vary by location and format. Please refer to the booking links above for current pricing, or reach out via the contact form for custom arrangements.",
+  },
+  {
+    title: "Common Questions",
+    body: "Do I need a partner? No — solo lessons are welcome. What should I wear? Comfortable clothes and smooth-soled shoes. How long is a lesson? Typically 45–60 minutes.",
+  },
+  {
+    title: "Locations",
+    body: "Twin Cities metro area, Minneapolis studio, SWINGesota venue (Wednesdays), and weekend dance conventions nationwide.",
+  },
+  {
+    title: "Student Survey",
+    body: "Periodic survey for current students. Link provided by Kaiano directly after lessons.",
+  },
+] as const;
+---
+
+<Page
+  title="WCS Lessons"
+  subtitle="Private lessons with Kaiano Levine"
+>
+  <div class="space-y-10">
+    <!-- Booking links -->
+    <section class="space-y-4">
+      <div>
+        <h2 class="font-display text-xl tracking-tight">Book a Lesson</h2>
+        <p class="mt-1 text-sm text-slate-400">
+          Questions not answered below?
+          <a href="/contact" class="text-accent transition-colors hover:text-accent/80">
+            Contact →
+          </a>
+        </p>
+      </div>
+
+      <div class="grid gap-3 sm:grid-cols-2">
+        {bookingLinks.map((link) => (
+          <a
+            href={link.href}
+            target="_blank"
+            rel="noreferrer"
+            class="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.02] px-5 py-4 text-sm font-medium transition-colors hover:border-white/20 hover:bg-white/[0.04] hover:text-accent"
+          >
+            {link.label}
+            <span class="ml-3 font-mono text-slate-500">↗</span>
+          </a>
+        ))}
+      </div>
+    </section>
+
+    <!-- Lesson information accordions -->
+    <section class="space-y-3" data-accordion-group>
+      <h2 class="font-display text-xl tracking-tight">Lesson Information</h2>
+
+      {lessonDocs.map((doc, i) => (
+        <div
+          class="overflow-hidden rounded-xl border border-white/10"
+          data-accordion
+        >
+          <button
+            type="button"
+            data-accordion-trigger
+            aria-expanded="false"
+            class="flex w-full items-center justify-between bg-white/[0.02] px-5 py-4 text-left text-sm font-medium transition-colors hover:bg-white/[0.04]"
+          >
+            {doc.title}
+            <svg
+              data-accordion-icon
+              class="h-4 w-4 shrink-0 text-slate-400 transition-transform"
+              viewBox="0 0 16 16"
+              fill="none"
+            >
+              <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+          <div
+            data-accordion-body
+            class="grid grid-rows-[0fr] transition-[grid-template-rows] duration-200"
+          >
+            <div class="overflow-hidden">
+              <p class="border-t border-white/10 px-5 py-4 text-sm leading-relaxed text-slate-400">
+                {doc.body}
+              </p>
+            </div>
+          </div>
+        </div>
+      ))}
+    </section>
+  </div>
+
+  <script>
+    document.querySelectorAll("[data-accordion]").forEach((el) => {
+      const trigger = el.querySelector("[data-accordion-trigger]") as HTMLButtonElement | null;
+      const body = el.querySelector("[data-accordion-body]") as HTMLElement | null;
+      const icon = el.querySelector("[data-accordion-icon]") as HTMLElement | null;
+      if (!trigger || !body) return;
+
+      trigger.addEventListener("click", () => {
+        const expanded = trigger.getAttribute("aria-expanded") === "true";
+        trigger.setAttribute("aria-expanded", String(!expanded));
+        body.style.gridTemplateRows = expanded ? "0fr" : "1fr";
+        icon?.style.setProperty("transform", expanded ? "" : "rotate(180deg)");
+      });
+    });
+  </script>
+</Page>

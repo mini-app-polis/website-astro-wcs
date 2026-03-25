@@ -1,0 +1,12 @@
+---
+import Page from "../../layouts/Page.astro";
+import SetsList from "../../components/SetsList.astro";
+
+const maxYear = new Date().getFullYear();
+const minYear = 2016;
+const years = Array.from({ length: maxYear - minYear + 1 }, (_, i) => maxYear - i);
+---
+
+<Page title="Set History" subtitle={`${minYear}–${maxYear} · deejay-marvel-api`}>
+  <SetsList years={years} initialYear={maxYear} />
+</Page>

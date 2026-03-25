@@ -1,0 +1,11 @@
+---
+import Page from "../../layouts/Page.astro";
+import LiveHistory from "../../components/LiveHistory.astro";
+---
+
+<Page
+  title="Recently Played"
+  subtitle="Last 50 songs from the most recent DJ session · deejay-marvel-api"
+>
+  <LiveHistory limit={50} />
+</Page>

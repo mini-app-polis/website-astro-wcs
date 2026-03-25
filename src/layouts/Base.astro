@@ -1,0 +1,58 @@
+---
+import Nav from "../components/Nav.astro";
+import Footer from "../components/Footer.astro";
+import "../styles/global.css";
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = "Kaiano Levine",
+  description = "West Coast Swing DJ and instructor based in the Twin Cities, MN.",
+} = Astro.props;
+
+const fontsUrl =
+  "https://fonts.googleapis.com/css2?family=Oxanium:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap";
+---
+
+<!doctype html>
+<html
+  lang="en"
+  class="dark"
+  data-api-url={import.meta.env.PUBLIC_API_URL}
+>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href={fontsUrl} rel="stylesheet" />
+
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  </head>
+  <body class="min-h-screen bg-gradient-to-b from-surface2 to-surface">
+    <a
+      href="#content"
+      class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50"
+    >
+      Skip to content
+    </a>
+
+    <div class="min-h-screen">
+      <header class="sticky top-0 z-40 bg-black/40 backdrop-blur">
+        <Nav />
+      </header>
+
+      <main id="content" class="mx-auto max-w-5xl px-6 pb-8 pt-10">
+        <slot />
+      </main>
+
+      <Footer />
+    </div>
+  </body>
+</html>

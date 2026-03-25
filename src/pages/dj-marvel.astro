@@ -1,0 +1,51 @@
+---
+import Page from "../layouts/Page.astro";
+
+const links = [
+  {
+    title: "Set History",
+    description: "Browse all sets by year. Open any set for its full track list.",
+    api: "/v1/sets",
+    href: "/sets",
+  },
+  {
+    title: "Recently Played",
+    description: "Last 50 songs from the most recent DJ session.",
+    api: "/v1/live-plays/recent",
+    href: "/live",
+  },
+  {
+    title: "Music Catalog",
+    description: "Top artists and tracks ranked by total plays across all sets.",
+    api: "/v1/stats/top-artists · /v1/stats/top-tracks",
+    href: "/catalog",
+  },
+  {
+    title: "Submit Routine Music",
+    description: "All music submission and management at deejaytools.com.",
+    api: "deejaytools.com",
+    href: "https://deejaytools.com/",
+    external: true,
+  },
+] as const;
+---
+
+<Page title="DJ Marvel" subtitle="Set history, live plays, and music tools">
+  <div class="grid gap-4 sm:grid-cols-2">
+    {links.map((link) => (
+      <a
+        href={link.href}
+        target={link.external ? "_blank" : undefined}
+        rel={link.external ? "noreferrer" : undefined}
+        class="group flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/[0.02] p-5 transition-colors hover:border-white/20 hover:bg-white/[0.04]"
+      >
+        <h2 class="font-display text-lg tracking-tight transition-colors group-hover:text-accent">
+          {link.title}
+          {link.external && <span class="ml-1 font-mono text-sm text-slate-500">↗</span>}
+        </h2>
+        <p class="flex-1 text-sm leading-relaxed text-slate-400">{link.description}</p>
+        <p class="font-mono text-xs text-slate-600">{link.api}</p>
+      </a>
+    ))}
+  </div>
+</Page>
