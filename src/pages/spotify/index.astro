@@ -61,7 +61,7 @@ import Page from "../../layouts/Page.astro";
 
     async function loadPlaylists() {
       if (!BASE) {
-        showError();
+        showError("API not configured — set PUBLIC_API_URL.");
         return;
       }
       try {
@@ -117,9 +117,10 @@ import Page from "../../layouts/Page.astro";
       }
     }
 
-    function showError() {
+    function showError(msg = "Unable to load playlists") {
       if (!grid || !errorEl) return;
       grid.innerHTML = "";
+      errorEl.textContent = msg;
       errorEl.classList.remove("hidden");
     }
 

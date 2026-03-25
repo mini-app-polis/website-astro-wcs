@@ -49,7 +49,7 @@ const {
   <script type="module">
     async function fetchSets(params = {}) {
       const BASE = document.documentElement.dataset.apiUrl || "";
-      if (!BASE) return [];
+      if (!BASE) return null;
       try {
         const qs = new URLSearchParams(
           Object.entries(params).map(([k, v]) => [k, String(v)]),
@@ -62,7 +62,7 @@ const {
         const json = await res.json();
         return json?.data ?? [];
       } catch {
-        return [];
+        return null;
       }
     }
 
@@ -161,6 +161,12 @@ const {
       statusText.textContent = "Loading…";
       try {
         const res = await fetchSets(params);
+        if (res === null) {
+          statusText.textContent = "API not configured — set PUBLIC_API_URL.";
+          done = true;
+          loadMoreBtn.disabled = true;
+          return;
+        }
         if (!Array.isArray(res) || res.length === 0) {
           renderSets(items);
           statusText.textContent = reset ? "No sets found." : "";

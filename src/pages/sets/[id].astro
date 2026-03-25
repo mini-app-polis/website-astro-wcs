@@ -1,11 +1,14 @@
 ---
 import Page from "../../layouts/Page.astro";
 import TrackTable from "../../components/TrackTable.astro";
-import { getSetDetail } from "../../lib/api";
+import { getApiBase, getSetDetail } from "../../lib/api";
 
 export const prerender = false;
 
 const { id } = Astro.params;
+if (getApiBase() === "") {
+  return new Response("PUBLIC_API_URL is not configured.", { status: 500 });
+}
 const set = await getSetDetail(String(id));
 
 if (!set) {

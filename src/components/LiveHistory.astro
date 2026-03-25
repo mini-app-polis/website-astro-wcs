@@ -49,7 +49,7 @@ const { limit = 50 } = Astro.props;
 
     async function getLivePlays() {
       const BASE = document.documentElement.dataset.apiUrl || "";
-      if (!BASE) return [];
+      if (!BASE) return null;
       try {
         const res = await fetch(
           `${String(BASE).replace(/\/$/, "")}/v1/live-plays/recent?limit=${limit}`,
@@ -59,7 +59,7 @@ const { limit = 50 } = Astro.props;
         const json = await res.json();
         return json?.data ?? [];
       } catch {
-        return [];
+        return null;
       }
     }
 
@@ -118,6 +118,10 @@ const { limit = 50 } = Astro.props;
     async function load() {
       if (statusEl) statusEl.textContent = "Loading…";
       const plays = await getLivePlays();
+      if (plays === null) {
+        if (statusEl) statusEl.textContent = "API not configured — set PUBLIC_API_URL.";
+        return;
+      }
       render(plays);
       if (statusEl) {
         statusEl.textContent = plays.length
