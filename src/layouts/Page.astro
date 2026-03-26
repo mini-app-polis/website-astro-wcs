@@ -12,11 +12,11 @@ const { title, subtitle } = Astro.props;
 <Base title={title} description={subtitle ?? title}>
   <section class="space-y-5">
     <header>
-      <h1 class="font-display text-3xl tracking-tight sm:text-4xl">
+      <h1 class="font-display text-4xl font-black italic tracking-tight sm:text-5xl">
         {title}
       </h1>
       {subtitle ? (
-        <p class="mt-2 text-sm text-slate-400">{subtitle}</p>
+        <p class="mt-2 text-sm font-light text-slate-400">{subtitle}</p>
       ) : null}
     </header>
     <div class="pt-2">

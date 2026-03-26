@@ -5,18 +5,19 @@ export default {
   theme: {
     extend: {
       colors: {
-        accent: "#ffb020",
-        pink: "#dd4462",
-        surface: "#0f121a",
-        surface2: "#0b0c0f",
+        accent: "#34d399",
+        surface: "#18181e",
+        surface2: "#1f1f27",
+        bg: "#0d0d0f",
+        bg2: "#111115",
       },
       fontFamily: {
-        display: ["Oxanium", "ui-sans-serif", "system-ui", "sans-serif"],
-        sans: ["IBM Plex Sans", "ui-sans-serif", "system-ui", "sans-serif"],
-        mono: ["IBM Plex Mono", "ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
+        display: ["Playfair Display", "ui-serif", "Georgia", "serif"],
+        sans: ["DM Sans", "ui-sans-serif", "system-ui", "sans-serif"],
+        mono: ["DM Mono", "ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
       },
       boxShadow: {
-        soft: "0 12px 40px rgba(0,0,0,0.45)",
+        soft: "0 12px 40px rgba(0,0,0,0.6)",
       },
     },
   },

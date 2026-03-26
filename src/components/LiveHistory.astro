@@ -9,7 +9,7 @@ const { limit = 50 } = Astro.props;
 <section data-live-root data-limit={limit} class="space-y-5">
   <div class="flex flex-wrap items-end justify-between gap-4">
     <div>
-      <h2 class="font-display text-xl tracking-tight">Now Playing</h2>
+      <h2 class="font-display text-xl font-black italic tracking-tight">Now Playing</h2>
       <p class="mt-1 text-sm text-slate-400">
         Last {limit} songs from the most recent DJ session
       </p>
@@ -25,7 +25,7 @@ const { limit = 50 } = Astro.props;
 
   <div
     id="liveList"
-    class="space-y-1 rounded-2xl border border-white/10 bg-white/[0.02] p-4"
+    class="space-y-1 rounded-2xl border border-white/[0.07] bg-surface p-4"
   ></div>
 
   <p id="liveStatus" class="text-sm text-slate-400"></p>
@@ -78,7 +78,7 @@ const { limit = 50 } = Astro.props;
       plays.forEach((play, i) => {
         const row = document.createElement("div");
         row.className =
-          "grid grid-cols-[auto_1fr_auto] items-center gap-4 rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 reveal";
+          "grid grid-cols-[auto_1fr_auto] items-center gap-4 rounded-xl border border-white/[0.07] bg-surface px-4 py-3 reveal";
         row.style.setProperty("--d", `${i * 40}ms`);
 
         const num = document.createElement("span");

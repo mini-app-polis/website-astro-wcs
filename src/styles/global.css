@@ -7,7 +7,8 @@ html {
 }
 
 body {
-  @apply bg-surface2 text-slate-100 antialiased;
+  @apply bg-bg text-slate-100 antialiased;
+  font-family: "DM Sans", ui-sans-serif, system-ui, sans-serif;
 }
 
 .reveal {
@@ -25,6 +26,6 @@ body {
 }
 
 :focus-visible {
-  outline: 2px solid rgba(255, 176, 32, 0.75);
+  outline: 2px solid rgba(52, 211, 153, 0.6);
   outline-offset: 2px;
 }

@@ -49,7 +49,7 @@ function isActive(href: string) {
 <nav class="mx-auto flex max-w-5xl items-center justify-between px-6 py-5">
   <!-- Logo -->
   <a href="/" class="group flex items-baseline gap-3">
-    <span class="font-display text-lg tracking-tight text-slate-100 transition-colors group-hover:text-accent">
+    <span class="font-display text-lg font-bold tracking-tight text-slate-100 transition-colors group-hover:text-accent">
       Kaiano Levine
     </span>
     <span class="hidden font-mono text-xs text-slate-500 sm:inline">wcs</span>
@@ -73,14 +73,14 @@ function isActive(href: string) {
                 <path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </button>
-            <div class="invisible absolute right-0 top-full z-50 mt-1.5 min-w-[160px] rounded-xl border border-white/10 bg-surface2/95 p-1.5 opacity-0 shadow-soft backdrop-blur transition-all group-hover:visible group-hover:opacity-100">
+            <div class="invisible absolute right-0 top-full z-50 mt-1.5 min-w-[160px] rounded-xl border border-white/10 bg-surface/95 p-1.5 opacity-0 shadow-soft backdrop-blur transition-all group-hover:visible group-hover:opacity-100">
               {item.submenu.map((sub) => (
                 <a
                   href={sub.href}
                   class={`block rounded-lg px-3 py-2 text-sm transition-colors ${
                     isActive(sub.href)
                       ? "text-accent"
-                      : "text-slate-300 hover:bg-white/5 hover:text-slate-100"
+                      : "text-slate-300 hover:bg-accent/10 hover:text-accent"
                   }`}
                 >
                   {sub.label}
