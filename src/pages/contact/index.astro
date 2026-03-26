@@ -164,9 +164,10 @@ const socials = [
           const res = await fetch(`${legacyApiUrl}/api/v1/contact`, {
             method: "POST",
             body: data,
+            redirect: "follow",
           });
 
-          if (!res.ok) {
+          if (!res.ok && !res.redirected) {
             const text = await res.text().catch(() => "");
             throw new Error(text || `Error ${res.status}`);
           }
