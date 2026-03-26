@@ -12,7 +12,7 @@ export default {
         bg2: "#111115",
       },
       fontFamily: {
-        display: ["Playfair Display", "ui-serif", "Georgia", "serif"],
+        display: ["Fraunces", "ui-serif", "Georgia", "serif"],
         sans: ["DM Sans", "ui-sans-serif", "system-ui", "sans-serif"],
         mono: ["DM Mono", "ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
       },

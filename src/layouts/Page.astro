@@ -12,7 +12,7 @@ const { title, subtitle } = Astro.props;
 <Base title={title} description={subtitle ?? title}>
   <section class="space-y-5">
     <header>
-      <h1 class="font-display text-4xl font-black italic tracking-tight sm:text-5xl">
+      <h1 class="font-display text-4xl font-black italic tracking-tight sm:text-5xl" style="font-variation-settings: 'opsz' 72;">
         {title}
       </h1>
       {subtitle ? (
