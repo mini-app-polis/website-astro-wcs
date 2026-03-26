@@ -8,8 +8,8 @@ export default {
         accent: "#34d399",
         surface: "#18181e",
         surface2: "#1f1f27",
-        bg: "#0d0d0f",
-        bg2: "#111115",
+        canvas: "#0d0d0f",
+        canvas2: "#111115",
       },
       fontFamily: {
         display: ["Fraunces", "ui-serif", "Georgia", "serif"],

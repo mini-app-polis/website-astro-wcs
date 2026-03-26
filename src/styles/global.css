@@ -7,7 +7,7 @@ html {
 }
 
 body {
-  @apply bg-bg text-slate-100 antialiased;
+  @apply bg-canvas text-slate-100 antialiased;
   font-family: "DM Sans", ui-sans-serif, system-ui, sans-serif;
 }
 

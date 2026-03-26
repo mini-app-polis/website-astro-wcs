@@ -43,7 +43,7 @@ const cards = [
       <div class="flex items-center gap-3">
         <a
           href="/booking/lessons"
-          class="inline-flex items-center gap-2 rounded-full bg-accent px-6 py-3 font-mono text-xs font-medium uppercase tracking-widest text-bg transition-opacity hover:opacity-90"
+          class="inline-flex items-center gap-2 rounded-full bg-accent px-6 py-3 font-mono text-xs font-medium uppercase tracking-widest text-canvas transition-opacity hover:opacity-90"
         >
           Book a Lesson →
         </a>
@@ -57,9 +57,9 @@ const cards = [
     </div>
 
     <div class="relative overflow-hidden">
-      <div class="absolute inset-y-0 left-0 z-10 w-16 bg-gradient-to-r from-bg to-transparent"></div>
+      <div class="absolute inset-y-0 left-0 z-10 w-16 bg-gradient-to-r from-canvas to-transparent"></div>
       <img
-        src="/images/kaiano.jpg"
+        src="/kaiano.png"
         alt="Kaiano Levine"
         class="h-full w-full object-cover object-top"
         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
@@ -71,7 +71,7 @@ const cards = [
   </div>
 
   <!-- Stats -->
-  <div class="-mx-6 border-y border-white/[0.07] bg-bg2">
+  <div class="-mx-6 border-y border-white/[0.07] bg-canvas2">
     <StatsBar />
   </div>
 
