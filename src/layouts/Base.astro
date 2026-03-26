@@ -12,9 +12,6 @@ const {
   title = "Kaiano Levine",
   description = "West Coast Swing DJ and instructor based in the Twin Cities, MN.",
 } = Astro.props;
-
-const fontsUrl =
-  "https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,700;0,9..144,900;1,9..144,400;1,9..144,700;1,9..144,900&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap";
 ---
 
 <!doctype html>
@@ -28,10 +25,6 @@ const fontsUrl =
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
     <meta name="description" content={description} />
-
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href={fontsUrl} rel="stylesheet" />
 
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   </head>
