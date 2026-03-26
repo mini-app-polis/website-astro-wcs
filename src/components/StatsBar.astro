@@ -1,10 +1,9 @@
 ---
 const stats = [
+  { key: "years_active", label: "Years" },
   { key: "total_sets", label: "Sets" },
   { key: "total_plays", label: "Plays" },
-  { key: "unique_tracks", label: "Tracks" },
-  { key: "years_active", label: "Years" },
-  { key: "most_played_artist", label: "Top Artist" },
+  { key: "unique_tracks", label: "Unique Tracks" },
 ] as const;
 ---
 
@@ -12,7 +11,7 @@ const stats = [
   class="p-6"
   data-statsbar
 >
-  <div class="grid grid-cols-2 gap-4 sm:grid-cols-5">
+  <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
     {stats.map((s, i) => (
       <div
         class="stat text-center opacity-60"
@@ -29,10 +28,6 @@ const stats = [
       </div>
     ))}
   </div>
-
-  <p class="mt-5 text-center text-sm text-slate-300">
-    <span class="font-mono text-accent">Live data</span> · deejay-marvel-api
-  </p>
 
   <p data-stats-error class="mt-4 hidden text-center text-sm text-slate-400">
     Unable to load live data
