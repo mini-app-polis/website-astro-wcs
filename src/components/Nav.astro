@@ -121,9 +121,9 @@ function isActive(href: string) {
 <!-- Mobile drawer -->
 <div
   id="nav-drawer"
-  style="position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:9999;"
-  class="flex translate-x-full flex-col bg-surface2 transition-transform duration-300 md:hidden"
   aria-hidden="true"
+  style="position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:9999;transform:translateX(100%);transition:transform 300ms ease;display:flex;flex-direction:column;background:#1f1f27;"
+  class="md:hidden"
 >
   <div class="flex items-center justify-between border-b border-white/10 px-6 py-5">
     <a href="/" class="font-serif italic text-lg tracking-tight text-slate-100">
@@ -163,14 +163,16 @@ function isActive(href: string) {
   const drawer = document.getElementById("nav-drawer");
 
   function openDrawer() {
-    drawer?.classList.remove("translate-x-full");
-    drawer?.setAttribute("aria-hidden", "false");
+    if (!drawer) return;
+    drawer.style.transform = "translateX(0)";
+    drawer.setAttribute("aria-hidden", "false");
     document.body.style.overflow = "hidden";
   }
 
   function closeDrawer() {
-    drawer?.classList.add("translate-x-full");
-    drawer?.setAttribute("aria-hidden", "true");
+    if (!drawer) return;
+    drawer.style.transform = "translateX(100%)";
+    drawer.setAttribute("aria-hidden", "true");
     document.body.style.overflow = "";
   }
 

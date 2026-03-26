@@ -8,10 +8,14 @@ html {
 
 body {
   @apply bg-canvas text-slate-100 antialiased;
-  font-family: "DM Sans", ui-sans-serif, system-ui, sans-serif;
 }
 
 .font-serif {
+  font-variation-settings: "opsz" 72;
+}
+
+/* Ensure Fraunces optical size is always set at display sizes */
+h1, h2, h3 {
   font-variation-settings: "opsz" 72;
 }
 
