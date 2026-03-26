@@ -161,7 +161,7 @@ const socials = [
         submitLabel.textContent = "Sending…";
 
         try {
-          const res = await fetch(`${legacyApiUrl}/api/v1/contact`, {
+          const res = await fetch(`${legacyApiUrl}/v1/contact`, {
             method: "POST",
             body: data,
             redirect: "manual",
