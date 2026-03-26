@@ -11,6 +11,11 @@ body {
   font-family: "DM Sans", ui-sans-serif, system-ui, sans-serif;
 }
 
+.font-display,
+[class*="font-display"] {
+  font-variation-settings: "opsz" 72;
+}
+
 .reveal {
   opacity: 0;
   transform: translateY(10px);

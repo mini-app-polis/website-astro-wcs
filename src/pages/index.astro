@@ -29,8 +29,8 @@ const cards = [
 
 <Base title="Kaiano Levine — West Coast Swing">
   <!-- Hero -->
-  <div class="-mx-6 -mt-10 grid grid-cols-2">
-    <div class="flex flex-col justify-center gap-7 px-6 py-20 sm:px-10">
+  <div class="-mx-6 -mt-10 grid min-h-[480px] grid-cols-[5fr_3fr]">
+    <div class="flex flex-col justify-center gap-7 px-10 py-20">
       <p class="font-mono text-[10px] uppercase tracking-[0.18em] text-accent">
         West Coast Swing · Twin Cities, MN
       </p>
@@ -56,20 +56,16 @@ const cards = [
       </div>
     </div>
 
-    <div class="relative flex items-center justify-center overflow-hidden bg-surface">
-      <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_60%_40%,rgba(52,211,153,0.06),transparent_65%)]"></div>
-      <div class="relative z-10 flex flex-col items-center gap-4">
-        <img
-          src="/kaiano.png"
-          alt="Kaiano Levine"
-          class="h-36 w-36 rounded-full border-2 border-accent/30 object-cover object-top"
-          onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
-        />
-        <div
-          class="hidden h-36 w-36 items-center justify-center rounded-full border-2 border-accent/30 bg-surface2 font-display text-4xl font-bold italic text-accent"
-        >
-          KL
-        </div>
+    <div class="relative overflow-hidden">
+      <div class="absolute inset-y-0 left-0 z-10 w-16 bg-gradient-to-r from-bg to-transparent"></div>
+      <img
+        src="/images/kaiano.jpg"
+        alt="Kaiano Levine"
+        class="h-full w-full object-cover object-top"
+        onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
+      />
+      <div class="hidden h-full w-full items-center justify-center bg-surface font-display italic text-6xl text-accent/20">
+        KL
       </div>
     </div>
   </div>
@@ -97,7 +93,7 @@ const cards = [
           >
             {card.status}
           </span>
-          <h3 class="font-display text-lg font-bold italic transition-colors group-hover:text-accent" style="font-variation-settings: 'opsz' 72;">
+          <h3 class="font-display text-lg font-black italic transition-colors group-hover:text-accent" style="font-variation-settings: 'opsz' 72;">
             {card.title}
           </h3>
           <p class="text-sm font-light leading-relaxed text-slate-400">{card.description}</p>
