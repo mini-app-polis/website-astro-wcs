@@ -12,7 +12,7 @@ export default {
         canvas2: "#111115",
       },
       fontFamily: {
-        display: ["Fraunces", "ui-serif", "Georgia", "serif"],
+        serif: ["Fraunces", "ui-serif", "Georgia", "serif"],
         sans: ["DM Sans", "ui-sans-serif", "system-ui", "sans-serif"],
         mono: ["DM Mono", "ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
       },
