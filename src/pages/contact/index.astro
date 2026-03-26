@@ -163,7 +163,8 @@ const socials = [
         try {
           const res = await fetch(`${legacyApiUrl}/v1/contact`, {
             method: "POST",
-            body: data,
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(Object.fromEntries(data)),
             redirect: "manual",
           });
 
