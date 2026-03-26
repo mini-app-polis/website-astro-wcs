@@ -11,8 +11,7 @@ body {
   font-family: "DM Sans", ui-sans-serif, system-ui, sans-serif;
 }
 
-.font-display,
-[class*="font-display"] {
+.font-display {
   font-variation-settings: "opsz" 72;
 }
 
