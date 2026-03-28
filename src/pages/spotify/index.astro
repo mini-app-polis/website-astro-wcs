@@ -79,25 +79,11 @@ import Page from "../../layouts/Page.astro";
 
         playlists.forEach((pl, i) => {
           const card = document.createElement("a");
-          card.href = pl.external_url ?? pl.url ?? "#";
+          card.href = pl.url ?? "#";
           card.target = "_blank";
           card.rel = "noreferrer";
           card.className = "group space-y-2 reveal";
           card.style.setProperty("--d", `${i * 60}ms`);
-
-          const imgWrap = document.createElement("div");
-          imgWrap.className = "overflow-hidden rounded-xl border border-white/10";
-
-          if (pl.image_url ?? pl.image) {
-            const img = document.createElement("img");
-            img.src = pl.image_url ?? pl.image;
-            img.alt = pl.name ?? "Playlist";
-            img.className = "aspect-square w-full object-cover transition-transform duration-300 group-hover:scale-105";
-            imgWrap.appendChild(img);
-          } else {
-            imgWrap.className += " bg-white/[0.04]";
-            imgWrap.style.aspectRatio = "1";
-          }
 
           const name = document.createElement("p");
           name.className = "text-sm font-medium text-slate-100 transition-colors group-hover:text-accent";
@@ -105,9 +91,8 @@ import Page from "../../layouts/Page.astro";
 
           const count = document.createElement("p");
           count.className = "font-mono text-xs text-slate-500";
-          count.textContent = pl.track_count != null ? `${pl.track_count} songs` : "";
+          count.textContent = pl.tracks_total != null ? `${pl.tracks_total} songs` : "";
 
-          card.appendChild(imgWrap);
           card.appendChild(name);
           card.appendChild(count);
           grid.appendChild(card);
