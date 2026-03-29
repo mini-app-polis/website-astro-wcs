@@ -106,10 +106,25 @@ const labelClass = "text-xs font-medium uppercase tracking-widest text-slate-400
     const errorEl = document.getElementById("surveyError");
     const errorMsg = document.getElementById("surveyErrorMsg");
 
-    if (form && submitBtn && successEl && errorEl) {
+    if (form && submitBtn && submitLabel && successEl && errorEl && errorMsg) {
       form.addEventListener("submit", async (e) => {
         e.preventDefault();
         errorEl.classList.add("hidden");
+
+        const data = new FormData(form);
+
+        if (!data.get("replyTo") || !data.get("first")) {
+          errorMsg.textContent = "Please fill in all required fields.";
+          errorEl.classList.remove("hidden");
+          return;
+        }
+
+        const token = data.get("cf-turnstile-response");
+        if (!token) {
+          errorMsg.textContent = "Please complete the verification check.";
+          errorEl.classList.remove("hidden");
+          return;
+        }
 
         submitBtn.disabled = true;
         submitLabel.textContent = "Submitting…";
@@ -118,7 +133,7 @@ const labelClass = "text-xs font-medium uppercase tracking-widest text-slate-400
           const res = await fetch(`${apiUrl}/v1/contact`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(Object.fromEntries(new FormData(form))),
+            body: JSON.stringify(Object.fromEntries(data)),
             redirect: "manual",
           });
 
