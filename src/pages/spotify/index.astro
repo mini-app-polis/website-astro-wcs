@@ -19,18 +19,18 @@ import Page from "../../layouts/Page.astro";
       that support their growth and creativity within the dance community.
     </p>
 
-    <!-- Playlists rendered by kaiano-api Spotify snapshot JSON -->
+    <!-- Playlists rendered by api.kaianolevine.com Spotify snapshot JSON -->
     <section
       class="rounded-2xl border border-white/10 bg-white/[0.02] p-6"
       data-spotify-playlists
     >
       <h2 class="font-serif text-xl font-black italic tracking-tight" style="font-variation-settings: 'opsz' 72;">Playlists</h2>
       <p class="mt-1 text-sm text-slate-400">
-        Pulled from <span class="font-mono">kaiano-api</span> Spotify snapshot
+        Pulled from <span class="font-mono">api.kaianolevine.com</span> Spotify snapshot
       </p>
 
       <div
-        class="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+        class="mt-5 flex flex-col gap-2"
         data-playlists-grid
       >
         {Array.from({ length: 6 }).map(() => (
@@ -49,8 +49,7 @@ import Page from "../../layouts/Page.astro";
   </div>
 
   <script type="module">
-    // kaiano-api exposes Spotify playlist snapshots at /api/v1/spotify/playlists
-    // Adjust the endpoint path to match your actual kaiano-api route.
+    // api.kaianolevine.com exposes Spotify playlist snapshots at /v1/spotify/playlists
     const root = document.querySelector("[data-spotify-playlists]");
     if (!root) throw new Error("Spotify root not found");
 
@@ -74,15 +73,22 @@ import Page from "../../layouts/Page.astro";
         const playlists = json?.data ?? json;
         if (!Array.isArray(playlists) || playlists.length === 0) throw new Error("Empty");
 
+        const sorted = [...playlists].sort((a, b) => {
+          if (a.name === "Radio") return -1;
+          if (b.name === "Radio") return 1;
+          return b.name.localeCompare(a.name);
+        });
+
         if (!grid) return;
         grid.innerHTML = "";
 
-        playlists.forEach((pl, i) => {
+        sorted.forEach((pl, i) => {
           const card = document.createElement("a");
           card.href = pl.url ?? "#";
           card.target = "_blank";
           card.rel = "noreferrer";
-          card.className = "group space-y-2 reveal";
+          card.className =
+            "group flex items-center justify-between rounded-xl border border-white/[0.07] bg-surface px-5 py-3 transition-colors hover:border-accent/20 hover:bg-surface2 reveal";
           card.style.setProperty("--d", `${i * 60}ms`);
 
           const name = document.createElement("p");
