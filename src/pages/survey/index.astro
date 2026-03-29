@@ -2,138 +2,139 @@
 import Page from "../../layouts/Page.astro";
 
 const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "0x4AAAAAACXUS6RYhJCvPzZg";
+const apiUrl = import.meta.env.PUBLIC_API_URL ?? "https://api.kaianolevine.com";
 
-const inputClass =
-  "w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 transition-colors focus:border-white/25 focus:outline-none";
+const inputClass = "w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 transition-colors focus:border-white/25 focus:outline-none";
 const labelClass = "text-xs font-medium uppercase tracking-widest text-slate-400";
 ---
 
 <Page title="Student Survey" subtitle="Thanks for taking the time to share your thoughts!">
-  <div class="max-w-2xl space-y-6">
-    <form id="survey-form" class="space-y-5">
-      <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+  <div class="rounded-2xl border border-white/10 bg-white/[0.02] p-6 shadow-soft max-w-2xl">
+
+    <div id="surveySuccess" class="hidden space-y-2 py-6 text-center">
+      <p class="font-serif italic text-2xl tracking-tight text-accent">Survey submitted!</p>
+      <p class="text-sm text-slate-400">Thank you — Kaiano will review before your lesson.</p>
+    </div>
+
+    <div id="surveyError" class="mb-5 hidden rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3">
+      <p class="text-sm text-red-400" id="surveyErrorMsg">Something went wrong. Please refresh and try again.</p>
+    </div>
+
+    <form id="surveyForm" class="space-y-5" novalidate>
+      <input type="hidden" name="type" value="survey" />
+      <input type="hidden" name="originSite" value="wcs.kaianolevine.com" />
+
+      <div style="display:none" aria-hidden="true">
+        <input type="text" name="website" tabindex="-1" autocomplete="off" />
+      </div>
+
+      <div class="grid gap-5 sm:grid-cols-2">
         <div class="space-y-1.5">
           <label class={labelClass}>First name</label>
-          <input class={inputClass} type="text" name="first" required placeholder="Alex" autocomplete="given-name" />
+          <input type="text" name="first" required autocomplete="given-name" class={inputClass} />
         </div>
         <div class="space-y-1.5">
           <label class={labelClass}>Last name</label>
-          <input class={inputClass} type="text" name="lastName" required placeholder="Smith" autocomplete="family-name" />
+          <input type="text" name="lastName" required autocomplete="family-name" class={inputClass} />
         </div>
         <div class="space-y-1.5">
           <label class={labelClass}>Preferred name</label>
-          <input class={inputClass} type="text" name="preferredName" placeholder="If different from first name" />
+          <input type="text" name="preferredName" placeholder="If different from first name" class={inputClass} />
         </div>
         <div class="space-y-1.5">
           <label class={labelClass}>Pronouns</label>
-          <input class={inputClass} type="text" name="pronouns" required placeholder="e.g. she/her, they/them" />
+          <input type="text" name="pronouns" required placeholder="e.g. she/her, they/them" class={inputClass} />
         </div>
         <div class="space-y-1.5 sm:col-span-2">
           <label class={labelClass}>Email address</label>
-          <input class={inputClass} type="email" name="replyTo" required placeholder="you@example.com" autocomplete="email" />
+          <input type="email" name="replyTo" required autocomplete="email" class={inputClass} />
         </div>
       </div>
 
       <div class="space-y-1.5">
-        <label class={labelClass}>
-          What is your primary role (lead, follow, or both)? Which role do you want to focus on?
-        </label>
-        <textarea class={inputClass} name="role-choice" rows="4" required></textarea>
+        <label class={labelClass}>What is your primary role (lead, follow, or both)? Which role do you want to focus on?</label>
+        <textarea name="role-choice" rows="4" required class={inputClass}></textarea>
       </div>
       <div class="space-y-1.5">
         <label class={labelClass}>What is your movement background?</label>
-        <textarea
-          class={inputClass}
-          name="movement-background"
-          rows="4"
-          required
-          placeholder="Dance, athletics, anything you feel may be related. Feel free to think outside the box."
-        ></textarea>
+        <textarea name="movement-background" rows="4" required placeholder="Dance, athletics, anything you feel may be related. Feel free to think outside the box." class={inputClass}></textarea>
       </div>
       <div class="space-y-1.5">
         <label class={labelClass}>What is your education/career background?</label>
-        <textarea
-          class={inputClass}
-          name="education-background"
-          rows="4"
-          placeholder="Anything that demonstrates how you think about the world."
-        ></textarea>
+        <textarea name="education-background" rows="4" placeholder="Anything that demonstrates how you think about the world." class={inputClass}></textarea>
       </div>
       <div class="space-y-1.5">
         <label class={labelClass}>Who inspires you, and what about them inspires you?</label>
-        <textarea
-          class={inputClass}
-          name="inspiration"
-          rows="4"
-          placeholder="Local dancers or international professionals."
-        ></textarea>
+        <textarea name="inspiration" rows="4" placeholder="Local dancers or international professionals." class={inputClass}></textarea>
       </div>
       <div class="space-y-1.5">
         <label class={labelClass}>How do you most effectively learn?</label>
-        <textarea
-          class={inputClass}
-          name="learning-style"
-          rows="4"
-          placeholder="Visual, auditory, kinesthetic — or describe in your own words."
-        ></textarea>
+        <textarea name="learning-style" rows="4" placeholder="Visual, auditory, kinesthetic — or describe in your own words." class={inputClass}></textarea>
       </div>
       <div class="space-y-1.5">
         <label class={labelClass}>What are your goals in dance?</label>
-        <textarea class={inputClass} name="goals" rows="4" placeholder="Short or long term."></textarea>
+        <textarea name="goals" rows="4" placeholder="Short or long term." class={inputClass}></textarea>
       </div>
       <div class="space-y-1.5">
         <label class={labelClass}>How would you like to measure success from lessons?</label>
-        <textarea class={inputClass} name="success-measurement" rows="4"></textarea>
+        <textarea name="success-measurement" rows="4" class={inputClass}></textarea>
       </div>
       <div class="space-y-1.5">
         <label class={labelClass}>Is there anything specific you want to work on?</label>
-        <textarea class={inputClass} name="lesson-content-requests" rows="4"></textarea>
+        <textarea name="lesson-content-requests" rows="4" class={inputClass}></textarea>
       </div>
 
       <div class="cf-turnstile" data-sitekey={turnstileSiteKey} data-theme="dark"></div>
 
-      <div id="survey-error" class="hidden text-sm text-red-400"></div>
-      <div id="survey-success" class="hidden text-sm text-accent">Survey submitted — thank you!</div>
-
       <button
+        id="surveySubmit"
         type="submit"
-        class="inline-flex items-center gap-2 rounded-full bg-accent px-6 py-3 font-mono text-xs font-medium uppercase tracking-widest text-canvas transition-opacity hover:opacity-90"
+        class="inline-flex items-center gap-2 rounded-full bg-accent px-6 py-2.5 font-mono text-sm font-semibold text-black transition-opacity hover:opacity-90 disabled:opacity-50"
       >
-        Submit Survey →
+        <span id="surveySubmitLabel">Submit Survey →</span>
       </button>
     </form>
   </div>
 
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 
-  <script>
-    const form = document.getElementById("survey-form");
-    const errorEl = document.getElementById("survey-error");
-    const successEl = document.getElementById("survey-success");
+  <script define:vars={{ apiUrl }}>
+    const form = document.getElementById("surveyForm");
+    const submitBtn = document.getElementById("surveySubmit");
+    const submitLabel = document.getElementById("surveySubmitLabel");
+    const successEl = document.getElementById("surveySuccess");
+    const errorEl = document.getElementById("surveyError");
+    const errorMsg = document.getElementById("surveyErrorMsg");
 
-    if (form && errorEl && successEl) {
+    if (form && submitBtn && successEl && errorEl) {
       form.addEventListener("submit", async (e) => {
         e.preventDefault();
         errorEl.classList.add("hidden");
-        successEl.classList.add("hidden");
 
-        const data = Object.fromEntries(new FormData(form));
-        const BASE = document.documentElement.dataset.apiUrl || "";
+        submitBtn.disabled = true;
+        submitLabel.textContent = "Submitting…";
 
         try {
-          const res = await fetch(`${BASE.replace(/\/$/, "")}/v1/contact`, {
+          const res = await fetch(`${apiUrl}/v1/contact`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ ...data, type: "survey" }),
+            body: JSON.stringify(Object.fromEntries(new FormData(form))),
             redirect: "manual",
           });
-          const isRedirect = res.type === "opaqueredirect";
-          if (!res.ok && !isRedirect) throw new Error("Submission failed");
+
+          const isSuccess = res.ok || res.type === "opaqueredirect";
+          if (!isSuccess) {
+            const text = await res.text().catch(() => "");
+            throw new Error(text || `Error ${res.status}`);
+          }
+
+          form.classList.add("hidden");
           successEl.classList.remove("hidden");
-          form.reset();
-        } catch {
-          errorEl.textContent = "Something went wrong — please try again or use the contact form.";
+        } catch (err) {
+          errorMsg.textContent = err instanceof Error ? err.message : "Something went wrong. Please try again.";
           errorEl.classList.remove("hidden");
+          submitBtn.disabled = false;
+          submitLabel.textContent = "Submit Survey →";
         }
       });
     }
