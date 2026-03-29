@@ -22,6 +22,7 @@ const bookingLinks = [
 
 // Lesson info accordions — order matches render below
 const lessonDocs = [
+  { title: "Intro Survey" },
   { title: "Pricing" },
   { title: "Common Questions" },
   { title: "Locations" },
@@ -95,7 +96,22 @@ const lessonDocs = [
           >
             <div class="overflow-hidden">
               <div class="border-t border-white/10 px-5 py-4">
-                {doc.title === "Pricing" ? (
+                {doc.title === "Intro Survey" ? (
+                  <>
+                    <p class="text-sm text-slate-400 font-light leading-relaxed">
+                      If this is the first time working with Kaiano (or if it has been some time since the last time)
+                      please fill out the survey at your earliest convenience. This helps us use the lesson time as
+                      efficiently as possible. Feel free to read through and take some time before answering —
+                      ideally before the lesson.
+                    </p>
+                    <a
+                      href="/survey"
+                      class="mt-4 inline-flex items-center gap-2 rounded-full bg-accent px-5 py-2.5 font-mono text-xs font-medium uppercase tracking-widest text-canvas transition-opacity hover:opacity-90"
+                    >
+                      Student Survey →
+                    </a>
+                  </>
+                ) : doc.title === "Pricing" ? (
                   <>
                     <p class="text-sm text-slate-400 font-light leading-relaxed">Lessons are 50 minutes by default.</p>
                     <div class="mt-2 space-y-1">

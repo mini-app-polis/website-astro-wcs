@@ -1,0 +1,141 @@
+---
+import Page from "../../layouts/Page.astro";
+
+const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "0x4AAAAAACXUS6RYhJCvPzZg";
+
+const inputClass =
+  "w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 transition-colors focus:border-white/25 focus:outline-none";
+const labelClass = "text-xs font-medium uppercase tracking-widest text-slate-400";
+---
+
+<Page title="Student Survey" subtitle="Thanks for taking the time to share your thoughts!">
+  <div class="max-w-2xl space-y-6">
+    <form id="survey-form" class="space-y-5">
+      <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+        <div class="space-y-1.5">
+          <label class={labelClass}>First name</label>
+          <input class={inputClass} type="text" name="first" required placeholder="Alex" autocomplete="given-name" />
+        </div>
+        <div class="space-y-1.5">
+          <label class={labelClass}>Last name</label>
+          <input class={inputClass} type="text" name="lastName" required placeholder="Smith" autocomplete="family-name" />
+        </div>
+        <div class="space-y-1.5">
+          <label class={labelClass}>Preferred name</label>
+          <input class={inputClass} type="text" name="preferredName" placeholder="If different from first name" />
+        </div>
+        <div class="space-y-1.5">
+          <label class={labelClass}>Pronouns</label>
+          <input class={inputClass} type="text" name="pronouns" required placeholder="e.g. she/her, they/them" />
+        </div>
+        <div class="space-y-1.5 sm:col-span-2">
+          <label class={labelClass}>Email address</label>
+          <input class={inputClass} type="email" name="replyTo" required placeholder="you@example.com" autocomplete="email" />
+        </div>
+      </div>
+
+      <div class="space-y-1.5">
+        <label class={labelClass}>
+          What is your primary role (lead, follow, or both)? Which role do you want to focus on?
+        </label>
+        <textarea class={inputClass} name="role-choice" rows="4" required></textarea>
+      </div>
+      <div class="space-y-1.5">
+        <label class={labelClass}>What is your movement background?</label>
+        <textarea
+          class={inputClass}
+          name="movement-background"
+          rows="4"
+          required
+          placeholder="Dance, athletics, anything you feel may be related. Feel free to think outside the box."
+        ></textarea>
+      </div>
+      <div class="space-y-1.5">
+        <label class={labelClass}>What is your education/career background?</label>
+        <textarea
+          class={inputClass}
+          name="education-background"
+          rows="4"
+          placeholder="Anything that demonstrates how you think about the world."
+        ></textarea>
+      </div>
+      <div class="space-y-1.5">
+        <label class={labelClass}>Who inspires you, and what about them inspires you?</label>
+        <textarea
+          class={inputClass}
+          name="inspiration"
+          rows="4"
+          placeholder="Local dancers or international professionals."
+        ></textarea>
+      </div>
+      <div class="space-y-1.5">
+        <label class={labelClass}>How do you most effectively learn?</label>
+        <textarea
+          class={inputClass}
+          name="learning-style"
+          rows="4"
+          placeholder="Visual, auditory, kinesthetic — or describe in your own words."
+        ></textarea>
+      </div>
+      <div class="space-y-1.5">
+        <label class={labelClass}>What are your goals in dance?</label>
+        <textarea class={inputClass} name="goals" rows="4" placeholder="Short or long term."></textarea>
+      </div>
+      <div class="space-y-1.5">
+        <label class={labelClass}>How would you like to measure success from lessons?</label>
+        <textarea class={inputClass} name="success-measurement" rows="4"></textarea>
+      </div>
+      <div class="space-y-1.5">
+        <label class={labelClass}>Is there anything specific you want to work on?</label>
+        <textarea class={inputClass} name="lesson-content-requests" rows="4"></textarea>
+      </div>
+
+      <div class="cf-turnstile" data-sitekey={turnstileSiteKey} data-theme="dark"></div>
+
+      <div id="survey-error" class="hidden text-sm text-red-400"></div>
+      <div id="survey-success" class="hidden text-sm text-accent">Survey submitted — thank you!</div>
+
+      <button
+        type="submit"
+        class="inline-flex items-center gap-2 rounded-full bg-accent px-6 py-3 font-mono text-xs font-medium uppercase tracking-widest text-canvas transition-opacity hover:opacity-90"
+      >
+        Submit Survey →
+      </button>
+    </form>
+  </div>
+
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+
+  <script>
+    const form = document.getElementById("survey-form");
+    const errorEl = document.getElementById("survey-error");
+    const successEl = document.getElementById("survey-success");
+
+    if (form && errorEl && successEl) {
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        errorEl.classList.add("hidden");
+        successEl.classList.add("hidden");
+
+        const data = Object.fromEntries(new FormData(form));
+        const BASE = document.documentElement.dataset.apiUrl || "";
+
+        try {
+          const res = await fetch(`${BASE.replace(/\/$/, "")}/v1/contact`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ...data, type: "survey" }),
+            redirect: "manual",
+          });
+          const isRedirect = res.type === "opaqueredirect";
+          if (!res.ok && !isRedirect) throw new Error("Submission failed");
+          successEl.classList.remove("hidden");
+          form.reset();
+        } catch {
+          errorEl.textContent = "Something went wrong — please try again or use the contact form.";
+          errorEl.classList.remove("hidden");
+        }
+      });
+    }
+  </script>
+</Page>
