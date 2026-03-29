@@ -26,10 +26,6 @@ const lessonDocs = [
   { title: "Pricing" },
   { title: "Common Questions" },
   { title: "Locations" },
-  {
-    title: "Student Survey",
-    body: "Periodic survey for current students. Link provided by Kaiano directly after lessons.",
-  },
 ] as const;
 ---
 
@@ -145,9 +141,7 @@ const lessonDocs = [
                       <p class="text-slate-400 font-light leading-relaxed mt-1">You are welcome to split lessons with as many people as you would like. This includes the same rate for small group private lessons.</p>
                     </div>
                   </div>
-                ) : (
-                  <p class="text-sm leading-relaxed text-slate-400">{"body" in doc ? doc.body : ""}</p>
-                )}
+                ) : null}
               </div>
             </div>
           </div>
