@@ -20,20 +20,11 @@ const bookingLinks = [
   },
 ] as const;
 
-// Lesson info docs — add/edit content here directly or migrate to Astro content collections later
+// Lesson info accordions — order matches render below
 const lessonDocs = [
-  {
-    title: "Pricing",
-    body: "Lesson rates vary by location and format. Please refer to the booking links above for current pricing, or reach out via the contact form for custom arrangements.",
-  },
-  {
-    title: "Common Questions",
-    body: "Do I need a partner? No — solo lessons are welcome. What should I wear? Comfortable clothes and smooth-soled shoes. How long is a lesson? Typically 45–60 minutes.",
-  },
-  {
-    title: "Locations",
-    body: "Twin Cities metro area, Minneapolis studio, SWINGesota venue (Wednesdays), and weekend dance conventions nationwide.",
-  },
+  { title: "Pricing" },
+  { title: "Common Questions" },
+  { title: "Locations" },
   {
     title: "Student Survey",
     body: "Periodic survey for current students. Link provided by Kaiano directly after lessons.",
@@ -73,54 +64,11 @@ const lessonDocs = [
       </div>
     </section>
 
-    <div class="mt-12 space-y-8 max-w-2xl">
-
-      <section class="space-y-3">
-        <h2 class="font-serif italic text-2xl font-bold">Pricing</h2>
-        <p class="text-slate-400 font-light leading-relaxed">Lessons are 50 minutes by default.</p>
-        <div class="space-y-1">
-          <p class="text-slate-300">Regular rate: <span class="text-accent font-mono">$70 USD</span></p>
-          <p class="text-slate-300">Discounted rate: <span class="text-accent font-mono">$50 USD</span></p>
-        </div>
-        <p class="text-slate-400 font-light leading-relaxed text-sm">
-          All bookings are made through the booking portal, which requires a credit card payment entry.
-          To pay in cash instead, use code <span class="font-mono text-slate-300">PAYINCASH</span> at booking — payment is due at the start of the lesson.
-        </p>
-        <p class="text-slate-400 font-light leading-relaxed text-sm">
-          A discounted rate is available for students and those on a fixed or limited income.
-          Use code <span class="font-mono text-slate-300">DISCOUNTRATE</span> at booking.
-        </p>
-      </section>
-
-      <section class="space-y-3">
-        <h2 class="font-serif italic text-2xl font-bold">Locations</h2>
-        <ul class="space-y-2 text-slate-400 font-light leading-relaxed">
-          <li><span class="text-slate-300">Weekend dance conventions</span> — variable time and availability, typical rates apply</li>
-          <li><span class="text-slate-300">SWINGesota, MN</span> — Wednesdays 6pm–10pm, typical rates apply</li>
-          <li><span class="text-slate-300">I come to you</span> — Twin Cities area, typical rates + $10</li>
-          <li><span class="text-slate-300">You come to me</span> — Minneapolis, MN, variable availability, typical rates apply</li>
-        </ul>
-      </section>
-
-      <section class="space-y-4">
-        <h2 class="font-serif italic text-2xl font-bold">Common Questions</h2>
-        <div class="space-y-1">
-          <p class="text-slate-300 font-medium">Do I need to bring a partner?</p>
-          <p class="text-slate-400 font-light leading-relaxed">A partner is not required but highly encouraged to get the most out of the lesson time.</p>
-        </div>
-        <div class="space-y-1">
-          <p class="text-slate-300 font-medium">Can I split a private lesson with a partner?</p>
-          <p class="text-slate-400 font-light leading-relaxed">You are welcome to split lessons with as many people as you would like. This includes the same rate for small group private lessons.</p>
-        </div>
-      </section>
-
-    </div>
-
     <!-- Lesson information accordions -->
     <section class="space-y-3" data-accordion-group>
       <h2 class="font-serif text-xl font-black italic tracking-tight" style="font-variation-settings: 'opsz' 72;">Lesson Information</h2>
 
-      {lessonDocs.map((doc, i) => (
+      {lessonDocs.map((doc) => (
         <div
           class="overflow-hidden rounded-xl border border-white/10"
           data-accordion
@@ -146,9 +94,45 @@ const lessonDocs = [
             class="grid grid-rows-[0fr] transition-[grid-template-rows] duration-200"
           >
             <div class="overflow-hidden">
-              <p class="border-t border-white/10 px-5 py-4 text-sm leading-relaxed text-slate-400">
-                {doc.body}
-              </p>
+              <div class="border-t border-white/10 px-5 py-4">
+                {doc.title === "Pricing" ? (
+                  <>
+                    <p class="text-sm text-slate-400 font-light leading-relaxed">Lessons are 50 minutes by default.</p>
+                    <div class="mt-2 space-y-1">
+                      <p class="text-sm text-slate-300">Regular rate: <span class="text-accent font-mono">$70 USD</span></p>
+                      <p class="text-sm text-slate-300">Discounted rate: <span class="text-accent font-mono">$50 USD</span></p>
+                    </div>
+                    <p class="mt-3 text-sm text-slate-400 font-light leading-relaxed">
+                      All bookings are made through the booking portal, which requires a credit card payment entry.
+                      To pay in cash instead, use code <span class="font-mono text-slate-300">PAYINCASH</span> at booking — payment is due at the start of the lesson.
+                    </p>
+                    <p class="mt-2 text-sm text-slate-400 font-light leading-relaxed">
+                      A discounted rate is available for students and those on a fixed or limited income.
+                      Use code <span class="font-mono text-slate-300">DISCOUNTRATE</span> at booking.
+                    </p>
+                  </>
+                ) : doc.title === "Locations" ? (
+                  <ul class="space-y-2 text-sm text-slate-400 font-light leading-relaxed">
+                    <li><span class="text-slate-300">Weekend dance conventions</span> — variable time and availability, typical rates apply</li>
+                    <li><span class="text-slate-300">SWINGesota, MN</span> — Wednesdays 6pm–10pm, typical rates apply</li>
+                    <li><span class="text-slate-300">I come to you</span> — Twin Cities area, typical rates + $10</li>
+                    <li><span class="text-slate-300">You come to me</span> — Minneapolis, MN, variable availability, typical rates apply</li>
+                  </ul>
+                ) : doc.title === "Common Questions" ? (
+                  <div class="space-y-4 text-sm">
+                    <div>
+                      <p class="text-slate-300 font-medium">Do I need to bring a partner?</p>
+                      <p class="text-slate-400 font-light leading-relaxed mt-1">A partner is not required but highly encouraged to get the most out of the lesson time.</p>
+                    </div>
+                    <div>
+                      <p class="text-slate-300 font-medium">Can I split a private lesson with a partner?</p>
+                      <p class="text-slate-400 font-light leading-relaxed mt-1">You are welcome to split lessons with as many people as you would like. This includes the same rate for small group private lessons.</p>
+                    </div>
+                  </div>
+                ) : (
+                  <p class="text-sm leading-relaxed text-slate-400">{"body" in doc ? doc.body : ""}</p>
+                )}
+              </div>
             </div>
           </div>
         </div>
