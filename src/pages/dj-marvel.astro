@@ -5,25 +5,21 @@ const links = [
   {
     title: "Set History",
     description: "Browse all sets by year. Open any set for its full track list.",
-    api: "/v1/sets",
     href: "/sets",
   },
   {
     title: "Recently Played",
     description: "Last 50 songs from the most recent DJ session.",
-    api: "/v1/live-plays/recent",
     href: "/live",
   },
   {
     title: "Music Catalog",
     description: "Top artists and tracks ranked by total plays across all sets.",
-    api: "/v1/stats/top-artists · /v1/stats/top-tracks",
     href: "/catalog",
   },
   {
     title: "Submit Routine Music",
     description: "All music submission and management at deejaytools.com.",
-    api: "deejaytools.com",
     href: "https://deejaytools.com/",
     external: true,
   },
@@ -44,7 +40,6 @@ const links = [
           {link.external && <span class="ml-1 font-mono text-sm text-slate-500">↗</span>}
         </h2>
         <p class="flex-1 text-sm leading-relaxed text-slate-400">{link.description}</p>
-        <p class="font-mono text-xs text-slate-600">{link.api}</p>
       </a>
     ))}
   </div>

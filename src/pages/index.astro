@@ -5,7 +5,7 @@ import StatsBar from "../components/StatsBar.astro";
 const cards = [
   {
     title: "DJ Marvel",
-    description: "Full set history, live plays, and catalog — powered by api.kaianolevine.com.",
+    description: "Full set history, live plays, and catalog.",
     status: "Live",
     href: "/dj-marvel",
   },
@@ -81,6 +81,9 @@ const cards = [
 
   <!-- Stats -->
   <div class="-mx-6 border-y border-white/[0.07] bg-canvas2">
+    <div class="mx-auto max-w-5xl px-6 pt-4">
+      <p class="font-mono text-[9px] uppercase tracking-[0.18em] text-accent/50">DJ Marvel</p>
+    </div>
     <StatsBar />
   </div>
 
