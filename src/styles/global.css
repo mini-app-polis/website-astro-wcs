@@ -4,10 +4,12 @@
 
 html {
   color-scheme: dark;
+  overflow-x: hidden;
 }
 
 body {
   @apply bg-canvas text-slate-100 antialiased;
+  overflow-x: hidden;
 }
 
 .font-serif {
