@@ -1,3 +1,10 @@
+## [1.0.2](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.0.1...v1.0.2) (2026-03-30)
+
+
+### Bug Fixes
+
+* prevent mobile horizontal scroll and wire semantic-release version to footer ([7216749](https://github.com/mini-app-polis/website-astro-wcs/commit/72167495f19bbe8b4fe0847755ab009d31932f73))
+
 ## [1.0.1](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.0.0...v1.0.1) (2026-03-30)
 
 
