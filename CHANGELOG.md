@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.0.0...v1.0.1) (2026-03-30)
+
+
+### Bug Fixes
+
+* nav menu on mobile ([e8eaf61](https://github.com/mini-app-polis/website-astro-wcs/commit/e8eaf6158e76bef7c88567e2e0e5ad4a32705250))
+
 # 1.0.0 (2026-03-30)
 
 
