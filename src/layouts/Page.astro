@@ -4,12 +4,14 @@ import Base from "./Base.astro";
 interface Props {
   title: string;
   subtitle?: string;
+  ogImage?: string;
+  ogType?: string;
 }
 
-const { title, subtitle } = Astro.props;
+const { title, subtitle, ogImage, ogType } = Astro.props;
 ---
 
-<Base title={title} description={subtitle ?? title}>
+<Base title={title} description={subtitle ?? title} ogImage={ogImage} ogType={ogType}>
   <section class="space-y-5">
     <header>
       <h1 class="font-serif text-4xl font-black italic tracking-tight sm:text-5xl" style="font-variation-settings: 'opsz' 72;">

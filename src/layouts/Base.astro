@@ -6,12 +6,20 @@ import "../styles/global.css";
 interface Props {
   title?: string;
   description?: string;
+  ogImage?: string;
+  ogType?: string;
 }
 
 const {
   title = "Kaiano Levine",
   description = "West Coast Swing DJ and instructor based in the Twin Cities, MN.",
+  ogImage = "/og/default.png",
+  ogType = "website",
 } = Astro.props;
+
+const canonicalUrl = new URL(Astro.url.pathname, "https://wcs.kaianolevine.com").href;
+const ogImageUrl = new URL(ogImage, "https://wcs.kaianolevine.com").href;
+const pageTitle = title === "Kaiano Levine" ? title : `${title} — Kaiano Levine`;
 ---
 
 <!doctype html>
@@ -23,8 +31,28 @@ const {
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{title}</title>
+    <title>{pageTitle}</title>
     <meta name="description" content={description} />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content={ogType} />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={ogImageUrl} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:site_name" content="Kaiano Levine" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter / X -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={pageTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImageUrl} />
+
+    <!-- Canonical -->
+    <link rel="canonical" href={canonicalUrl} />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
