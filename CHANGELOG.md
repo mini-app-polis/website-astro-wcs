@@ -1,3 +1,13 @@
+# [1.2.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.1.0...v1.2.0) (2026-04-03)
+
+
+### Features
+
+* adding notes view, first pass ([73c2d54](https://github.com/mini-app-polis/website-astro-wcs/commit/73c2d545e228fd7d755ea47ce1f67e29f5e604b6))
+* adding notes view, first pass ([8d68eb7](https://github.com/mini-app-polis/website-astro-wcs/commit/8d68eb78f7ee713473186a0739a1d5d765ed0b2a))
+* adding notes view, first pass ([1373ac5](https://github.com/mini-app-polis/website-astro-wcs/commit/1373ac53b7df4aadecf37ca36769a96d06750b1b))
+* adding notes view, first pass ([9e2c0db](https://github.com/mini-app-polis/website-astro-wcs/commit/9e2c0db5a657fe80b48320e227ab61a64e7f8256))
+
 # [1.1.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.0.2...v1.1.0) (2026-04-02)
 
 
