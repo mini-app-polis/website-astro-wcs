@@ -1,8 +1,7 @@
 ---
 import Page from "../../layouts/Page.astro";
-import { auth } from "@clerk/astro/server";
 
-const { userId } = auth();
+const { userId } = Astro.locals.auth();
 const allowedUserId = import.meta.env.NOTES_ALLOWED_USER_ID;
 
 const isAuthenticated = !!userId;
