@@ -18,6 +18,11 @@ export async function getAuthenticatedUserId(request: Request): Promise<string |
 
   if (!sessionToken) return null;
 
+  console.error("[auth] jwtKey present:", !!import.meta.env.CLERK_JWT_KEY);
+  console.error("[auth] jwtKey starts with:", import.meta.env.CLERK_JWT_KEY?.slice(0, 30));
+  console.error("[auth] token present:", !!sessionToken);
+  console.error("[auth] token prefix:", sessionToken?.slice(0, 20));
+
   try {
     const payload = await verifyToken(sessionToken, {
       jwtKey: import.meta.env.CLERK_JWT_KEY?.replace(/\\n/g, "\n"),
