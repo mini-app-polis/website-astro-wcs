@@ -20,13 +20,15 @@ const {
 const canonicalUrl = new URL(Astro.url.pathname, "https://wcs.kaianolevine.com").href;
 const ogImageUrl = new URL(ogImage, "https://wcs.kaianolevine.com").href;
 const pageTitle = title === "Kaiano Levine" ? title : `${title} — Kaiano Levine`;
+
+const apiUrl = Astro.locals.runtime?.env?.KAIANO_API_BASE_URL ?? import.meta.env.KAIANO_API_BASE_URL ?? "";
 ---
 
 <!doctype html>
 <html
   lang="en"
   class="dark"
-  data-api-url={import.meta.env.PUBLIC_API_URL}
+  data-api-url={apiUrl}
 >
   <head>
     <meta charset="UTF-8" />
