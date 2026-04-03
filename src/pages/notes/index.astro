@@ -1,5 +1,12 @@
 ---
-import Page from "../../layouts/Page.astro";
+import Base from "../../layouts/Base.astro";
+import { auth } from "@clerk/astro/server";
+
+const { userId } = auth();
+const allowedUserId = import.meta.env.NOTES_ALLOWED_USER_ID;
+
+const isAuthenticated = !!userId;
+const isAuthorized = userId === allowedUserId;
 ---
 
 <Page title="Notes" subtitle="WCS lesson notes">
