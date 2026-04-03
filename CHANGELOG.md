@@ -1,3 +1,10 @@
+## [1.3.4](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.3.3...v1.3.4) (2026-04-03)
+
+
+### Bug Fixes
+
+* clerk login setup ([71e807b](https://github.com/mini-app-polis/website-astro-wcs/commit/71e807bb6d50296f474d0d18aa6cf4dedfd0af54))
+
 ## [1.3.3](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.3.2...v1.3.3) (2026-04-03)
 
 
