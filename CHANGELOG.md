@@ -1,3 +1,10 @@
+## [1.2.2](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.2.1...v1.2.2) (2026-04-03)
+
+
+### Bug Fixes
+
+* adding schema suggestions to notes ([10b9edd](https://github.com/mini-app-polis/website-astro-wcs/commit/10b9edd75ccf3f0d20329ed1ce49b918a288d7d7))
+
 ## [1.2.1](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.2.0...v1.2.1) (2026-04-03)
 
 
