@@ -4,11 +4,15 @@ export async function getAuthenticatedUserId(request: Request): Promise<string |
   const cookieHeader = request.headers.get("cookie") ?? "";
   const cookies = cookieHeader.split(";").map((c) => c.trim());
 
-  // Clerk may use __session or a suffixed variant like __session_qkRq4rUA
   const sessionCookie = cookies.find(
     (c) => c.startsWith("__session=") || /^__session_[a-zA-Z0-9]+=/.test(c),
   );
   const sessionToken = sessionCookie?.split("=").slice(1).join("=");
+
+  console.log("[auth] cookie found:", !!sessionCookie);
+  console.log("[auth] token length:", sessionToken?.length ?? 0);
+  console.log("[auth] jwtKey set:", !!import.meta.env.CLERK_JWT_KEY);
+  console.log("[auth] jwtKey prefix:", import.meta.env.CLERK_JWT_KEY?.slice(0, 30));
 
   if (!sessionToken) return null;
 
@@ -17,8 +21,10 @@ export async function getAuthenticatedUserId(request: Request): Promise<string |
       jwtKey: import.meta.env.CLERK_JWT_KEY,
       authorizedParties: ["https://wcs.kaianolevine.com"],
     });
+    console.log("[auth] verified userId:", payload.sub);
     return payload.sub ?? null;
-  } catch {
+  } catch (err) {
+    console.error("[auth] verifyToken error:", err);
     return null;
   }
 }
