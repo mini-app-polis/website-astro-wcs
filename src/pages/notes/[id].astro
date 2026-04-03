@@ -1,0 +1,226 @@
+---
+import Page from "../../../layouts/Page.astro";
+import { getApiBase } from "../../../lib/api";
+
+const { id } = Astro.params;
+const base = getApiBase();
+
+type WcsNote = {
+  id: string;
+  title: string | null;
+  session_date: string | null;
+  session_type: string;
+  visibility: string;
+  model: string;
+  provider: string;
+  notes_json: Record<string, unknown>;
+  created_at: string;
+};
+
+let note: WcsNote | null = null;
+let error = false;
+
+if (base && id) {
+  try {
+    const res = await fetch(`${base.replace(/\/$/, "")}/v1/wcs/notes/${id}`);
+    if (res.ok) {
+      const json = await res.json();
+      note = json.data ?? null;
+    } else {
+      error = true;
+    }
+  } catch {
+    error = true;
+  }
+}
+
+const SESSION_LABELS: Record<string, string> = {
+  private_lesson: "Private lesson",
+  class_taught: "Class taught",
+  class_attended: "Class attended",
+  workshop: "Workshop",
+  coaching_session: "Coaching",
+  other: "Other",
+};
+
+function formatDate(iso: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return d.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+}
+
+// Render helpers
+function asStrings(val: unknown): string[] {
+  if (!Array.isArray(val)) return [];
+  return val.flatMap((item) => {
+    if (typeof item === "string") return [item];
+    if (typeof item === "object" && item !== null) {
+      const obj = item as Record<string, unknown>;
+      // Try common shapes
+      const text =
+        obj.concept ?? obj.action ?? obj.observation ?? obj.note ??
+        obj.quote ?? obj.name ?? obj.term ?? null;
+      const detail =
+        obj.detail ?? obj.rationale ?? obj.context ?? obj.definition ??
+        obj.correction ?? obj.description ?? obj.summary ?? null;
+      if (text && detail) return [`${text} — ${detail}`];
+      if (text) return [String(text)];
+    }
+    return [];
+  });
+}
+
+const nj = note?.notes_json ?? {};
+---
+
+<Page
+  title={note?.title ?? "Note"}
+  subtitle={note ? `${SESSION_LABELS[note.session_type] ?? note.session_type}${note.session_date ? ` · ${formatDate(note.session_date)}` : ""}` : undefined}
+>
+  <div class="mb-4">
+    <a href="/notes" class="text-xs text-slate-500 hover:text-slate-300 transition-colors">
+      ← All notes
+    </a>
+  </div>
+
+  {(error || !note) && (
+    <p class="text-sm text-slate-500">Note not found.</p>
+  )}
+
+  {note && (
+    <div class="space-y-8">
+
+      {nj.summary && (
+        <p class="text-slate-300 leading-relaxed">{String(nj.summary)}</p>
+      )}
+
+      {Array.isArray(nj.key_concepts) && nj.key_concepts.length > 0 && (
+        <section>
+          <h2 class="mb-3 text-xs font-mono uppercase tracking-widest text-slate-500">Key concepts</h2>
+          <ul class="space-y-1.5">
+            {asStrings(nj.key_concepts).map((s) => (
+              <li class="flex gap-2 text-sm text-slate-300">
+                <span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-accent"></span>
+                {s}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {Array.isArray(nj.vocabulary_terms) && nj.vocabulary_terms.length > 0 && (
+        <section>
+          <h2 class="mb-3 text-xs font-mono uppercase tracking-widest text-slate-500">Vocabulary</h2>
+          <dl class="space-y-2">
+            {(nj.vocabulary_terms as Array<Record<string, unknown>>).map((item) => (
+              <div>
+                <dt class="text-sm font-medium text-slate-200">{String(item.term ?? "")}</dt>
+                {item.definition && (
+                  <dd class="text-sm text-slate-400">{String(item.definition)}</dd>
+                )}
+              </div>
+            ))}
+          </dl>
+        </section>
+      )}
+
+      {Array.isArray(nj.drills) && nj.drills.length > 0 && (
+        <section>
+          <h2 class="mb-3 text-xs font-mono uppercase tracking-widest text-slate-500">Drills</h2>
+          <div class="space-y-4">
+            {(nj.drills as Array<Record<string, unknown>>).map((drill) => (
+              <div class="rounded-lg border border-white/8 bg-surface/40 px-4 py-3">
+                <p class="font-medium text-sm text-slate-200">{String(drill.name ?? "")}</p>
+                {drill.goal && <p class="text-xs text-slate-400 mt-0.5">{String(drill.goal)}</p>}
+                {Array.isArray(drill.steps) && drill.steps.length > 0 && (
+                  <ol class="mt-2 space-y-1">
+                    {(drill.steps as string[]).map((step, i) => (
+                      <li class="text-sm text-slate-300 flex gap-2">
+                        <span class="text-slate-600 shrink-0">{i + 1}.</span>
+                        {step}
+                      </li>
+                    ))}
+                  </ol>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {Array.isArray(nj.common_mistakes) && nj.common_mistakes.length > 0 && (
+        <section>
+          <h2 class="mb-3 text-xs font-mono uppercase tracking-widest text-slate-500">Common mistakes</h2>
+          <div class="space-y-2">
+            {(nj.common_mistakes as Array<Record<string, unknown>>).map((item) => (
+              <div class="text-sm">
+                <span class="text-slate-300">{String(item.mistake ?? "")}</span>
+                {item.correction && (
+                  <span class="text-slate-500"> → <span class="text-slate-300">{String(item.correction)}</span></span>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {Array.isArray(nj.action_items) && nj.action_items.length > 0 && (
+        <section>
+          <h2 class="mb-3 text-xs font-mono uppercase tracking-widest text-slate-500">Action items</h2>
+          <ul class="space-y-1.5">
+            {asStrings(nj.action_items).map((s) => (
+              <li class="flex gap-2 text-sm text-slate-300">
+                <span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-accent/60"></span>
+                {s}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {Array.isArray(nj.student_observations) && nj.student_observations.length > 0 && (
+        <section>
+          <h2 class="mb-3 text-xs font-mono uppercase tracking-widest text-slate-500">Observations</h2>
+          <ul class="space-y-1.5">
+            {asStrings(nj.student_observations).map((s) => (
+              <li class="text-sm text-slate-300">{s}</li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {Array.isArray(nj.quotes) && nj.quotes.length > 0 && (
+        <section>
+          <h2 class="mb-3 text-xs font-mono uppercase tracking-widest text-slate-500">Quotes</h2>
+          <div class="space-y-3">
+            {(nj.quotes as Array<Record<string, unknown> | string>).map((q) => {
+              const quote = typeof q === "string" ? q : String((q as Record<string,unknown>).quote ?? "");
+              const speaker = typeof q === "object" ? String((q as Record<string,unknown>).speaker ?? "") : "";
+              return (
+                <blockquote class="border-l-2 border-accent/40 pl-4">
+                  <p class="text-sm italic text-slate-300">"{quote}"</p>
+                  {speaker && <p class="mt-1 text-xs text-slate-500">— {speaker}</p>}
+                </blockquote>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {Array.isArray(nj.references) && nj.references.length > 0 && (
+        <section>
+          <h2 class="mb-3 text-xs font-mono uppercase tracking-widest text-slate-500">References</h2>
+          <ul class="space-y-1">
+            {asStrings(nj.references).map((s) => (
+              <li class="text-sm text-slate-400">{s}</li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <div class="border-t border-white/8 pt-4 text-xs text-slate-600">
+        Processed {formatDate(note.created_at)} · {note.provider}/{note.model}
+      </div>
+    </div>
+  )}
+</Page>

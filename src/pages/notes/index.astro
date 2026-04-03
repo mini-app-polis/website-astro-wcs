@@ -1,0 +1,91 @@
+---
+import Page from "../../layouts/Page.astro";
+import { getApiBase } from "../../lib/api";
+
+const base = getApiBase();
+
+type WcsNote = {
+  id: string;
+  title: string | null;
+  session_date: string | null;
+  session_type: string;
+  visibility: string;
+  model: string;
+  provider: string;
+  notes_json: Record<string, unknown>;
+  created_at: string;
+};
+
+type NotesEnvelope = {
+  data: WcsNote[];
+  meta: { count: number; version: string };
+};
+
+let notes: WcsNote[] = [];
+let error = false;
+
+if (base) {
+  try {
+    const res = await fetch(`${base.replace(/\/$/, "")}/v1/wcs/notes?limit=100`);
+    if (res.ok) {
+      const json: NotesEnvelope = await res.json();
+      notes = json.data ?? [];
+    } else {
+      error = true;
+    }
+  } catch {
+    error = true;
+  }
+}
+
+const SESSION_LABELS: Record<string, string> = {
+  private_lesson: "Private lesson",
+  class_taught: "Class taught",
+  class_attended: "Class attended",
+  workshop: "Workshop",
+  coaching_session: "Coaching",
+  other: "Other",
+};
+
+function formatDate(iso: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return d.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+}
+---
+
+<Page title="Notes" subtitle="WCS lesson notes">
+  {error && (
+    <p class="text-sm text-slate-500">Could not load notes.</p>
+  )}
+
+  {!error && notes.length === 0 && (
+    <p class="text-sm text-slate-500">No notes yet.</p>
+  )}
+
+  {notes.length > 0 && (
+    <div class="space-y-3">
+      {notes.map((note) => (
+        <a
+          href={`/notes/${note.id}`}
+          class="block rounded-xl border border-white/8 bg-surface/60 px-5 py-4 transition-colors hover:border-accent/30 hover:bg-surface"
+        >
+          <div class="flex items-start justify-between gap-4">
+            <div class="min-w-0">
+              <p class="truncate font-medium text-slate-100">
+                {note.title ?? "Untitled"}
+              </p>
+              <p class="mt-0.5 text-xs text-slate-500">
+                {SESSION_LABELS[note.session_type] ?? note.session_type}
+                {note.session_date ? ` · ${formatDate(note.session_date)}` : ""}
+              </p>
+            </div>
+            <span class="shrink-0 text-xs text-slate-600">
+              {formatDate(note.created_at)}
+            </span>
+          </div>
+        </a>
+      ))}
+    </div>
+  )}
+</Page>
