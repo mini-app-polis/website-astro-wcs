@@ -7,4 +7,20 @@ export default defineConfig({
   output: "server",
   adapter: cloudflare(),
   integrations: [clerk(), tailwind()],
+  vite: {
+    ssr: {
+      external: [
+        "node:fs",
+        "node:path",
+        "node:crypto",
+        "node:buffer",
+        "node:async_hooks",
+        "fs",
+        "path",
+        "crypto",
+        "buffer",
+        "async_hooks",
+      ],
+    },
+  },
 });
