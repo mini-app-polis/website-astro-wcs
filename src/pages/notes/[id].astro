@@ -114,6 +114,11 @@ const quotes = Array.isArray(nj.quotes)
   : [];
 const references = asStrings(nj.references);
 const summary = nj.summary ? String(nj.summary) : "";
+const suggestedSections = Array.isArray(nj.suggested_new_sections)
+  ? (nj.suggested_new_sections as Array<Record<string, unknown>>).filter(
+      (s) => s.suggested_name || s.rationale
+    )
+  : [];
 ---
 
 <Page title={note?.title ?? "Note"} subtitle={subtitle}>
@@ -251,6 +256,25 @@ const summary = nj.summary ? String(nj.summary) : "";
               <li class="text-sm text-slate-400">{s}</li>
             ))}
           </ul>
+        </section>
+      )}
+      
+      {suggestedSections.length > 0 && (
+        <section class="rounded-lg border border-amber-500/20 bg-amber-500/5 px-4 py-4">
+          <h2 class="mb-3 text-xs font-mono uppercase tracking-widest text-amber-500/70">Schema feedback</h2>
+          <div class="space-y-3">
+            {suggestedSections.map((s) => (
+              <div>
+                <p class="text-sm font-medium text-amber-400/80">{String(s.suggested_name ?? "")}</p>
+                {s.rationale && (
+                  <p class="text-xs text-slate-500 mt-0.5">{String(s.rationale)}</p>
+                )}
+                {s.sample_content && (
+                  <p class="text-xs text-slate-600 mt-1 italic">{String(s.sample_content)}</p>
+                )}
+              </div>
+            ))}
+          </div>
         </section>
       )}
 
