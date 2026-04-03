@@ -1,3 +1,10 @@
+## [1.2.1](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.2.0...v1.2.1) (2026-04-03)
+
+
+### Bug Fixes
+
+* handling 404 in cloudflare/astro ([5827934](https://github.com/mini-app-polis/website-astro-wcs/commit/5827934637e34b2705647553d2945757c47d33ce))
+
 # [1.2.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.1.0...v1.2.0) (2026-04-03)
 
 
