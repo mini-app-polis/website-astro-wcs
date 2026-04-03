@@ -2,11 +2,13 @@ import { verifyToken } from "@clerk/backend";
 
 export async function getAuthenticatedUserId(request: Request): Promise<string | null> {
   const cookieHeader = request.headers.get("cookie") ?? "";
-  const sessionToken = cookieHeader
-    .split(";")
-    .map((c) => c.trim())
-    .find((c) => c.startsWith("__session="))
-    ?.split("=")[1];
+  const cookies = cookieHeader.split(";").map((c) => c.trim());
+
+  // Clerk may use __session or a suffixed variant like __session_qkRq4rUA
+  const sessionCookie = cookies.find(
+    (c) => c.startsWith("__session=") || /^__session_[a-zA-Z0-9]+=/.test(c),
+  );
+  const sessionToken = sessionCookie?.split("=").slice(1).join("=");
 
   if (!sessionToken) return null;
 
