@@ -1,3 +1,10 @@
+## [1.2.3](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.2.2...v1.2.3) (2026-04-03)
+
+
+### Bug Fixes
+
+* data from client side fetch, after shell is rendered ([aeaef2c](https://github.com/mini-app-polis/website-astro-wcs/commit/aeaef2c011d4920ff8375839c07a201f97ff9e02))
+
 ## [1.2.2](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.2.1...v1.2.2) (2026-04-03)
 
 
