@@ -1,287 +1,317 @@
 ---
 import Page from "../../layouts/Page.astro";
-import { getApiBase } from "../../lib/api";
-
-const { id } = Astro.params;
-const base = getApiBase();
-
-type WcsNote = {
-  id: string;
-  title: string | null;
-  session_date: string | null;
-  session_type: string;
-  visibility: string;
-  model: string;
-  provider: string;
-  notes_json: Record<string, unknown>;
-  created_at: string;
-};
-
-type Quote = { quote: string; speaker: string };
-type Drill = { name: string; goal: string; steps: string[] };
-type TermItem = { term: string; definition: string };
-type MistakeItem = { mistake: string; correction: string };
-
-let note: WcsNote | null = null;
-let error = false;
-
-if (base && id) {
-  try {
-    const res = await fetch(`${base.replace(/\/$/, "")}/v1/wcs/notes/${id}`);
-    if (res.ok) {
-      const json = await res.json();
-      note = json.data ?? null;
-    } else {
-      error = true;
-    }
-  } catch {
-    error = true;
-  }
-}
-
-const SESSION_LABELS: Record<string, string> = {
-  private_lesson: "Private lesson",
-  class_taught: "Class taught",
-  class_attended: "Class attended",
-  workshop: "Workshop",
-  coaching_session: "Coaching",
-  other: "Other",
-};
-
-function formatDate(iso: string | null): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  return d.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
-}
-
-const subtitle = note
-  ? [
-      SESSION_LABELS[note.session_type] ?? note.session_type,
-      note.session_date ? formatDate(note.session_date) : "",
-    ]
-      .filter(Boolean)
-      .join(" · ")
-  : undefined;
-
-function asStrings(val: unknown): string[] {
-  if (!Array.isArray(val)) return [];
-  return val.flatMap((item) => {
-    if (typeof item === "string") return [item];
-    if (typeof item === "object" && item !== null) {
-      const obj = item as Record<string, unknown>;
-      const text =
-        obj.concept ?? obj.action ?? obj.observation ?? obj.note ??
-        obj.name ?? obj.term ?? null;
-      const detail =
-        obj.detail ?? obj.rationale ?? obj.context ?? obj.definition ??
-        obj.correction ?? obj.description ?? obj.summary ?? null;
-      if (text && detail) return [String(text) + " — " + String(detail)];
-      if (text) return [String(text)];
-    }
-    return [];
-  });
-}
-
-const nj = note?.notes_json ?? {};
-
-const keyConcepts = asStrings(nj.key_concepts);
-const vocabTerms = Array.isArray(nj.vocabulary_terms)
-  ? (nj.vocabulary_terms as Array<Record<string, unknown>>).map((t) => ({
-      term: String(t.term ?? ""),
-      definition: t.definition ? String(t.definition) : "",
-    })) as TermItem[]
-  : [];
-const drills = Array.isArray(nj.drills)
-  ? (nj.drills as Array<Record<string, unknown>>).map((d) => ({
-      name: String(d.name ?? ""),
-      goal: d.goal ? String(d.goal) : "",
-      steps: Array.isArray(d.steps) ? (d.steps as string[]) : [],
-    })) as Drill[]
-  : [];
-const mistakes = Array.isArray(nj.common_mistakes)
-  ? (nj.common_mistakes as Array<Record<string, unknown>>).map((m) => ({
-      mistake: String(m.mistake ?? ""),
-      correction: m.correction ? String(m.correction) : "",
-    })) as MistakeItem[]
-  : [];
-const actionItems = asStrings(nj.action_items);
-const observations = asStrings(nj.student_observations);
-const quotes = Array.isArray(nj.quotes)
-  ? (nj.quotes as Array<Record<string, unknown> | string>).map((q) => ({
-      quote: typeof q === "string" ? q : String((q as Record<string, unknown>).quote ?? ""),
-      speaker: typeof q === "object" ? String((q as Record<string, unknown>).speaker ?? "") : "",
-    })) as Quote[]
-  : [];
-const references = asStrings(nj.references);
-const summary = nj.summary ? String(nj.summary) : "";
-const suggestedSections = Array.isArray(nj.suggested_new_sections)
-  ? (nj.suggested_new_sections as Array<Record<string, unknown>>).filter(
-      (s) => s.suggested_name || s.rationale
-    )
-  : [];
 ---
 
-<Page title={note?.title ?? "Note"} subtitle={subtitle}>
+<Page title="Note">
   <div class="mb-4">
     <a href="/notes" class="text-xs text-slate-500 hover:text-slate-300 transition-colors">
       ← All notes
     </a>
   </div>
 
-  {(error || !note) && (
-    <p class="text-sm text-slate-500">Note not found.</p>
-  )}
+  <div id="note-loading" class="text-sm text-slate-500">Loading…</div>
+  <div id="note-error" class="text-sm text-slate-500 hidden">Note not found.</div>
+  <div id="note-content" class="space-y-8 hidden"></div>
 
-  {note && (
-    <div class="space-y-8">
+  <script type="module">
+    const BASE = document.documentElement.dataset.apiUrl || "";
+    const id = window.location.pathname.split("/").filter(Boolean).pop();
+    const loadingEl = document.getElementById("note-loading");
+    const errorEl = document.getElementById("note-error");
+    const contentEl = document.getElementById("note-content");
 
-      {summary && (
-        <p class="text-slate-300 leading-relaxed">{summary}</p>
-      )}
+    const SESSION_LABELS = {
+      private_lesson: "Private lesson",
+      class_taught: "Class taught",
+      class_attended: "Class attended",
+      workshop: "Workshop",
+      coaching_session: "Coaching",
+      other: "Other",
+    };
 
-      {keyConcepts.length > 0 && (
-        <section>
-          <h2 class="mb-3 text-xs font-mono uppercase tracking-widest text-slate-500">Key concepts</h2>
-          <ul class="space-y-1.5">
-            {keyConcepts.map((s) => (
-              <li class="flex gap-2 text-sm text-slate-300">
-                <span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-accent"></span>
-                {s}
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+    function formatDate(iso) {
+      if (!iso) return "";
+      return new Date(iso).toLocaleDateString("en-US", {
+        year: "numeric", month: "short", day: "numeric"
+      });
+    }
 
-      {vocabTerms.length > 0 && (
-        <section>
-          <h2 class="mb-3 text-xs font-mono uppercase tracking-widest text-slate-500">Vocabulary</h2>
-          <dl class="space-y-2">
-            {vocabTerms.map((item) => (
-              <div>
-                <dt class="text-sm font-medium text-slate-200">{item.term}</dt>
-                {item.definition && (
-                  <dd class="text-sm text-slate-400">{item.definition}</dd>
-                )}
-              </div>
-            ))}
-          </dl>
-        </section>
-      )}
+    function show(el) { el.classList.remove("hidden"); }
+    function hide(el) { el.classList.add("hidden"); }
 
-      {drills.length > 0 && (
-        <section>
-          <h2 class="mb-3 text-xs font-mono uppercase tracking-widest text-slate-500">Drills</h2>
-          <div class="space-y-4">
-            {drills.map((drill) => (
-              <div class="rounded-lg border border-white/8 bg-surface/40 px-4 py-3">
-                <p class="font-medium text-sm text-slate-200">{drill.name}</p>
-                {drill.goal && <p class="text-xs text-slate-400 mt-0.5">{drill.goal}</p>}
-                {drill.steps.length > 0 && (
-                  <ol class="mt-2 space-y-1">
-                    {drill.steps.map((step, i) => (
-                      <li class="text-sm text-slate-300 flex gap-2">
-                        <span class="text-slate-600 shrink-0">{i + 1}.</span>
-                        {step}
-                      </li>
-                    ))}
-                  </ol>
-                )}
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
+    function sectionHeader(label) {
+      const h = document.createElement("h2");
+      h.className = "mb-3 text-xs font-mono uppercase tracking-widest text-slate-500";
+      h.textContent = label;
+      return h;
+    }
 
-      {mistakes.length > 0 && (
-        <section>
-          <h2 class="mb-3 text-xs font-mono uppercase tracking-widest text-slate-500">Common mistakes</h2>
-          <div class="space-y-2">
-            {mistakes.map((item) => (
-              <div class="text-sm">
-                <span class="text-slate-300">{item.mistake}</span>
-                {item.correction && (
-                  <span class="text-slate-500"> → <span class="text-slate-300">{item.correction}</span></span>
-                )}
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
+    function bullet(text, dimColor = false) {
+      const li = document.createElement("li");
+      li.className = "flex gap-2 text-sm text-slate-300";
+      const dot = document.createElement("span");
+      dot.className = `mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${dimColor ? "bg-accent/60" : "bg-accent"}`;
+      const t = document.createElement("span");
+      t.textContent = text;
+      li.appendChild(dot);
+      li.appendChild(t);
+      return li;
+    }
 
-      {actionItems.length > 0 && (
-        <section>
-          <h2 class="mb-3 text-xs font-mono uppercase tracking-widest text-slate-500">Action items</h2>
-          <ul class="space-y-1.5">
-            {actionItems.map((s) => (
-              <li class="flex gap-2 text-sm text-slate-300">
-                <span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-accent/60"></span>
-                {s}
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+    function asStrings(arr) {
+      if (!Array.isArray(arr)) return [];
+      return arr.flatMap((item) => {
+        if (typeof item === "string") return [item];
+        if (typeof item === "object" && item !== null) {
+          const text = item.concept ?? item.action ?? item.observation ??
+            item.note ?? item.name ?? item.term ?? null;
+          const detail = item.detail ?? item.rationale ?? item.context ??
+            item.definition ?? item.correction ?? item.description ?? item.summary ?? null;
+          if (text && detail) return [String(text) + " — " + String(detail)];
+          if (text) return [String(text)];
+        }
+        return [];
+      });
+    }
 
-      {observations.length > 0 && (
-        <section>
-          <h2 class="mb-3 text-xs font-mono uppercase tracking-widest text-slate-500">Observations</h2>
-          <ul class="space-y-1.5">
-            {observations.map((s) => (
-              <li class="text-sm text-slate-300">{s}</li>
-            ))}
-          </ul>
-        </section>
-      )}
+    function renderSection(label, items, renderFn) {
+      if (!items || items.length === 0) return null;
+      const section = document.createElement("section");
+      section.appendChild(sectionHeader(label));
+      renderFn(section, items);
+      return section;
+    }
 
-      {quotes.length > 0 && (
-        <section>
-          <h2 class="mb-3 text-xs font-mono uppercase tracking-widest text-slate-500">Quotes</h2>
-          <div class="space-y-3">
-            {quotes.map((q) => (
-              <blockquote class="border-l-2 border-accent/40 pl-4">
-                <p class="text-sm italic text-slate-300">"{q.quote}"</p>
-                {q.speaker && <p class="mt-1 text-xs text-slate-500">— {q.speaker}</p>}
-              </blockquote>
-            ))}
-          </div>
-        </section>
-      )}
+    function renderBulletList(label, items, dim = false) {
+      const strings = asStrings(items);
+      if (!strings.length) return null;
+      const section = document.createElement("section");
+      section.appendChild(sectionHeader(label));
+      const ul = document.createElement("ul");
+      ul.className = "space-y-1.5";
+      strings.forEach((s) => ul.appendChild(bullet(s, dim)));
+      section.appendChild(ul);
+      return section;
+    }
 
-      {references.length > 0 && (
-        <section>
-          <h2 class="mb-3 text-xs font-mono uppercase tracking-widest text-slate-500">References</h2>
-          <ul class="space-y-1">
-            {references.map((s) => (
-              <li class="text-sm text-slate-400">{s}</li>
-            ))}
-          </ul>
-        </section>
-      )}
-      
-      {suggestedSections.length > 0 && (
-        <section class="rounded-lg border border-amber-500/20 bg-amber-500/5 px-4 py-4">
-          <h2 class="mb-3 text-xs font-mono uppercase tracking-widest text-amber-500/70">Schema feedback</h2>
-          <div class="space-y-3">
-            {suggestedSections.map((s) => (
-              <div>
-                <p class="text-sm font-medium text-amber-400/80">{String(s.suggested_name ?? "")}</p>
-                {s.rationale && (
-                  <p class="text-xs text-slate-500 mt-0.5">{String(s.rationale)}</p>
-                )}
-                {s.sample_content && (
-                  <p class="text-xs text-slate-600 mt-1 italic">{String(s.sample_content)}</p>
-                )}
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
+    function renderNote(note) {
+      const nj = note.notes_json || {};
 
-      <div class="border-t border-white/8 pt-4 text-xs text-slate-600">
-        Processed {formatDate(note.created_at)} · {note.provider}/{note.model}
-      </div>
+      // Update page title
+      if (note.title) document.title = note.title + " — Kaiano Levine";
 
-    </div>
-  )}
+      // Subtitle
+      const label = SESSION_LABELS[note.session_type] || note.session_type;
+      const dateStr = note.session_date ? formatDate(note.session_date) : "";
+      const subtitle = [label, dateStr].filter(Boolean).join(" · ");
+      const existingSub = document.querySelector("header p");
+      if (existingSub && subtitle) existingSub.textContent = subtitle;
+
+      // Update h1
+      const h1 = document.querySelector("h1");
+      if (h1 && note.title) h1.textContent = note.title;
+
+      // Summary
+      if (nj.summary) {
+        const p = document.createElement("p");
+        p.className = "text-slate-300 leading-relaxed";
+        p.textContent = String(nj.summary);
+        contentEl.appendChild(p);
+      }
+
+      // Key concepts
+      const concepts = renderBulletList("Key concepts", nj.key_concepts);
+      if (concepts) contentEl.appendChild(concepts);
+
+      // Vocabulary
+      if (Array.isArray(nj.vocabulary_terms) && nj.vocabulary_terms.length > 0) {
+        const section = document.createElement("section");
+        section.appendChild(sectionHeader("Vocabulary"));
+        const dl = document.createElement("dl");
+        dl.className = "space-y-2";
+        nj.vocabulary_terms.forEach((item) => {
+          const div = document.createElement("div");
+          const dt = document.createElement("dt");
+          dt.className = "text-sm font-medium text-slate-200";
+          dt.textContent = String(item.term ?? "");
+          div.appendChild(dt);
+          if (item.definition) {
+            const dd = document.createElement("dd");
+            dd.className = "text-sm text-slate-400";
+            dd.textContent = String(item.definition);
+            div.appendChild(dd);
+          }
+          dl.appendChild(div);
+        });
+        section.appendChild(dl);
+        contentEl.appendChild(section);
+      }
+
+      // Drills
+      if (Array.isArray(nj.drills) && nj.drills.length > 0) {
+        const section = document.createElement("section");
+        section.appendChild(sectionHeader("Drills"));
+        const wrapper = document.createElement("div");
+        wrapper.className = "space-y-4";
+        nj.drills.forEach((drill) => {
+          const card = document.createElement("div");
+          card.className = "rounded-lg border border-white/8 bg-surface/40 px-4 py-3";
+          const name = document.createElement("p");
+          name.className = "font-medium text-sm text-slate-200";
+          name.textContent = String(drill.name ?? "");
+          card.appendChild(name);
+          if (drill.goal) {
+            const goal = document.createElement("p");
+            goal.className = "text-xs text-slate-400 mt-0.5";
+            goal.textContent = String(drill.goal);
+            card.appendChild(goal);
+          }
+          if (Array.isArray(drill.steps) && drill.steps.length > 0) {
+            const ol = document.createElement("ol");
+            ol.className = "mt-2 space-y-1";
+            drill.steps.forEach((step, i) => {
+              const li = document.createElement("li");
+              li.className = "text-sm text-slate-300 flex gap-2";
+              const num = document.createElement("span");
+              num.className = "text-slate-600 shrink-0";
+              num.textContent = String(i + 1) + ".";
+              const t = document.createElement("span");
+              t.textContent = String(step);
+              li.appendChild(num);
+              li.appendChild(t);
+              ol.appendChild(li);
+            });
+            card.appendChild(ol);
+          }
+          wrapper.appendChild(card);
+        });
+        section.appendChild(wrapper);
+        contentEl.appendChild(section);
+      }
+
+      // Common mistakes
+      if (Array.isArray(nj.common_mistakes) && nj.common_mistakes.length > 0) {
+        const section = document.createElement("section");
+        section.appendChild(sectionHeader("Common mistakes"));
+        const wrapper = document.createElement("div");
+        wrapper.className = "space-y-2";
+        nj.common_mistakes.forEach((item) => {
+          const div = document.createElement("div");
+          div.className = "text-sm";
+          const m = document.createElement("span");
+          m.className = "text-slate-300";
+          m.textContent = String(item.mistake ?? "");
+          div.appendChild(m);
+          if (item.correction) {
+            const arrow = document.createElement("span");
+            arrow.className = "text-slate-500";
+            arrow.textContent = " → ";
+            const c = document.createElement("span");
+            c.className = "text-slate-300";
+            c.textContent = String(item.correction);
+            div.appendChild(arrow);
+            div.appendChild(c);
+          }
+          wrapper.appendChild(div);
+        });
+        section.appendChild(wrapper);
+        contentEl.appendChild(section);
+      }
+
+      // Action items
+      const actions = renderBulletList("Action items", nj.action_items, true);
+      if (actions) contentEl.appendChild(actions);
+
+      // Student observations
+      const obs = renderBulletList("Observations", nj.student_observations);
+      if (obs) contentEl.appendChild(obs);
+
+      // Quotes
+      if (Array.isArray(nj.quotes) && nj.quotes.length > 0) {
+        const section = document.createElement("section");
+        section.appendChild(sectionHeader("Quotes"));
+        const wrapper = document.createElement("div");
+        wrapper.className = "space-y-3";
+        nj.quotes.forEach((q) => {
+          const quote = typeof q === "string" ? q : String(q.quote ?? "");
+          const speaker = typeof q === "object" ? String(q.speaker ?? "") : "";
+          const bq = document.createElement("blockquote");
+          bq.className = "border-l-2 border-accent/40 pl-4";
+          const p = document.createElement("p");
+          p.className = "text-sm italic text-slate-300";
+          p.textContent = "\u201c" + quote + "\u201d";
+          bq.appendChild(p);
+          if (speaker) {
+            const cite = document.createElement("p");
+            cite.className = "mt-1 text-xs text-slate-500";
+            cite.textContent = "— " + speaker;
+            bq.appendChild(cite);
+          }
+          wrapper.appendChild(bq);
+        });
+        section.appendChild(wrapper);
+        contentEl.appendChild(section);
+      }
+
+      // References
+      const refs = renderBulletList("References", nj.references);
+      if (refs) contentEl.appendChild(refs);
+
+      // Suggested new sections (dev signal)
+      if (Array.isArray(nj.suggested_new_sections) && nj.suggested_new_sections.length > 0) {
+        const section = document.createElement("section");
+        section.className = "rounded-lg border border-amber-500/20 bg-amber-500/5 px-4 py-4";
+        section.appendChild(sectionHeader("Schema feedback"));
+        const wrapper = document.createElement("div");
+        wrapper.className = "space-y-3";
+        nj.suggested_new_sections.forEach((s) => {
+          const div = document.createElement("div");
+          const name = document.createElement("p");
+          name.className = "text-sm font-medium text-amber-400/80";
+          name.textContent = String(s.suggested_name ?? "");
+          div.appendChild(name);
+          if (s.rationale) {
+            const r = document.createElement("p");
+            r.className = "text-xs text-slate-500 mt-0.5";
+            r.textContent = String(s.rationale);
+            div.appendChild(r);
+          }
+          if (s.sample_content) {
+            const sc = document.createElement("p");
+            sc.className = "text-xs text-slate-600 mt-1 italic";
+            sc.textContent = String(s.sample_content);
+            div.appendChild(sc);
+          }
+          wrapper.appendChild(div);
+        });
+        section.appendChild(wrapper);
+        contentEl.appendChild(section);
+      }
+
+      // Footer
+      const footer = document.createElement("div");
+      footer.className = "border-t border-white/8 pt-4 text-xs text-slate-600";
+      footer.textContent = "Processed " + formatDate(note.created_at) + " · " + note.provider + "/" + note.model;
+      contentEl.appendChild(footer);
+    }
+
+    async function load() {
+      if (!BASE || !id) { hide(loadingEl); show(errorEl); return; }
+      try {
+        const res = await fetch(`${BASE.replace(/\/$/, "")}/v1/wcs/notes/${id}`);
+        if (!res.ok) throw new Error("not found");
+        const json = await res.json();
+        const note = json.data;
+        if (!note) throw new Error("no data");
+        hide(loadingEl);
+        renderNote(note);
+        show(contentEl);
+      } catch {
+        hide(loadingEl);
+        show(errorEl);
+      }
+    }
+
+    load();
+  </script>
 </Page>
