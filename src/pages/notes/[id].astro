@@ -49,14 +49,21 @@ function formatDate(iso: string | null): string {
   return d.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
 }
 
-// Render helpers
+const subtitle = note
+  ? [
+      SESSION_LABELS[note.session_type] ?? note.session_type,
+      note.session_date ? formatDate(note.session_date) : "",
+    ]
+      .filter(Boolean)
+      .join(" · ")
+  : undefined;
+
 function asStrings(val: unknown): string[] {
   if (!Array.isArray(val)) return [];
   return val.flatMap((item) => {
     if (typeof item === "string") return [item];
     if (typeof item === "object" && item !== null) {
       const obj = item as Record<string, unknown>;
-      // Try common shapes
       const text =
         obj.concept ?? obj.action ?? obj.observation ?? obj.note ??
         obj.quote ?? obj.name ?? obj.term ?? null;
@@ -73,10 +80,7 @@ function asStrings(val: unknown): string[] {
 const nj = note?.notes_json ?? {};
 ---
 
-<Page
-  title={note?.title ?? "Note"}
-  subtitle={note ? `${SESSION_LABELS[note.session_type] ?? note.session_type}${note.session_date ? ` · ${formatDate(note.session_date)}` : ""}` : undefined}
->
+<Page title={note?.title ?? "Note"} subtitle={subtitle}>
   <div class="mb-4">
     <a href="/notes" class="text-xs text-slate-500 hover:text-slate-300 transition-colors">
       ← All notes
@@ -194,8 +198,8 @@ const nj = note?.notes_json ?? {};
           <h2 class="mb-3 text-xs font-mono uppercase tracking-widest text-slate-500">Quotes</h2>
           <div class="space-y-3">
             {(nj.quotes as Array<Record<string, unknown> | string>).map((q) => {
-              const quote = typeof q === "string" ? q : String((q as Record<string,unknown>).quote ?? "");
-              const speaker = typeof q === "object" ? String((q as Record<string,unknown>).speaker ?? "") : "";
+              const quote = typeof q === "string" ? q : String((q as Record<string, unknown>).quote ?? "");
+              const speaker = typeof q === "object" ? String((q as Record<string, unknown>).speaker ?? "") : "";
               return (
                 <blockquote class="border-l-2 border-accent/40 pl-4">
                   <p class="text-sm italic text-slate-300">"{quote}"</p>
@@ -221,6 +225,7 @@ const nj = note?.notes_json ?? {};
       <div class="border-t border-white/8 pt-4 text-xs text-slate-600">
         Processed {formatDate(note.created_at)} · {note.provider}/{note.model}
       </div>
+
     </div>
   )}
 </Page>
