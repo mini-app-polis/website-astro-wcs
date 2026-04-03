@@ -1,12 +1,8 @@
 ---
 import Page from "../../layouts/Page.astro";
-import { Fragment } from "astro/jsx-runtime";
 
-const { userId } = Astro.locals.auth();
-const allowedUserId = import.meta.env.NOTES_ALLOWED_USER_ID;
-
-const isAuthenticated = !!userId;
-const isAuthorized = userId === allowedUserId;
+const isAuthenticated = false;
+const isAuthorized = false;
 ---
 
 <Page title="Notes" subtitle="WCS lesson notes">
@@ -25,7 +21,7 @@ const isAuthorized = userId === allowedUserId;
       <p class="text-slate-400 font-light">You don't have access to this section.</p>
     </div>
   ) : (
-    <Fragment>
+    <div class="contents">
       <div id="notes-loading" class="text-sm text-slate-500">Loading…</div>
       <div id="notes-error" class="text-sm text-slate-500 hidden">Could not load notes.</div>
       <div id="notes-empty" class="text-sm text-slate-500 hidden">No notes yet.</div>
@@ -110,6 +106,6 @@ const isAuthorized = userId === allowedUserId;
 
         load();
       </script>
-    </Fragment>
+    </div>
   )}
 </Page>

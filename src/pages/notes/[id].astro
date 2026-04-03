@@ -1,11 +1,8 @@
 ---
 import Page from "../../layouts/Page.astro";
 
-const { userId } = Astro.locals.auth();
-const allowedUserId = import.meta.env.NOTES_ALLOWED_USER_ID;
-
-const isAuthenticated = !!userId;
-const isAuthorized = userId === allowedUserId;
+const isAuthenticated = false;
+const isAuthorized = false;
 ---
 
 <Page title="Note">
@@ -24,7 +21,7 @@ const isAuthorized = userId === allowedUserId;
       <p class="text-slate-400 font-light">You don't have access to this section.</p>
     </div>
   ) : (
-    <Fragment>
+    <div class="contents">
       <div class="mb-4">
         <a href="/notes" class="text-xs text-slate-500 hover:text-slate-300 transition-colors">
           ← All notes
@@ -314,6 +311,6 @@ const isAuthorized = userId === allowedUserId;
 
         load();
       </script>
-    </Fragment>
+    </div>
   )}
 </Page>
