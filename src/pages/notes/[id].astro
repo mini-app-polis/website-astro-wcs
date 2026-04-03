@@ -1,8 +1,12 @@
 ---
 import Page from "../../layouts/Page.astro";
+import { getAuthenticatedUserId } from "../../lib/auth";
 
-const isAuthenticated = false;
-const isAuthorized = false;
+const userId = await getAuthenticatedUserId(Astro.request);
+const allowedUserId = import.meta.env.NOTES_ALLOWED_USER_ID;
+
+const isAuthenticated = !!userId;
+const isAuthorized = userId === allowedUserId;
 ---
 
 <Page title="Note">
