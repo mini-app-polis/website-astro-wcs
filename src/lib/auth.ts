@@ -23,9 +23,6 @@ export async function getAuthenticatedUserId(
 
   const jwtKey = env?.CLERK_JWT_KEY ?? import.meta.env.CLERK_JWT_KEY;
 
-  console.error("[auth] jwtKey present:", !!jwtKey);
-  console.error("[auth] jwtKey source:", env?.CLERK_JWT_KEY ? "runtime.env" : "import.meta.env");
-
   if (!jwtKey) return null;
 
   try {
