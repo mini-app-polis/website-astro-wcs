@@ -6,6 +6,7 @@ interface ImportMetaEnv {
   readonly PUBLIC_TURNSTILE_SITE_KEY: string;
   readonly NOTES_ALLOWED_USER_ID: string;
   readonly CLERK_SECRET_KEY: string;
+  readonly CLERK_JWT_KEY: string;
 }
 
 interface ImportMeta {
