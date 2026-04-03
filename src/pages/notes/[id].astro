@@ -17,6 +17,11 @@ type WcsNote = {
   created_at: string;
 };
 
+type Quote = { quote: string; speaker: string };
+type Drill = { name: string; goal: string; steps: string[] };
+type TermItem = { term: string; definition: string };
+type MistakeItem = { mistake: string; correction: string };
+
 let note: WcsNote | null = null;
 let error = false;
 
@@ -66,11 +71,11 @@ function asStrings(val: unknown): string[] {
       const obj = item as Record<string, unknown>;
       const text =
         obj.concept ?? obj.action ?? obj.observation ?? obj.note ??
-        obj.quote ?? obj.name ?? obj.term ?? null;
+        obj.name ?? obj.term ?? null;
       const detail =
         obj.detail ?? obj.rationale ?? obj.context ?? obj.definition ??
         obj.correction ?? obj.description ?? obj.summary ?? null;
-      if (text && detail) return [`${text} — ${detail}`];
+      if (text && detail) return [String(text) + " — " + String(detail)];
       if (text) return [String(text)];
     }
     return [];
@@ -78,6 +83,37 @@ function asStrings(val: unknown): string[] {
 }
 
 const nj = note?.notes_json ?? {};
+
+const keyConcepts = asStrings(nj.key_concepts);
+const vocabTerms = Array.isArray(nj.vocabulary_terms)
+  ? (nj.vocabulary_terms as Array<Record<string, unknown>>).map((t) => ({
+      term: String(t.term ?? ""),
+      definition: t.definition ? String(t.definition) : "",
+    })) as TermItem[]
+  : [];
+const drills = Array.isArray(nj.drills)
+  ? (nj.drills as Array<Record<string, unknown>>).map((d) => ({
+      name: String(d.name ?? ""),
+      goal: d.goal ? String(d.goal) : "",
+      steps: Array.isArray(d.steps) ? (d.steps as string[]) : [],
+    })) as Drill[]
+  : [];
+const mistakes = Array.isArray(nj.common_mistakes)
+  ? (nj.common_mistakes as Array<Record<string, unknown>>).map((m) => ({
+      mistake: String(m.mistake ?? ""),
+      correction: m.correction ? String(m.correction) : "",
+    })) as MistakeItem[]
+  : [];
+const actionItems = asStrings(nj.action_items);
+const observations = asStrings(nj.student_observations);
+const quotes = Array.isArray(nj.quotes)
+  ? (nj.quotes as Array<Record<string, unknown> | string>).map((q) => ({
+      quote: typeof q === "string" ? q : String((q as Record<string, unknown>).quote ?? ""),
+      speaker: typeof q === "object" ? String((q as Record<string, unknown>).speaker ?? "") : "",
+    })) as Quote[]
+  : [];
+const references = asStrings(nj.references);
+const summary = nj.summary ? String(nj.summary) : "";
 ---
 
 <Page title={note?.title ?? "Note"} subtitle={subtitle}>
@@ -94,15 +130,15 @@ const nj = note?.notes_json ?? {};
   {note && (
     <div class="space-y-8">
 
-      {nj.summary && (
-        <p class="text-slate-300 leading-relaxed">{String(nj.summary)}</p>
+      {summary && (
+        <p class="text-slate-300 leading-relaxed">{summary}</p>
       )}
 
-      {Array.isArray(nj.key_concepts) && nj.key_concepts.length > 0 && (
+      {keyConcepts.length > 0 && (
         <section>
           <h2 class="mb-3 text-xs font-mono uppercase tracking-widest text-slate-500">Key concepts</h2>
           <ul class="space-y-1.5">
-            {asStrings(nj.key_concepts).map((s) => (
+            {keyConcepts.map((s) => (
               <li class="flex gap-2 text-sm text-slate-300">
                 <span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-accent"></span>
                 {s}
@@ -112,15 +148,15 @@ const nj = note?.notes_json ?? {};
         </section>
       )}
 
-      {Array.isArray(nj.vocabulary_terms) && nj.vocabulary_terms.length > 0 && (
+      {vocabTerms.length > 0 && (
         <section>
           <h2 class="mb-3 text-xs font-mono uppercase tracking-widest text-slate-500">Vocabulary</h2>
           <dl class="space-y-2">
-            {(nj.vocabulary_terms as Array<Record<string, unknown>>).map((item) => (
+            {vocabTerms.map((item) => (
               <div>
-                <dt class="text-sm font-medium text-slate-200">{String(item.term ?? "")}</dt>
+                <dt class="text-sm font-medium text-slate-200">{item.term}</dt>
                 {item.definition && (
-                  <dd class="text-sm text-slate-400">{String(item.definition)}</dd>
+                  <dd class="text-sm text-slate-400">{item.definition}</dd>
                 )}
               </div>
             ))}
@@ -128,17 +164,17 @@ const nj = note?.notes_json ?? {};
         </section>
       )}
 
-      {Array.isArray(nj.drills) && nj.drills.length > 0 && (
+      {drills.length > 0 && (
         <section>
           <h2 class="mb-3 text-xs font-mono uppercase tracking-widest text-slate-500">Drills</h2>
           <div class="space-y-4">
-            {(nj.drills as Array<Record<string, unknown>>).map((drill) => (
+            {drills.map((drill) => (
               <div class="rounded-lg border border-white/8 bg-surface/40 px-4 py-3">
-                <p class="font-medium text-sm text-slate-200">{String(drill.name ?? "")}</p>
-                {drill.goal && <p class="text-xs text-slate-400 mt-0.5">{String(drill.goal)}</p>}
-                {Array.isArray(drill.steps) && drill.steps.length > 0 && (
+                <p class="font-medium text-sm text-slate-200">{drill.name}</p>
+                {drill.goal && <p class="text-xs text-slate-400 mt-0.5">{drill.goal}</p>}
+                {drill.steps.length > 0 && (
                   <ol class="mt-2 space-y-1">
-                    {(drill.steps as string[]).map((step, i) => (
+                    {drill.steps.map((step, i) => (
                       <li class="text-sm text-slate-300 flex gap-2">
                         <span class="text-slate-600 shrink-0">{i + 1}.</span>
                         {step}
@@ -152,15 +188,15 @@ const nj = note?.notes_json ?? {};
         </section>
       )}
 
-      {Array.isArray(nj.common_mistakes) && nj.common_mistakes.length > 0 && (
+      {mistakes.length > 0 && (
         <section>
           <h2 class="mb-3 text-xs font-mono uppercase tracking-widest text-slate-500">Common mistakes</h2>
           <div class="space-y-2">
-            {(nj.common_mistakes as Array<Record<string, unknown>>).map((item) => (
+            {mistakes.map((item) => (
               <div class="text-sm">
-                <span class="text-slate-300">{String(item.mistake ?? "")}</span>
+                <span class="text-slate-300">{item.mistake}</span>
                 {item.correction && (
-                  <span class="text-slate-500"> → <span class="text-slate-300">{String(item.correction)}</span></span>
+                  <span class="text-slate-500"> → <span class="text-slate-300">{item.correction}</span></span>
                 )}
               </div>
             ))}
@@ -168,11 +204,11 @@ const nj = note?.notes_json ?? {};
         </section>
       )}
 
-      {Array.isArray(nj.action_items) && nj.action_items.length > 0 && (
+      {actionItems.length > 0 && (
         <section>
           <h2 class="mb-3 text-xs font-mono uppercase tracking-widest text-slate-500">Action items</h2>
           <ul class="space-y-1.5">
-            {asStrings(nj.action_items).map((s) => (
+            {actionItems.map((s) => (
               <li class="flex gap-2 text-sm text-slate-300">
                 <span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-accent/60"></span>
                 {s}
@@ -182,40 +218,36 @@ const nj = note?.notes_json ?? {};
         </section>
       )}
 
-      {Array.isArray(nj.student_observations) && nj.student_observations.length > 0 && (
+      {observations.length > 0 && (
         <section>
           <h2 class="mb-3 text-xs font-mono uppercase tracking-widest text-slate-500">Observations</h2>
           <ul class="space-y-1.5">
-            {asStrings(nj.student_observations).map((s) => (
+            {observations.map((s) => (
               <li class="text-sm text-slate-300">{s}</li>
             ))}
           </ul>
         </section>
       )}
 
-      {Array.isArray(nj.quotes) && nj.quotes.length > 0 && (
+      {quotes.length > 0 && (
         <section>
           <h2 class="mb-3 text-xs font-mono uppercase tracking-widest text-slate-500">Quotes</h2>
           <div class="space-y-3">
-            {(nj.quotes as Array<Record<string, unknown> | string>).map((q) => {
-              const quote = typeof q === "string" ? q : String((q as Record<string, unknown>).quote ?? "");
-              const speaker = typeof q === "object" ? String((q as Record<string, unknown>).speaker ?? "") : "";
-              return (
-                <blockquote class="border-l-2 border-accent/40 pl-4">
-                  <p class="text-sm italic text-slate-300">"{quote}"</p>
-                  {speaker && <p class="mt-1 text-xs text-slate-500">— {speaker}</p>}
-                </blockquote>
-              );
-            })}
+            {quotes.map((q) => (
+              <blockquote class="border-l-2 border-accent/40 pl-4">
+                <p class="text-sm italic text-slate-300">"{q.quote}"</p>
+                {q.speaker && <p class="mt-1 text-xs text-slate-500">— {q.speaker}</p>}
+              </blockquote>
+            ))}
           </div>
         </section>
       )}
 
-      {Array.isArray(nj.references) && nj.references.length > 0 && (
+      {references.length > 0 && (
         <section>
           <h2 class="mb-3 text-xs font-mono uppercase tracking-widest text-slate-500">References</h2>
           <ul class="space-y-1">
-            {asStrings(nj.references).map((s) => (
+            {references.map((s) => (
               <li class="text-sm text-slate-400">{s}</li>
             ))}
           </ul>
