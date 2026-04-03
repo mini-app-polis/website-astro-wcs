@@ -1,6 +1,9 @@
 import { verifyToken } from "@clerk/backend";
 
-export async function getAuthenticatedUserId(request: Request): Promise<string | null> {
+export async function getAuthenticatedUserId(
+  request: Request,
+  env?: Record<string, string>,
+): Promise<string | null> {
   const cookieHeader = request.headers.get("cookie") ?? "";
 
   const cookieMap: Record<string, string> = {};
@@ -18,19 +21,16 @@ export async function getAuthenticatedUserId(request: Request): Promise<string |
 
   if (!sessionToken) return null;
 
-  const jwtKey =
-    import.meta.env.CLERK_JWT_KEY ??
-    (typeof process !== "undefined" ? process.env.CLERK_JWT_KEY : undefined);
+  const jwtKey = env?.CLERK_JWT_KEY ?? import.meta.env.CLERK_JWT_KEY;
 
-  console.error("[auth] jwtKey present:", !!import.meta.env.CLERK_JWT_KEY);
-  console.error("[auth] jwtKey starts with:", import.meta.env.CLERK_JWT_KEY?.slice(0, 30));
-  console.error("[auth] jwtKey via process.env:", !!process.env.CLERK_JWT_KEY);
-  console.error("[auth] token present:", !!sessionToken);
-  console.error("[auth] token prefix:", sessionToken?.slice(0, 20));
+  console.error("[auth] jwtKey present:", !!jwtKey);
+  console.error("[auth] jwtKey source:", env?.CLERK_JWT_KEY ? "runtime.env" : "import.meta.env");
+
+  if (!jwtKey) return null;
 
   try {
     const payload = await verifyToken(sessionToken, {
-      jwtKey: jwtKey?.replace(/\\n/g, "\n"),
+      jwtKey: jwtKey.replace(/\\n/g, "\n"),
       authorizedParties: ["https://wcs.kaianolevine.com"],
     });
     return payload.sub ?? null;

@@ -2,8 +2,9 @@
 import Page from "../../layouts/Page.astro";
 import { getAuthenticatedUserId } from "../../lib/auth";
 
-const userId = await getAuthenticatedUserId(Astro.request);
-const allowedUserId = import.meta.env.NOTES_ALLOWED_USER_ID;
+const runtime = Astro.locals.runtime;
+const userId = await getAuthenticatedUserId(Astro.request, runtime?.env);
+const allowedUserId = runtime?.env?.NOTES_ALLOWED_USER_ID ?? import.meta.env.NOTES_ALLOWED_USER_ID;
 
 const isAuthenticated = !!userId;
 const isAuthorized = userId === allowedUserId;
