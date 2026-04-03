@@ -1,5 +1,6 @@
 ---
-import Base from "../../layouts/Base.astro";
+import Page from "../../layouts/Page.astro";
+import { Fragment } from "astro/jsx-runtime";
 import { auth } from "@clerk/astro/server";
 
 const { userId } = auth();
@@ -10,88 +11,106 @@ const isAuthorized = userId === allowedUserId;
 ---
 
 <Page title="Notes" subtitle="WCS lesson notes">
-  <div id="notes-loading" class="text-sm text-slate-500">Loading…</div>
-  <div id="notes-error" class="text-sm text-slate-500 hidden">Could not load notes.</div>
-  <div id="notes-empty" class="text-sm text-slate-500 hidden">No notes yet.</div>
-  <div id="notes-list" class="space-y-3 hidden"></div>
+  {!isAuthenticated ? (
+    <div class="flex flex-col items-center justify-center min-h-[40vh] gap-6 text-center">
+      <p class="text-slate-400 font-light">This section is private.</p>
+      <a
+        href="/sign-in"
+        class="inline-flex items-center gap-2 rounded-full bg-accent px-6 py-2.5 font-mono text-xs font-medium uppercase tracking-widest text-canvas transition-opacity hover:opacity-90"
+      >
+        Sign in →
+      </a>
+    </div>
+  ) : !isAuthorized ? (
+    <div class="flex flex-col items-center justify-center min-h-[40vh] gap-3 text-center">
+      <p class="text-slate-400 font-light">You don't have access to this section.</p>
+    </div>
+  ) : (
+    <Fragment>
+      <div id="notes-loading" class="text-sm text-slate-500">Loading…</div>
+      <div id="notes-error" class="text-sm text-slate-500 hidden">Could not load notes.</div>
+      <div id="notes-empty" class="text-sm text-slate-500 hidden">No notes yet.</div>
+      <div id="notes-list" class="space-y-3 hidden"></div>
 
-  <script type="module">
-    const BASE = document.documentElement.dataset.apiUrl || "";
-    const loadingEl = document.getElementById("notes-loading");
-    const errorEl = document.getElementById("notes-error");
-    const emptyEl = document.getElementById("notes-empty");
-    const listEl = document.getElementById("notes-list");
+      <script type="module">
+        const BASE = document.documentElement.dataset.apiUrl || "";
+        const loadingEl = document.getElementById("notes-loading");
+        const errorEl = document.getElementById("notes-error");
+        const emptyEl = document.getElementById("notes-empty");
+        const listEl = document.getElementById("notes-list");
 
-    const SESSION_LABELS = {
-      private_lesson: "Private lesson",
-      class_taught: "Class taught",
-      class_attended: "Class attended",
-      workshop: "Workshop",
-      coaching_session: "Coaching",
-      other: "Other",
-    };
+        const SESSION_LABELS = {
+          private_lesson: "Private lesson",
+          class_taught: "Class taught",
+          class_attended: "Class attended",
+          workshop: "Workshop",
+          coaching_session: "Coaching",
+          other: "Other",
+        };
 
-    function formatDate(iso) {
-      if (!iso) return "";
-      return new Date(iso).toLocaleDateString("en-US", {
-        year: "numeric", month: "short", day: "numeric"
-      });
-    }
-
-    function show(el) { el.classList.remove("hidden"); }
-    function hide(el) { el.classList.add("hidden"); }
-
-    async function load() {
-      if (!BASE) { hide(loadingEl); show(errorEl); return; }
-      try {
-        const res = await fetch(`${BASE.replace(/\/$/, "")}/v1/wcs/notes?limit=100`);
-        if (!res.ok) throw new Error("bad response");
-        const json = await res.json();
-        const notes = json.data ?? [];
-        hide(loadingEl);
-        if (notes.length === 0) { show(emptyEl); return; }
-
-        for (const note of notes) {
-          const a = document.createElement("a");
-          a.href = `/notes/${note.id}`;
-          a.className = "block rounded-xl border border-white/8 bg-surface/60 px-5 py-4 transition-colors hover:border-accent/30 hover:bg-surface";
-
-          const row = document.createElement("div");
-          row.className = "flex items-start justify-between gap-4";
-
-          const left = document.createElement("div");
-          left.className = "min-w-0";
-
-          const title = document.createElement("p");
-          title.className = "truncate font-medium text-slate-100";
-          title.textContent = note.title || "Untitled";
-
-          const meta = document.createElement("p");
-          meta.className = "mt-0.5 text-xs text-slate-500";
-          const label = SESSION_LABELS[note.session_type] || note.session_type;
-          const date = note.session_date ? ` · ${formatDate(note.session_date)}` : "";
-          meta.textContent = label + date;
-
-          left.appendChild(title);
-          left.appendChild(meta);
-
-          const right = document.createElement("span");
-          right.className = "shrink-0 text-xs text-slate-600";
-          right.textContent = formatDate(note.created_at);
-
-          row.appendChild(left);
-          row.appendChild(right);
-          a.appendChild(row);
-          listEl.appendChild(a);
+        function formatDate(iso) {
+          if (!iso) return "";
+          return new Date(iso).toLocaleDateString("en-US", {
+            year: "numeric", month: "short", day: "numeric"
+          });
         }
 
-        show(listEl);
-      } catch {
-        hide(loadingEl);
-        show(errorEl);
-      }
-    }
+        function show(el) { el.classList.remove("hidden"); }
+        function hide(el) { el.classList.add("hidden"); }
 
-    load();
-  </script>
+        async function load() {
+          if (!BASE) { hide(loadingEl); show(errorEl); return; }
+          try {
+            const res = await fetch(`${BASE.replace(/\/$/, "")}/v1/wcs/notes?limit=100`);
+            if (!res.ok) throw new Error("bad response");
+            const json = await res.json();
+            const notes = json.data ?? [];
+            hide(loadingEl);
+            if (notes.length === 0) { show(emptyEl); return; }
+
+            for (const note of notes) {
+              const a = document.createElement("a");
+              a.href = `/notes/${note.id}`;
+              a.className = "block rounded-xl border border-white/8 bg-surface/60 px-5 py-4 transition-colors hover:border-accent/30 hover:bg-surface";
+
+              const row = document.createElement("div");
+              row.className = "flex items-start justify-between gap-4";
+
+              const left = document.createElement("div");
+              left.className = "min-w-0";
+
+              const title = document.createElement("p");
+              title.className = "truncate font-medium text-slate-100";
+              title.textContent = note.title || "Untitled";
+
+              const meta = document.createElement("p");
+              meta.className = "mt-0.5 text-xs text-slate-500";
+              const label = SESSION_LABELS[note.session_type] || note.session_type;
+              const date = note.session_date ? ` · ${formatDate(note.session_date)}` : "";
+              meta.textContent = label + date;
+
+              left.appendChild(title);
+              left.appendChild(meta);
+
+              const right = document.createElement("span");
+              right.className = "shrink-0 text-xs text-slate-600";
+              right.textContent = formatDate(note.created_at);
+
+              row.appendChild(left);
+              row.appendChild(right);
+              a.appendChild(row);
+              listEl.appendChild(a);
+            }
+
+            show(listEl);
+          } catch {
+            hide(loadingEl);
+            show(errorEl);
+          }
+        }
+
+        load();
+      </script>
+    </Fragment>
+  )}
 </Page>
