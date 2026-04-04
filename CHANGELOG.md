@@ -1,3 +1,10 @@
+## [1.3.7](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.3.6...v1.3.7) (2026-04-04)
+
+
+### Bug Fixes
+
+* env var names ([5c58831](https://github.com/mini-app-polis/website-astro-wcs/commit/5c588313d99cdfcb5bd065422d159f729f88980c))
+
 ## [1.3.6](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.3.5...v1.3.6) (2026-04-04)
 
 
