@@ -1,3 +1,10 @@
+## [1.3.6](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.3.5...v1.3.6) (2026-04-04)
+
+
+### Bug Fixes
+
+* set render issue ([65024fc](https://github.com/mini-app-polis/website-astro-wcs/commit/65024fcbb99c24604e272cd4c8cf01f1c9cbd443))
+
 ## [1.3.5](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.3.4...v1.3.5) (2026-04-03)
 
 
