@@ -119,7 +119,7 @@ const { limit = 50 } = Astro.props;
       if (statusEl) statusEl.textContent = "Loading…";
       const plays = await getLivePlays();
       if (plays === null) {
-        if (statusEl) statusEl.textContent = "API not configured — set PUBLIC_API_URL.";
+        if (statusEl) statusEl.textContent = "API not configured — set KAIANO_API_BASE_URL.";
         return;
       }
       render(plays);

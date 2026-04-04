@@ -27,11 +27,11 @@ npm run dev            # http://localhost:4321
 
 | Variable | Required | Purpose |
 |---|---|---|
-| `PUBLIC_API_URL` | Yes | Base URL for deejay-marvel-api (e.g. `https://your-api.railway.app`) |
+| `KAIANO_API_BASE_URL` | Yes | Base URL for deejay-marvel-api (e.g. `https://your-api.railway.app`) |
 | `PUBLIC_LEGACY_API_URL` | Yes | Base URL for legacy API — contact form only |
 | `PUBLIC_TURNSTILE_SITE_KEY` | Yes | Cloudflare Turnstile site key |
 
-`PUBLIC_API_URL` is injected into `<html data-api-url>` at render time. All
+`KAIANO_API_BASE_URL` is injected into `<html data-api-url>` at render time. All
 client-side `fetch` calls read it from there — no extra round-trips needed.
 
 ## Pages
@@ -67,7 +67,7 @@ client-side `fetch` calls read it from there — no extra round-trips needed.
 
 ## One future wiring task
 
-The `/spotify` page fetches `PUBLIC_API_URL/v1/spotify/playlists`. Adjust the path
+The `/spotify` page fetches `KAIANO_API_BASE_URL/v1/spotify/playlists`. Adjust the path
 in `src/pages/spotify/index.astro` once `kaiano-api` exposes the Spotify snapshot endpoint.
 
 ## Deploy

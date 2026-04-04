@@ -72,7 +72,8 @@ export interface LivePlay {
 // Fetch helpers
 // ---------------------------------------------------------------------------
 
-export function getApiBase(): string {
+export function getApiBase(runtimeUrl?: string): string {
+  if (runtimeUrl) return runtimeUrl;
   if (typeof document === "undefined") {
     // SSR
     const url = import.meta.env.KAIANO_API_BASE_URL as string | undefined;
@@ -82,9 +83,9 @@ export function getApiBase(): string {
   return document.documentElement.dataset.apiUrl ?? "";
 }
 
-async function apiFetch<T>(path: string, fallback: T): Promise<T> {
+async function apiFetch<T>(path: string, fallback: T, baseUrl?: string): Promise<T> {
   try {
-    const base = getApiBase();
+    const base = getApiBase(baseUrl);
     if (!base) {
       console.warn("[api] no base URL, returning fallback for", path);
       return fallback;
@@ -106,33 +107,33 @@ async function apiFetch<T>(path: string, fallback: T): Promise<T> {
 // Endpoint functions
 // ---------------------------------------------------------------------------
 
-export const getOverview = () =>
+export const getOverview = (baseUrl?: string) =>
   apiFetch<StatsOverview>("/v1/stats/overview", {
     total_sets: 0,
     total_plays: 0,
     unique_tracks: 0,
     years_active: 0,
     most_played_artist: "",
-  });
+  }, baseUrl);
 
-export const getSets = (params: Record<string, string | number> = {}) => {
+export const getSets = (params: Record<string, string | number> = {}, baseUrl?: string) => {
   const qs = new URLSearchParams(
     Object.entries(params).map(([k, v]) => [k, String(v)]),
   ).toString();
-  return apiFetch<SetListItem[]>(`/v1/sets${qs ? `?${qs}` : ""}`, []);
+  return apiFetch<SetListItem[]>(`/v1/sets${qs ? `?${qs}` : ""}`, [], baseUrl);
 };
 
-export const getSetDetail = (id: string) =>
-  apiFetch<SetDetail | null>(`/v1/sets/${id}`, null);
+export const getSetDetail = (id: string, baseUrl?: string) =>
+  apiFetch<SetDetail | null>(`/v1/sets/${id}`, null, baseUrl);
 
-export const getTopArtists = (limit = 20) =>
-  apiFetch<ArtistStat[]>(`/v1/stats/top-artists?limit=${limit}`, []);
+export const getTopArtists = (limit = 20, baseUrl?: string) =>
+  apiFetch<ArtistStat[]>(`/v1/stats/top-artists?limit=${limit}`, [], baseUrl);
 
-export const getTopTracks = (limit = 20) =>
-  apiFetch<TrackStat[]>(`/v1/stats/top-tracks?limit=${limit}`, []);
+export const getTopTracks = (limit = 20, baseUrl?: string) =>
+  apiFetch<TrackStat[]>(`/v1/stats/top-tracks?limit=${limit}`, [], baseUrl);
 
-export const getByYear = () =>
-  apiFetch<ByYear[]>("/v1/stats/by-year", []);
+export const getByYear = (baseUrl?: string) =>
+  apiFetch<ByYear[]>("/v1/stats/by-year", [], baseUrl);
 
-export const getLivePlays = (limit = 50) =>
-  apiFetch<LivePlay[]>(`/v1/live-plays/recent?limit=${limit}`, []);
+export const getLivePlays = (limit = 50, baseUrl?: string) =>
+  apiFetch<LivePlay[]>(`/v1/live-plays/recent?limit=${limit}`, [], baseUrl);

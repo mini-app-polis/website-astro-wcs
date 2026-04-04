@@ -162,7 +162,7 @@ const {
       try {
         const res = await fetchSets(params);
         if (res === null) {
-          statusText.textContent = "API not configured — set PUBLIC_API_URL.";
+          statusText.textContent = "API not configured — set KAIANO_API_BASE_URL.";
           done = true;
           loadMoreBtn.disabled = true;
           return;

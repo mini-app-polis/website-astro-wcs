@@ -2,7 +2,10 @@
 import Page from "../../layouts/Page.astro";
 
 const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "0x4AAAAAACXUS6RYhJCvPzZg";
-const apiUrl = import.meta.env.PUBLIC_API_URL ?? "https://api.kaianolevine.com";
+const apiUrl =
+  Astro.locals.runtime?.env?.KAIANO_API_BASE_URL ??
+  import.meta.env.KAIANO_API_BASE_URL ??
+  "https://api.kaianolevine.com";
 
 const inputClass = "w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 transition-colors focus:border-white/25 focus:outline-none";
 const labelClass = "text-xs font-medium uppercase tracking-widest text-slate-400";
