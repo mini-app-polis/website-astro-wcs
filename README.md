@@ -1,4 +1,4 @@
-# kaiano-wcs-website
+# website-astro-wcs
 
 West Coast Swing site for `wcs.kaianolevine.com` — built with Astro + Tailwind, deployed to Cloudflare Pages.
 
@@ -9,68 +9,51 @@ West Coast Swing site for `wcs.kaianolevine.com` — built with Astro + Tailwind
 | Framework | Astro 4 (SSR, `server` output) |
 | Adapter | `@astrojs/cloudflare` |
 | Styles | Tailwind CSS + PostCSS |
-| Fonts | Oxanium (display) · IBM Plex Sans (body) · IBM Plex Mono (mono) |
+| Auth | `@clerk/astro` + `@clerk/backend` (notes section) |
 | Hosting | Cloudflare Pages |
-| Primary API | `deejay-marvel-api` on Railway — sets, live plays, stats |
-| Legacy API | `api.kaianolevine.com` — **contact form only** |
-| Spam | Cloudflare Turnstile |
+| Primary API | `api-kaianolevine-com` on Railway — sets, live plays, stats, contact form |
 
-## Quick start
+## Running locally
 
 ```bash
 cp .env.example .env   # fill in your values
 npm install
 npm run dev            # http://localhost:4321
+npm run build          # verify build succeeds
 ```
 
 ## Environment variables
 
 | Variable | Required | Purpose |
 |---|---|---|
-| `KAIANO_API_BASE_URL` | Yes | Base URL for deejay-marvel-api (e.g. `https://your-api.railway.app`) |
-| `PUBLIC_LEGACY_API_URL` | Yes | Base URL for legacy API — contact form only |
-| `PUBLIC_TURNSTILE_SITE_KEY` | Yes | Cloudflare Turnstile site key |
+| `KAIANO_API_BASE_URL` | Yes | Base URL for api-kaianolevine-com |
+| `PUBLIC_TURNSTILE_SITE_KEY` | Yes | Cloudflare Turnstile site key (contact form) |
+| `PUBLIC_CLERK_PUBLISHABLE_KEY` | Yes | Clerk publishable key (notes auth) |
+| `CLERK_SECRET_KEY` | Yes | Clerk secret key (server-side) |
+| `NOTES_ALLOWED_USER_ID` | Yes | Clerk user ID with notes access |
+| `CLERK_JWT_KEY` | Yes | Clerk JWT public key for networkless token verification |
 
-`KAIANO_API_BASE_URL` is injected into `<html data-api-url>` at render time. All
-client-side `fetch` calls read it from there — no extra round-trips needed.
+`KAIANO_API_BASE_URL` is injected into `<html data-api-url>` at render time. Client-side fetches read it from there.
 
 ## Pages
 
-| Route | Source | Notes |
-|---|---|---|
-| `/` | `src/pages/index.astro` | Hero + StatsBar + feature cards |
-| `/dj-marvel` | `src/pages/dj-marvel.astro` | Hub linking to DJ tools |
-| `/sets` | `src/pages/sets/index.astro` | Year filter + paginated set list |
-| `/sets/[id]` | `src/pages/sets/[id].astro` | Set detail + TrackTable |
-| `/live` | `src/pages/live/index.astro` | Last 50 live plays |
-| `/catalog` | `src/pages/catalog/index.astro` | TopArtists + TopTracks |
-| `/booking` | `src/pages/booking/index.astro` | Booking index |
-| `/booking/lessons` | `src/pages/booking/lessons.astro` | youcanbook.me links + accordion docs |
-| `/booking/press-kit` | `src/pages/booking/press-kit.astro` | Google Drive asset links |
-| `/locate` | `src/pages/locate/index.astro` | Google Calendar iframe |
-| `/contact` | `src/pages/contact/index.astro` | Async form → legacy API |
-| `/spotify` | `src/pages/spotify/index.astro` | Playlists via kaiano-api |
-| `/about` | `src/pages/about/index.astro` | Coming soon placeholder |
-| `/404` | `src/pages/404.astro` | 404 page |
-
-## Components
-
-| Component | API endpoint |
+| Route | Notes |
 |---|---|
-| `StatsBar` | `GET /v1/stats/overview` |
-| `SetsList` | `GET /v1/sets?year=&limit=&offset=` |
-| `TrackTable` | Receives `tracks[]` prop from `[id].astro` SSR fetch |
-| `LiveHistory` | `GET /v1/live-plays/recent?limit=` |
-| `TopArtists` | `GET /v1/stats/top-artists?limit=15` |
-| `TopTracks` | `GET /v1/stats/top-tracks?limit=20` |
-| `YearFilter` | No API — pure UI |
-
-## One future wiring task
-
-The `/spotify` page fetches `KAIANO_API_BASE_URL/v1/spotify/playlists`. Adjust the path
-in `src/pages/spotify/index.astro` once `kaiano-api` exposes the Spotify snapshot endpoint.
+| `/` | Hero + StatsBar + feature cards |
+| `/sets` | Year filter + paginated set list |
+| `/sets/[id]` | Set detail + track table |
+| `/live` | Last 50 live plays |
+| `/catalog` | Top artists + top tracks |
+| `/notes` | Auth-gated lesson notes (Clerk) |
+| `/notes/[id]` | Individual note detail |
+| `/booking` | Booking index + lessons + press kit |
+| `/locate` | Google Calendar embed |
+| `/contact` | Contact form → api-kaianolevine-com |
+| `/spotify` | Spotify playlists |
+| `/about` | Coming soon |
 
 ## Deploy
 
-Push to `main`. Cloudflare Pages builds via `wrangler.toml` config.
+Push to `main`. Cloudflare Pages builds automatically.
+
 Build command: `npm run build` · Output dir: `dist`
