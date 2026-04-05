@@ -2,7 +2,7 @@
 import Page from "../../layouts/Page.astro";
 
 const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "0x4AAAAAACXUS6RYhJCvPzZg";
-const legacyApiUrl = import.meta.env.PUBLIC_LEGACY_API_URL ?? "https://api.kaianolevine.com";
+const apiBaseUrl = import.meta.env.KAIANO_API_BASE_URL ?? "https://api.kaianolevine.com";
 
 const socials = [
   { label: "Facebook (Personal)", href: "https://www.facebook.com/kaiano.levine" },
@@ -134,7 +134,7 @@ const socials = [
 
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 
-  <script define:vars={{ legacyApiUrl }}>
+  <script define:vars={{ apiBaseUrl }}>
     const form = document.getElementById("contactForm");
     const submitBtn = document.getElementById("contactSubmit");
     const submitLabel = document.getElementById("contactSubmitLabel");
@@ -161,7 +161,7 @@ const socials = [
         submitLabel.textContent = "Sending…";
 
         try {
-          const res = await fetch(`${legacyApiUrl}/v1/contact`, {
+          const res = await fetch(`${apiBaseUrl}/v1/contact`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(Object.fromEntries(data)),
