@@ -1,3 +1,10 @@
+## [1.3.9](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.3.8...v1.3.9) (2026-04-05)
+
+
+### Bug Fixes
+
+* updating notes titles based on data ([3488d8d](https://github.com/mini-app-polis/website-astro-wcs/commit/3488d8dd2a1c89d770948eccff9798ce5df267c6))
+
 ## [1.3.8](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.3.7...v1.3.8) (2026-04-04)
 
 
