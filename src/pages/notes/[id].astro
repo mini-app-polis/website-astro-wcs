@@ -44,15 +44,6 @@ const isAuthorized = userId === allowedUserId;
         const errorEl = document.getElementById("note-error");
         const contentEl = document.getElementById("note-content");
 
-        const SESSION_LABELS = {
-          private_lesson: "Private lesson",
-          class_taught: "Class taught",
-          class_attended: "Class attended",
-          workshop: "Workshop",
-          coaching_session: "Coaching",
-          other: "Other",
-        };
-
         function formatDate(iso) {
           if (!iso) return "";
           return new Date(iso).toLocaleDateString("en-US", {
@@ -110,19 +101,39 @@ const isAuthorized = userId === allowedUserId;
           return section;
         }
 
+        const SESSION_LABELS = {
+          private_lesson: "Private lesson",
+          group_class: "Group class",
+          other: "Other",
+        };
+
+        function buildDisplayTitle(note) {
+          const parts = [];
+          if (note.session_date) parts.push(note.session_date);
+          parts.push(SESSION_LABELS[note.session_type] || note.session_type);
+          if (note.session_type === "private_lesson") {
+            if (note.students && note.students.length > 0) {
+              parts.push(note.students.join(" + "));
+            }
+          } else {
+            if (note.organization) parts.push(note.organization);
+          }
+          if (note.title && note.title.trim()) parts.push(note.title.trim());
+          return parts.join(" | ");
+        }
+
         function renderNote(note) {
           const nj = note.notes_json || {};
 
-          if (note.title) document.title = note.title + " — Kaiano Levine";
+          const displayTitle = buildDisplayTitle(note);
+          if (displayTitle) {
+            document.title = displayTitle + " — Kaiano Levine";
+            const h1 = document.querySelector("h1");
+            if (h1) h1.textContent = displayTitle;
+          }
 
-          const label = SESSION_LABELS[note.session_type] || note.session_type;
-          const dateStr = note.session_date ? formatDate(note.session_date) : "";
-          const subtitle = [label, dateStr].filter(Boolean).join(" · ");
           const existingSub = document.querySelector("header p");
-          if (existingSub && subtitle) existingSub.textContent = subtitle;
-
-          const h1 = document.querySelector("h1");
-          if (h1 && note.title) h1.textContent = note.title;
+          if (existingSub) existingSub.remove();
 
           if (nj.summary) {
             const p = document.createElement("p");
