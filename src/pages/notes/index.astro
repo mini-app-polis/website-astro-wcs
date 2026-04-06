@@ -175,18 +175,6 @@ const isAuthorized = userId === allowedUserId;
           const badgeCls  = TYPE_BADGE[note.session_type] || TYPE_BADGE.other;
           const nj        = note.notes_json || {};
 
-          // Preview: summary, or first key concept text
-          let preview = "";
-          if (nj.summary) {
-            preview = String(nj.summary);
-          } else if (Array.isArray(nj.key_concepts) && nj.key_concepts.length) {
-            const first = nj.key_concepts[0];
-            preview = typeof first === "string"
-              ? first
-              : String(first.concept ?? first.name ?? "");
-          }
-          if (preview.length > 120) preview = preview.slice(0, 117) + "…";
-
           // Count non-empty sections for footer
           const sectionCount = [
             nj.key_concepts, nj.vocabulary_terms, nj.drills,
@@ -204,7 +192,7 @@ const isAuthorized = userId === allowedUserId;
           topRow.className = "flex items-center justify-between gap-2";
 
           const dateEl = document.createElement("span");
-          dateEl.className = "font-mono text-xs text-slate-500";
+          dateEl.className = "font-mono text-xs text-slate-200 font-medium";
           dateEl.textContent = formatDate(note.session_date);
 
           const badge = document.createElement("span");
@@ -234,13 +222,6 @@ const isAuthorized = userId === allowedUserId;
             a.appendChild(titleEl);
           }
 
-          // Preview snippet
-          if (preview) {
-            const previewEl = document.createElement("p");
-            previewEl.className = "text-xs text-slate-500 leading-relaxed line-clamp-3";
-            previewEl.textContent = preview;
-            a.appendChild(previewEl);
-          }
 
           // Footer: section count
           if (sectionCount > 0) {
