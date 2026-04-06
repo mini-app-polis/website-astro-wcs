@@ -1,3 +1,10 @@
+## [1.4.2](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.4.1...v1.4.2) (2026-04-06)
+
+
+### Bug Fixes
+
+* readability on cards, remove summary preview ([37b05e3](https://github.com/mini-app-polis/website-astro-wcs/commit/37b05e310eeb1d7b95409c6a36ae7eeac4f4ebcd))
+
 ## [1.4.1](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.4.0...v1.4.1) (2026-04-06)
 
 
