@@ -69,6 +69,16 @@ const isAuthorized = userId === allowedUserId;
             </button>
           </div>
         </div>
+
+        <div id="notes-instructor-row" class="flex flex-wrap items-center gap-2">
+          <span class="text-xs font-mono text-slate-500 shrink-0">Instructor</span>
+          <div class="flex flex-wrap items-center gap-2" data-instructor-buttons>
+            <button type="button" data-instructor="" data-selected="true" aria-pressed="true"
+              class="rounded-full border border-white/10 bg-white/[0.02] px-3 py-1 text-xs font-mono transition-colors hover:border-white/20 hover:text-slate-100 data-[selected=true]:border-accent data-[selected=true]:bg-accent/15 data-[selected=true]:text-accent">
+              All
+            </button>
+          </div>
+        </div>
       </div>
 
       <p id="notes-count" class="hidden text-xs font-mono text-slate-500 mb-5"></p>
@@ -98,10 +108,11 @@ const isAuthorized = userId === allowedUserId;
           other:          "bg-slate-500/10 text-slate-400 border-slate-500/25",
         };
 
-        let allNotes     = [];
-        let selectedType = "";
-        let selectedOrg  = "";
-        let searchQuery  = "";
+        let allNotes          = [];
+        let selectedType      = "";
+        let selectedOrg       = "";
+        let selectedInstructor = "";
+        let searchQuery        = "";
 
         const show = el => el.classList.remove("hidden");
         const hide = el => el.classList.add("hidden");
@@ -131,6 +142,7 @@ const isAuthorized = userId === allowedUserId;
             note.title,
             note.organization,
             ...(note.students || []),
+            ...(note.instructors || []),
             SESSION_LABELS[note.session_type] || note.session_type,
           ].join(" ").toLowerCase();
           return haystack.includes(q.toLowerCase());
@@ -139,8 +151,9 @@ const isAuthorized = userId === allowedUserId;
         function filterNotes(notes) {
           return notes.filter(note => {
             if (selectedType && note.session_type !== selectedType) return false;
-            if (selectedOrg  && noteWith(note) !== selectedOrg)       return false;
-            if (!matchesSearch(note, searchQuery))                    return false;
+            if (selectedOrg  && noteWith(note) !== selectedOrg)     return false;
+            if (selectedInstructor && !noteInstructors(note).split(" + ").includes(selectedInstructor)) return false;
+            if (!matchesSearch(note, searchQuery))                  return false;
             return true;
           });
         }
@@ -172,6 +185,27 @@ const isAuthorized = userId === allowedUserId;
             wrap.appendChild(btn);
           }
           orgs.length ? show(orgRow) : hide(orgRow);
+        }
+
+        function buildInstructorButtons(notes) {
+          const wrap = document.querySelector("[data-instructor-buttons]");
+          const row  = document.getElementById("notes-instructor-row");
+          if (!wrap || !row) return;
+          const instructors = [...new Set(
+            notes.flatMap(n => n.instructors || []).filter(Boolean)
+          )].sort();
+          wrap.querySelectorAll("button[data-instructor]:not([data-instructor=''])").forEach(b => b.remove());
+          for (const instr of instructors) {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.setAttribute("data-instructor", instr);
+            btn.setAttribute("data-selected", "false");
+            btn.setAttribute("aria-pressed", "false");
+            btn.className = BTN_CLASS;
+            btn.textContent = instr;
+            wrap.appendChild(btn);
+          }
+          instructors.length ? show(row) : hide(row);
         }
 
         function buildCard(note) {
@@ -300,6 +334,7 @@ const isAuthorized = userId === allowedUserId;
             }
             hide(loadingEl);
             buildOrgButtons(allNotes);
+            buildInstructorButtons(allNotes);
             show(filtersEl);
             render();
           } catch {
@@ -319,6 +354,13 @@ const isAuthorized = userId === allowedUserId;
           if (e.target.tagName !== "BUTTON") return;
           selectedOrg = e.target.getAttribute("data-org") ?? "";
           setButtonGroup(e.currentTarget, "data-org", selectedOrg);
+          render();
+        });
+
+        document.querySelector("[data-instructor-buttons]")?.addEventListener("click", e => {
+          if (e.target.tagName !== "BUTTON") return;
+          selectedInstructor = e.target.getAttribute("data-instructor") ?? "";
+          setButtonGroup(e.currentTarget, "data-instructor", selectedInstructor);
           render();
         });
 
