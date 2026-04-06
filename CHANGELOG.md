@@ -1,3 +1,10 @@
+## [1.4.3](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.4.2...v1.4.3) (2026-04-06)
+
+
+### Bug Fixes
+
+* label formatting ([0eb6a03](https://github.com/mini-app-polis/website-astro-wcs/commit/0eb6a031fbce4cb0cbc06e131ac09e3c82d6d6d3))
+
 ## [1.4.2](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.4.1...v1.4.2) (2026-04-06)
 
 
