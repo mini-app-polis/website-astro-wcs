@@ -1,0 +1,15 @@
+# website-astro-wcs / evaluator.yaml
+# Per-repo evaluation configuration — ecosystem-standards ADR-001, ADR-002
+
+type: static-site
+
+traits:
+  - cloudflare-pages
+  # Deployed via Cloudflare Pages Git integration (auto-deploy on push to main).
+  # No ci.yml required — Cloudflare Pages is the CI/CD pipeline.
+  # Automatically excepts VER-003, VER-005, VER-006.
+
+# TEST-001/002/003/004 covered by static-site type scoping.
+# XSTACK-001 covered by static-site type scoping (no server-side logic).
+# XSTACK-003 (pnpm) covered by static-site type scoping (npm permitted for static sites).
+# CD-002/009/010 covered by static-site type scoping (no server runtime).
