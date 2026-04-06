@@ -1,3 +1,10 @@
+## [1.4.4](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.4.3...v1.4.4) (2026-04-06)
+
+
+### Bug Fixes
+
+* adding searchable instructors ([d54ada1](https://github.com/mini-app-polis/website-astro-wcs/commit/d54ada1d1d10e5fda4f7e4f2c892884e9af27218))
+
 ## [1.4.3](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.4.2...v1.4.3) (2026-04-06)
 
 
