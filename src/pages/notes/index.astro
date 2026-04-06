@@ -106,7 +106,12 @@ const isAuthorized = userId === allowedUserId;
         const show = el => el.classList.remove("hidden");
         const hide = el => el.classList.add("hidden");
 
-        function noteOrg(note) {
+        function noteInstructors(note) {
+          return note.instructors?.length ? note.instructors.join(" + ") : "";
+        }
+
+        // Used for the "With" filter axis
+        function noteWith(note) {
           if (note.session_type === "private_lesson")
             return note.students?.length ? note.students.join(" + ") : "";
           return note.organization || "";
@@ -134,7 +139,7 @@ const isAuthorized = userId === allowedUserId;
         function filterNotes(notes) {
           return notes.filter(note => {
             if (selectedType && note.session_type !== selectedType) return false;
-            if (selectedOrg  && noteOrg(note) !== selectedOrg)       return false;
+            if (selectedOrg  && noteWith(note) !== selectedOrg)       return false;
             if (!matchesSearch(note, searchQuery))                    return false;
             return true;
           });
@@ -154,7 +159,7 @@ const isAuthorized = userId === allowedUserId;
         function buildOrgButtons(notes) {
           const wrap = document.querySelector("[data-org-buttons]");
           if (!wrap) return;
-          const orgs = [...new Set(notes.map(noteOrg).filter(Boolean))].sort();
+          const orgs = [...new Set(notes.map(noteWith).filter(Boolean))].sort();
           wrap.querySelectorAll("button[data-org]:not([data-org=''])").forEach(b => b.remove());
           for (const org of orgs) {
             const btn = document.createElement("button");
@@ -170,7 +175,7 @@ const isAuthorized = userId === allowedUserId;
         }
 
         function buildCard(note) {
-          const org       = noteOrg(note);
+          const org       = noteWith(note);
           const typeLabel = SESSION_LABELS[note.session_type] || note.session_type;
           const badgeCls  = TYPE_BADGE[note.session_type] || TYPE_BADGE.other;
           const nj        = note.notes_json || {};
@@ -204,23 +209,38 @@ const isAuthorized = userId === allowedUserId;
           topRow.appendChild(badge);
           a.appendChild(topRow);
 
-          // Primary label: org / students
-          if (org) {
-            const withEl = document.createElement("p");
-            withEl.className = "text-sm font-medium text-slate-100 leading-snug";
-            withEl.textContent = org;
-            a.appendChild(withEl);
+          // Primary label + "with [instructors]" inline
+          const instructors = noteInstructors(note);
+          const noteWithVal = noteWith(note);
+          if (noteWithVal) {
+            const primaryEl = document.createElement("p");
+            primaryEl.className = "text-sm font-medium text-slate-100 leading-snug";
+
+            const primaryName = document.createElement("span");
+            primaryName.textContent = noteWithVal;
+            primaryEl.appendChild(primaryName);
+
+            if (instructors) {
+              const withSpan = document.createElement("span");
+              withSpan.className = "font-normal text-slate-500";
+              withSpan.textContent = " [with " + instructors + "]";
+              primaryEl.appendChild(withSpan);
+            }
+
+            a.appendChild(primaryEl);
           }
 
-          // Title (smaller if org is present, primary if not)
-          if (note.title?.trim()) {
-            const titleEl = document.createElement("p");
-            titleEl.className = org
-              ? "text-xs text-slate-400 -mt-1.5"
-              : "text-sm font-medium text-slate-100 leading-snug";
-            titleEl.textContent = note.title.trim();
-            a.appendChild(titleEl);
-          }
+          // Title — always 2 lines tall, clipped with ellipsis
+          const titleEl = document.createElement("p");
+          const hasPrimary = !!noteWithVal;
+          titleEl.className = hasPrimary
+            ? "text-sm text-slate-400 leading-snug overflow-hidden"
+            : "text-sm font-medium text-slate-100 leading-snug overflow-hidden";
+          titleEl.style.cssText =
+            "display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; " +
+            "overflow: hidden; min-height: calc(1.25em * 2 * 1.375);";
+          titleEl.textContent = note.title?.trim() || "";
+          a.appendChild(titleEl);
 
 
           // Footer: section count
