@@ -1,3 +1,10 @@
+## [1.4.1](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.4.0...v1.4.1) (2026-04-06)
+
+
+### Bug Fixes
+
+* adding card formatting ([584b247](https://github.com/mini-app-polis/website-astro-wcs/commit/584b247b370ed2a54b9bc8d3368a7e5bf9c7816d))
+
 # [1.4.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.3.9...v1.4.0) (2026-04-06)
 
 
