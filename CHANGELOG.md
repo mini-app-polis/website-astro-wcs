@@ -1,3 +1,10 @@
+# [1.4.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.3.9...v1.4.0) (2026-04-06)
+
+
+### Features
+
+* adding filters to notes page ([57242ce](https://github.com/mini-app-polis/website-astro-wcs/commit/57242ce9d4b0bb94acff1da4d1a84e9517c04dce))
+
 ## [1.3.9](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.3.8...v1.3.9) (2026-04-05)
 
 
