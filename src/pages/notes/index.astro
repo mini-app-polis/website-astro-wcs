@@ -26,10 +26,78 @@ const isAuthorized = userId === allowedUserId;
       <p class="text-slate-400 font-light">You don't have access to this section.</p>
     </div>
   ) : (
-    <div class="contents">
+    <div class="contents" data-notes-browser>
       <div id="notes-loading" class="text-sm text-slate-500">Loading…</div>
       <div id="notes-error" class="text-sm text-slate-500 hidden">Could not load notes.</div>
-      <div id="notes-empty" class="text-sm text-slate-500 hidden">No notes yet.</div>
+
+      <!-- Filters (hidden until data loads) -->
+      <div id="notes-filters" class="hidden space-y-4 mb-6">
+        <!-- Search -->
+        <div class="flex items-center gap-3">
+          <span class="text-xs font-mono text-slate-500 shrink-0">Search</span>
+          <input
+            id="notes-search"
+            type="text"
+            placeholder="Title, organization, student…"
+            class="w-full max-w-sm rounded-full border border-white/10 bg-white/[0.02] px-4 py-1.5 text-xs font-mono text-slate-200 placeholder:text-slate-600 outline-none focus:border-accent/50 transition-colors"
+          />
+        </div>
+
+        <!-- Session type -->
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-xs font-mono text-slate-500">Type</span>
+          <div class="flex flex-wrap items-center gap-2" data-type-buttons>
+            <button
+              type="button"
+              data-type=""
+              data-selected="true"
+              aria-pressed="true"
+              class="rounded-full border border-white/10 bg-white/[0.02] px-3 py-1 text-xs font-mono transition-colors hover:border-white/20 hover:text-slate-100 data-[selected=true]:border-accent data-[selected=true]:bg-accent/15 data-[selected=true]:text-accent"
+            >
+              All
+            </button>
+            <button
+              type="button"
+              data-type="private_lesson"
+              data-selected="false"
+              aria-pressed="false"
+              class="rounded-full border border-white/10 bg-white/[0.02] px-3 py-1 text-xs font-mono transition-colors hover:border-white/20 hover:text-slate-100 data-[selected=true]:border-accent data-[selected=true]:bg-accent/15 data-[selected=true]:text-accent"
+            >
+              Private lesson
+            </button>
+            <button
+              type="button"
+              data-type="group_class"
+              data-selected="false"
+              aria-pressed="false"
+              class="rounded-full border border-white/10 bg-white/[0.02] px-3 py-1 text-xs font-mono transition-colors hover:border-white/20 hover:text-slate-100 data-[selected=true]:border-accent data-[selected=true]:bg-accent/15 data-[selected=true]:text-accent"
+            >
+              Group class
+            </button>
+          </div>
+        </div>
+
+        <!-- Organization / instructor (populated dynamically) -->
+        <div class="flex flex-wrap items-center gap-2" id="notes-org-row">
+          <span class="text-xs font-mono text-slate-500">With</span>
+          <div class="flex flex-wrap items-center gap-2" data-org-buttons>
+            <button
+              type="button"
+              data-org=""
+              data-selected="true"
+              aria-pressed="true"
+              class="rounded-full border border-white/10 bg-white/[0.02] px-3 py-1 text-xs font-mono transition-colors hover:border-white/20 hover:text-slate-100 data-[selected=true]:border-accent data-[selected=true]:bg-accent/15 data-[selected=true]:text-accent"
+            >
+              All
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Count line -->
+      <p id="notes-count" class="hidden text-xs font-mono text-slate-500 mb-4"></p>
+
+      <div id="notes-empty" class="text-sm text-slate-500 hidden">No notes match the filters.</div>
       <div id="notes-list" class="space-y-3 hidden"></div>
 
       <script type="module">
@@ -38,6 +106,10 @@ const isAuthorized = userId === allowedUserId;
         const errorEl = document.getElementById("notes-error");
         const emptyEl = document.getElementById("notes-empty");
         const listEl = document.getElementById("notes-list");
+        const filtersEl = document.getElementById("notes-filters");
+        const countEl = document.getElementById("notes-count");
+        const searchEl = document.getElementById("notes-search");
+        const orgRow = document.getElementById("notes-org-row");
 
         const SESSION_LABELS = {
           private_lesson: "Private lesson",
@@ -45,32 +117,138 @@ const isAuthorized = userId === allowedUserId;
           other: "Other",
         };
 
+        let allNotes = [];
+        let selectedType = "";
+        let selectedOrg = "";
+        let searchQuery = "";
+
+        // ── helpers ──────────────────────────────────────────────────────────
+
+        function show(el) { el.classList.remove("hidden"); }
+        function hide(el) { el.classList.add("hidden"); }
+
+        function noteOrg(note) {
+          // For group classes use organization; for private lessons use student names
+          if (note.session_type === "private_lesson") {
+            return (note.students && note.students.length > 0)
+              ? note.students.join(" + ")
+              : "";
+          }
+          return note.organization || "";
+        }
+
         function buildDisplayTitle(note) {
           const parts = [];
-
           if (note.session_date) parts.push(note.session_date);
-
           parts.push(SESSION_LABELS[note.session_type] || note.session_type);
-
-          if (note.session_type === "private_lesson") {
-            if (note.students && note.students.length > 0) {
-              parts.push(note.students.join(" + "));
-            }
-          } else {
-            if (note.organization) parts.push(note.organization);
-          }
-
+          const org = noteOrg(note);
+          if (org) parts.push(org);
           if (note.title && note.title.trim()) parts.push(note.title.trim());
-
           return parts.join(" | ");
         }
 
-        function show(el) {
-          el.classList.remove("hidden");
+        function matchesSearch(note, q) {
+          if (!q) return true;
+          const haystack = [
+            note.title,
+            note.organization,
+            ...(note.students || []),
+            SESSION_LABELS[note.session_type] || note.session_type,
+          ].join(" ").toLowerCase();
+          return haystack.includes(q.toLowerCase());
         }
-        function hide(el) {
-          el.classList.add("hidden");
+
+        function filterNotes(notes) {
+          return notes.filter(note => {
+            if (selectedType && note.session_type !== selectedType) return false;
+            if (selectedOrg && noteOrg(note) !== selectedOrg) return false;
+            if (!matchesSearch(note, searchQuery)) return false;
+            return true;
+          });
         }
+
+        // ── button group helpers ──────────────────────────────────────────────
+
+        function setButtonGroup(container, attr, value) {
+          container.querySelectorAll(`button[${attr}]`).forEach(btn => {
+            const v = btn.getAttribute(attr) || "";
+            const sel = v === value;
+            btn.setAttribute("data-selected", sel ? "true" : "false");
+            btn.setAttribute("aria-pressed", sel ? "true" : "false");
+          });
+        }
+
+        const BTN_CLASS =
+          "rounded-full border border-white/10 bg-white/[0.02] px-3 py-1 text-xs font-mono transition-colors hover:border-white/20 hover:text-slate-100 data-[selected=true]:border-accent data-[selected=true]:bg-accent/15 data-[selected=true]:text-accent";
+
+        function buildOrgButtons(notes) {
+          const orgWrap = document.querySelector("[data-org-buttons]");
+          if (!orgWrap) return;
+
+          const orgs = [...new Set(
+            notes.map(noteOrg).filter(Boolean)
+          )].sort();
+
+          // Rebuild non-All buttons
+          orgWrap.querySelectorAll("button[data-org]:not([data-org=''])").forEach(b => b.remove());
+
+          for (const org of orgs) {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.setAttribute("data-org", org);
+            btn.setAttribute("data-selected", "false");
+            btn.setAttribute("aria-pressed", "false");
+            btn.className = BTN_CLASS;
+            btn.textContent = org;
+            orgWrap.appendChild(btn);
+          }
+
+          // Hide the whole row if there's nothing to filter
+          orgs.length > 0 ? show(orgRow) : hide(orgRow);
+        }
+
+        // ── render ────────────────────────────────────────────────────────────
+
+        function render() {
+          const filtered = filterNotes(allNotes);
+
+          // Count line
+          const total = allNotes.length;
+          const shown = filtered.length;
+          countEl.textContent =
+            shown === total
+              ? `${total} note${total !== 1 ? "s" : ""}`
+              : `${shown} of ${total} note${total !== 1 ? "s" : ""}`;
+          show(countEl);
+
+          listEl.innerHTML = "";
+
+          if (filtered.length === 0) {
+            show(emptyEl);
+            hide(listEl);
+            return;
+          }
+
+          hide(emptyEl);
+
+          for (const note of filtered) {
+            const a = document.createElement("a");
+            a.href = `/notes/${note.id}`;
+            a.className =
+              "block rounded-xl border border-white/8 bg-surface/60 px-5 py-4 transition-colors hover:border-accent/30 hover:bg-surface";
+
+            const title = document.createElement("p");
+            title.className = "font-medium text-slate-100 text-sm";
+            title.textContent = buildDisplayTitle(note);
+
+            a.appendChild(title);
+            listEl.appendChild(a);
+          }
+
+          show(listEl);
+        }
+
+        // ── load ──────────────────────────────────────────────────────────────
 
         async function load() {
           if (!BASE) {
@@ -79,35 +257,49 @@ const isAuthorized = userId === allowedUserId;
             return;
           }
           try {
-            const res = await fetch(`${BASE.replace(/\/$/, "")}/v1/wcs/notes?limit=100`);
+            const res = await fetch(`${BASE.replace(/\/$/, "")}/v1/wcs/notes?limit=200`);
             if (!res.ok) throw new Error("bad response");
             const json = await res.json();
-            const notes = json.data ?? [];
+            allNotes = json.data ?? [];
             hide(loadingEl);
-            if (notes.length === 0) {
-              show(emptyEl);
-              return;
-            }
-
-            for (const note of notes) {
-              const a = document.createElement("a");
-              a.href = `/notes/${note.id}`;
-              a.className =
-                "block rounded-xl border border-white/8 bg-surface/60 px-5 py-4 transition-colors hover:border-accent/30 hover:bg-surface";
-
-              const title = document.createElement("p");
-              title.className = "font-medium text-slate-100 text-sm";
-              title.textContent = buildDisplayTitle(note);
-
-              a.appendChild(title);
-              listEl.appendChild(a);
-            }
-
-            show(listEl);
+            buildOrgButtons(allNotes);
+            show(filtersEl);
+            render();
           } catch {
             hide(loadingEl);
             show(errorEl);
           }
+        }
+
+        // ── event listeners ───────────────────────────────────────────────────
+
+        const typeWrap = document.querySelector("[data-type-buttons]");
+        if (typeWrap) {
+          typeWrap.addEventListener("click", e => {
+            const t = e.target;
+            if (t.tagName !== "BUTTON") return;
+            selectedType = t.getAttribute("data-type") ?? "";
+            setButtonGroup(typeWrap, "data-type", selectedType);
+            render();
+          });
+        }
+
+        const orgWrap = document.querySelector("[data-org-buttons]");
+        if (orgWrap) {
+          orgWrap.addEventListener("click", e => {
+            const t = e.target;
+            if (t.tagName !== "BUTTON") return;
+            selectedOrg = t.getAttribute("data-org") ?? "";
+            setButtonGroup(orgWrap, "data-org", selectedOrg);
+            render();
+          });
+        }
+
+        if (searchEl) {
+          searchEl.addEventListener("input", () => {
+            searchQuery = searchEl.value.trim();
+            render();
+          });
         }
 
         load();
