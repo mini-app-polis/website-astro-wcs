@@ -1,3 +1,10 @@
+## [1.4.5](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.4.4...v1.4.5) (2026-04-11)
+
+
+### Bug Fixes
+
+* homepage link to submit music ([732ce6c](https://github.com/mini-app-polis/website-astro-wcs/commit/732ce6cc7e5b81b73b004871ca48d0f98b856e2c))
+
 ## [1.4.4](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.4.3...v1.4.4) (2026-04-06)
 
 
