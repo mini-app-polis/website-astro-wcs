@@ -1,3 +1,15 @@
+# [1.6.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.5.4...v1.6.0) (2026-04-16)
+
+
+### Bug Fixes
+
+* build issue ([bfec4cb](https://github.com/mini-app-polis/website-astro-wcs/commit/bfec4cbf7533326bd8451086377931b6cc47d727))
+
+
+### Features
+
+* adding user information to database ([5b1668d](https://github.com/mini-app-polis/website-astro-wcs/commit/5b1668d5083ec314706e3a30796c0c0734e7899d))
+
 ## [1.5.4](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.5.3...v1.5.4) (2026-04-16)
 
 
