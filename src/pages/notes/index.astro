@@ -332,7 +332,7 @@ if (userId && apiBase) {
             const PAGE = 100;
             let offset = 0;
             while (true) {
-              const res = await fetch(`${base}/v1/wcs/notes?limit=${PAGE}&offset=${offset}`, {
+              const res = await fetch(`${base}/v1/wcs/notes?limit=${PAGE}&offset=${offset}&as_user=true`, {
                 headers: USER_ID ? { "X-Owner-Id": USER_ID } : {},
               });
               if (!res.ok) throw new Error("bad response");
