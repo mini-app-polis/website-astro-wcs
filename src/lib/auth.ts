@@ -50,6 +50,41 @@ export async function getAuthenticatedUserId(
 }
 
 /**
+ * Fetches the user's email and display name from the Clerk backend API.
+ * Returns empty strings on failure - upsert will preserve existing values.
+ */
+export async function getClerkUserData(
+  userId: string,
+  env?: Record<string, string>,
+): Promise<{ email: string; displayName: string }> {
+  const secretKey = env?.CLERK_SECRET_KEY ?? import.meta.env.CLERK_SECRET_KEY;
+  if (!secretKey) return { email: "", displayName: "" };
+
+  try {
+    const res = await fetch(`https://api.clerk.com/v1/users/${userId}`, {
+      headers: {
+        Authorization: `Bearer ${secretKey}`,
+        "Content-Type": "application/json",
+      },
+    });
+    if (!res.ok) {
+      console.error("[auth] getClerkUserData failed:", res.status);
+      return { email: "", displayName: "" };
+    }
+    const data = await res.json();
+    const email = data.email_addresses?.[0]?.email_address ?? "";
+    const firstName = data.first_name ?? "";
+    const lastName = data.last_name ?? "";
+    const displayName = [firstName, lastName].filter(Boolean).join(" ") ||
+      data.username ?? "";
+    return { email, displayName };
+  } catch (err) {
+    console.error("[auth] getClerkUserData error:", err);
+    return { email: "", displayName: "" };
+  }
+}
+
+/**
  * Fetches the WCS user profile from the API for a given Clerk user_id.
  * Returns null if the profile does not exist yet (first-time user before upsert).
  */

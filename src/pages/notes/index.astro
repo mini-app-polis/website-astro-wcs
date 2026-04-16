@@ -1,6 +1,6 @@
 ---
 import Page from "../../layouts/Page.astro";
-import { getAuthenticatedUserId, upsertWcsProfile } from "../../lib/auth";
+import { getAuthenticatedUserId, getClerkUserData, upsertWcsProfile } from "../../lib/auth";
 import { getApiBase } from "../../lib/api";
 
 const runtime = Astro.locals.runtime;
@@ -13,7 +13,8 @@ const isAuthenticated = !!userId;
 let isAdmin = false;
 
 if (userId && apiBase) {
-  const profile = await upsertWcsProfile(userId, "", "", apiBase);
+  const { email, displayName } = await getClerkUserData(userId, env);
+  const profile = await upsertWcsProfile(userId, email, displayName, apiBase);
   isAdmin = profile?.is_admin ?? false;
 }
 ---
