@@ -76,7 +76,7 @@ export async function getClerkUserData(
     const firstName = data.first_name ?? "";
     const lastName = data.last_name ?? "";
     const displayName = [firstName, lastName].filter(Boolean).join(" ") ||
-      data.username ?? "";
+      (data.username ?? "");
     return { email, displayName };
   } catch (err) {
     console.error("[auth] getClerkUserData error:", err);
