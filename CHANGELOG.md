@@ -1,3 +1,10 @@
+## [1.6.3](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.6.2...v1.6.3) (2026-04-16)
+
+
+### Bug Fixes
+
+* adding admin notes display ([6a013f8](https://github.com/mini-app-polis/website-astro-wcs/commit/6a013f81e7d5494c6984fd926259cd0e209143aa))
+
 ## [1.6.2](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.6.1...v1.6.2) (2026-04-16)
 
 
