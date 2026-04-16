@@ -21,6 +21,12 @@ try {
 type SubItem = { href: string; label: string };
 type NavItem = { href?: string; label: string; submenu?: SubItem[] };
 
+const moreSubmenu: SubItem[] = [
+  { href: "/about", label: "About" },
+  { href: "/notes", label: "Notes" },
+  ...(isAdmin ? [{ href: "/notes/admin", label: "Notes (Admin)" }] : []),
+];
+
 const items: NavItem[] = [
   {
     label: "Booking",
@@ -43,10 +49,7 @@ const items: NavItem[] = [
   { href: "/contact", label: "Contact" },
   {
     label: "More",
-    submenu: [
-      { href: "/about", label: "About" },
-      { href: "/notes", label: "Notes" },
-    ],
+    submenu: moreSubmenu,
   },
 ];
 
