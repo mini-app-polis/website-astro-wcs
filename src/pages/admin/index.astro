@@ -56,12 +56,23 @@ if (!profile?.is_admin) {
   const API_BASE = root?.dataset.apiBase ?? "";
   const H = USER_ID ? { "X-Owner-Id": USER_ID, "Content-Type": "application/json" } : {};
 
-  const tabs = ["users", "notes"];
+  const show = (el) => el?.classList.remove("hidden");
+  const hide = (el) => el?.classList.add("hidden");
+  const base = API_BASE.replace(/\/$/, "");
+
+  function pill(text, color = "slate") {
+    const s = document.createElement("span");
+    s.className = `inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-mono bg-${color}-500/10 text-${color}-300 border-${color}-500/25`;
+    s.textContent = text;
+    return s;
+  }
 
   let usersLoaded = false;
   let allUsers = [];
-  let notesLoaded = false;
   let grantsPanel = null;
+  let notesLoaded = false;
+
+  const tabs = ["users", "notes"];
   let activeTab = "users";
 
   function setTab(tab) {
@@ -79,17 +90,6 @@ if (!profile?.is_admin) {
   });
 
   setTab("users");
-
-  const show = (el) => el?.classList.remove("hidden");
-  const hide = (el) => el?.classList.add("hidden");
-  const base = API_BASE.replace(/\/$/, "");
-
-  function pill(text, color = "slate") {
-    const s = document.createElement("span");
-    s.className = `inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-mono bg-${color}-500/10 text-${color}-300 border-${color}-500/25`;
-    s.textContent = text;
-    return s;
-  }
 
   async function loadUsers() {
     usersLoaded = true;
