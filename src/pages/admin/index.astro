@@ -78,6 +78,7 @@ if (!profile?.is_admin) {
       if (note.organization) parts.push(note.organization);
     }
     if (note.instructors?.length) parts.push("w/ " + note.instructors.join(" + "));
+    if (note.title) parts.push(note.title);
     return parts.join(" · ") || note.id;
   }
 
@@ -239,7 +240,7 @@ if (!profile?.is_admin) {
 
       const noteTitle = document.createElement("span");
       noteTitle.className = "text-xs text-slate-300 truncate min-w-0";
-      noteTitle.textContent = note.title || noteLabel(note);
+      noteTitle.textContent = noteLabel(note);
 
       const hasGrant = grantedIds.has(note.id);
       const grantObj = grants.find((g) => g.note_id === note.id);
@@ -317,7 +318,7 @@ if (!profile?.is_admin) {
 
       const title = document.createElement("span");
       title.className = "text-sm text-slate-200 truncate";
-      title.textContent = note.title || noteLabel(note);
+      title.textContent = noteLabel(note);
 
       left.append(visibleBadge, title);
 
