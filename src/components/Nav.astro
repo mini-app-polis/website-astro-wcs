@@ -8,9 +8,15 @@ const runtime = Astro.locals.runtime;
 const env = runtime?.env as Record<string, string> | undefined;
 const apiBase = getApiBase(env?.KAIANO_API_BASE_URL);
 const userId = await getAuthenticatedUserId(Astro.request, env);
-const isAdmin = userId && apiBase
-  ? (await getWcsProfile(userId, apiBase))?.is_admin ?? false
-  : false;
+
+let isAdmin = false;
+try {
+  if (userId && apiBase) {
+    isAdmin = (await getWcsProfile(userId, apiBase))?.is_admin ?? false;
+  }
+} catch {
+  // Nav must never crash the page — isAdmin stays false
+}
 
 type SubItem = { href: string; label: string };
 type NavItem = { href?: string; label: string; submenu?: SubItem[] };
