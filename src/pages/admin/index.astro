@@ -57,6 +57,11 @@ if (!profile?.is_admin) {
   const H = USER_ID ? { "X-Owner-Id": USER_ID, "Content-Type": "application/json" } : {};
 
   const tabs = ["users", "notes"];
+
+  let usersLoaded = false;
+  let allUsers = [];
+  let notesLoaded = false;
+  let grantsPanel = null;
   let activeTab = "users";
 
   function setTab(tab) {
@@ -85,9 +90,6 @@ if (!profile?.is_admin) {
     s.textContent = text;
     return s;
   }
-
-  let usersLoaded = false;
-  let allUsers = [];
 
   async function loadUsers() {
     usersLoaded = true;
@@ -161,8 +163,6 @@ if (!profile?.is_admin) {
       listEl.appendChild(row);
     }
   }
-
-  let grantsPanel = null;
 
   async function openGrantsPanel(user) {
     grantsPanel?.remove();
@@ -253,8 +253,6 @@ if (!profile?.is_admin) {
       grantsList.appendChild(noteRow);
     }
   }
-
-  let notesLoaded = false;
 
   async function loadNotes() {
     notesLoaded = true;
