@@ -8,6 +8,8 @@ const env = runtime?.env as Record<string, string> | undefined;
 const apiBase = getApiBase(env?.KAIANO_API_BASE_URL);
 
 const userId = await getAuthenticatedUserId(Astro.request, env);
+console.log("[debug] CLERK_SECRET_KEY present:", !!(env?.CLERK_SECRET_KEY ?? import.meta.env.CLERK_SECRET_KEY));
+console.log("[debug] userId:", userId);
 const isAuthenticated = !!userId;
 
 let isAdmin = false;
