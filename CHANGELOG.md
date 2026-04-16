@@ -1,3 +1,10 @@
+# [1.5.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.4.5...v1.5.0) (2026-04-16)
+
+
+### Features
+
+* website updates to support api change for notes permissions and control ([c3dcf2c](https://github.com/mini-app-polis/website-astro-wcs/commit/c3dcf2c50fb32ab896c706f8a9516f14d4ad4d6f))
+
 ## [1.4.5](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.4.4...v1.4.5) (2026-04-11)
 
 
