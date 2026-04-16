@@ -1,3 +1,10 @@
+## [1.5.1](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.5.0...v1.5.1) (2026-04-16)
+
+
+### Bug Fixes
+
+* rollback ([e0b7fbe](https://github.com/mini-app-polis/website-astro-wcs/commit/e0b7fbef7ca1f893745e7fbf52614ce63743e03c))
+
 # [1.5.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.4.5...v1.5.0) (2026-04-16)
 
 
