@@ -198,7 +198,7 @@ if (!profile?.is_admin) {
 
     const [grantsRes, notesRes] = await Promise.all([
       fetch(`${base}/v1/wcs/admin/grants?user_id=${user.user_id}`, { headers: H }),
-      fetch(`${base}/v1/wcs/notes?limit=200`, { headers: H }),
+      fetch(`${base}/v1/wcs/notes?limit=100`, { headers: H }),
     ]);
     const grants = (await grantsRes.json()).data ?? [];
     const notes = (await notesRes.json()).data ?? [];
@@ -260,7 +260,7 @@ if (!profile?.is_admin) {
     const errEl = document.getElementById("notes-error");
     const listEl = document.getElementById("notes-list");
     try {
-      const res = await fetch(`${base}/v1/wcs/notes?limit=200`, { headers: H });
+      const res = await fetch(`${base}/v1/wcs/notes?limit=100`, { headers: H });
       if (!res.ok) throw new Error("bad response");
       const json = await res.json();
       const notes = json.data ?? [];
