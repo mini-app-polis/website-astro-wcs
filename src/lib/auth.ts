@@ -1,5 +1,18 @@
 import { verifyToken } from "@clerk/backend";
 
+export interface WcsUserProfile {
+  user_id: string;
+  email: string;
+  display_name: string;
+  is_admin: boolean;
+  created_at: string;
+  last_seen_at: string;
+}
+
+/**
+ * Verifies the Clerk session cookie and returns the user's Clerk sub (user_id).
+ * Returns null if unauthenticated or verification fails.
+ */
 export async function getAuthenticatedUserId(
   request: Request,
   env?: Record<string, string>,
@@ -22,7 +35,6 @@ export async function getAuthenticatedUserId(
   if (!sessionToken) return null;
 
   const jwtKey = env?.CLERK_JWT_KEY ?? import.meta.env.CLERK_JWT_KEY;
-
   if (!jwtKey) return null;
 
   try {
@@ -33,6 +45,62 @@ export async function getAuthenticatedUserId(
     return payload.sub ?? null;
   } catch (err) {
     console.error("[auth] verifyToken failed:", err);
+    return null;
+  }
+}
+
+/**
+ * Fetches the WCS user profile from the API for a given Clerk user_id.
+ * Returns null if the profile does not exist yet (first-time user before upsert).
+ */
+export async function getWcsProfile(
+  userId: string,
+  apiBase: string,
+): Promise<WcsUserProfile | null> {
+  try {
+    const res = await fetch(`${apiBase.replace(/\/$/, "")}/v1/wcs/me`, {
+      headers: { "X-Owner-Id": userId },
+    });
+    if (res.status === 404) return null;
+    if (!res.ok) {
+      console.error("[auth] getWcsProfile failed:", res.status);
+      return null;
+    }
+    const json = await res.json();
+    return (json?.data ?? null) as WcsUserProfile | null;
+  } catch (err) {
+    console.error("[auth] getWcsProfile error:", err);
+    return null;
+  }
+}
+
+/**
+ * Upserts a WCS user profile via the API. Called after sign-in to ensure
+ * the profile row exists before any access checks run.
+ */
+export async function upsertWcsProfile(
+  userId: string,
+  email: string,
+  displayName: string,
+  apiBase: string,
+): Promise<WcsUserProfile | null> {
+  try {
+    const res = await fetch(`${apiBase.replace(/\/$/, "")}/v1/wcs/me`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Owner-Id": userId,
+      },
+      body: JSON.stringify({ email, display_name: displayName }),
+    });
+    if (!res.ok) {
+      console.error("[auth] upsertWcsProfile failed:", res.status);
+      return null;
+    }
+    const json = await res.json();
+    return (json?.data ?? null) as WcsUserProfile | null;
+  } catch (err) {
+    console.error("[auth] upsertWcsProfile error:", err);
     return null;
   }
 }

@@ -1,7 +1,16 @@
 ---
 import { Show, UserButton } from "@clerk/astro/components";
+import { getAuthenticatedUserId, getWcsProfile } from "../lib/auth";
+import { getApiBase } from "../lib/api";
 
 const { pathname } = Astro.url;
+const runtime = Astro.locals.runtime;
+const env = runtime?.env as Record<string, string> | undefined;
+const apiBase = getApiBase(env?.KAIANO_API_BASE_URL);
+const userId = await getAuthenticatedUserId(Astro.request, env);
+const isAdmin = userId && apiBase
+  ? (await getWcsProfile(userId, apiBase))?.is_admin ?? false
+  : false;
 
 type SubItem = { href: string; label: string };
 type NavItem = { href?: string; label: string; submenu?: SubItem[] };
@@ -118,6 +127,14 @@ function isActive(href: string) {
     </Show>
     <Show when="signed-in">
       <UserButton />
+      {isAdmin && (
+        <a
+          href="/admin"
+          class="ml-3 font-mono text-xs uppercase tracking-widest text-slate-400 transition-colors hover:text-accent"
+        >
+          Admin
+        </a>
+      )}
     </Show>
   </div>
 
@@ -180,6 +197,14 @@ function isActive(href: string) {
     </Show>
     <Show when="signed-in">
       <UserButton />
+      {isAdmin && (
+        <a
+          href="/admin"
+          class="ml-3 font-mono text-xs uppercase tracking-widest text-slate-400 transition-colors hover:text-accent"
+        >
+          Admin
+        </a>
+      )}
     </Show>
   </div>
 </div>

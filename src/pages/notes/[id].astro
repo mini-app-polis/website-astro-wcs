@@ -1,13 +1,21 @@
 ---
 import Page from "../../layouts/Page.astro";
-import { getAuthenticatedUserId } from "../../lib/auth";
+import { getAuthenticatedUserId, upsertWcsProfile } from "../../lib/auth";
+import { getApiBase } from "../../lib/api";
 
 const runtime = Astro.locals.runtime;
-const userId = await getAuthenticatedUserId(Astro.request, runtime?.env);
-const allowedUserId = runtime?.env?.NOTES_ALLOWED_USER_ID ?? import.meta.env.NOTES_ALLOWED_USER_ID;
+const env = runtime?.env as Record<string, string> | undefined;
+const apiBase = getApiBase(env?.KAIANO_API_BASE_URL);
 
+const userId = await getAuthenticatedUserId(Astro.request, env);
 const isAuthenticated = !!userId;
-const isAuthorized = userId === allowedUserId;
+
+let isAdmin = false;
+
+if (userId && apiBase) {
+  const profile = await upsertWcsProfile(userId, "", "", apiBase);
+  isAdmin = profile?.is_admin ?? false;
+}
 ---
 
 <Page title="Note">
@@ -21,12 +29,8 @@ const isAuthorized = userId === allowedUserId;
         Sign in →
       </a>
     </div>
-  ) : !isAuthorized ? (
-    <div class="flex flex-col items-center justify-center min-h-[40vh] gap-3 text-center">
-      <p class="text-slate-400 font-light">You don't have access to this section.</p>
-    </div>
   ) : (
-    <div class="contents">
+    <div class="contents" data-notes-browser data-user-id={userId ?? ""}>
       <div class="mb-4">
         <a href="/notes" class="text-xs text-slate-500 hover:text-slate-300 transition-colors">
           ← All notes
@@ -39,6 +43,7 @@ const isAuthorized = userId === allowedUserId;
 
       <script type="module">
         const BASE = document.documentElement.dataset.apiUrl || "";
+        const USER_ID = document.querySelector("[data-notes-browser]")?.dataset.userId ?? "";
         const id = window.location.pathname.split("/").filter(Boolean).pop();
         const loadingEl = document.getElementById("note-loading");
         const errorEl = document.getElementById("note-error");
@@ -311,7 +316,13 @@ const isAuthorized = userId === allowedUserId;
         async function load() {
           if (!BASE || !id) { hide(loadingEl); show(errorEl); return; }
           try {
-            const res = await fetch(`${BASE.replace(/\/$/, "")}/v1/wcs/notes/${id}`);
+            const res = await fetch(`${BASE.replace(/\/$/, "")}/v1/wcs/notes/${id}`, {
+              headers: USER_ID ? { "X-Owner-Id": USER_ID } : {},
+            });
+            if (res.status === 403) {
+              errorEl.textContent = "You don't have access to this note.";
+              throw new Error("forbidden");
+            }
             if (!res.ok) throw new Error("not found");
             const json = await res.json();
             const note = json.data;
