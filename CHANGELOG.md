@@ -1,3 +1,10 @@
+## [1.6.4](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.6.3...v1.6.4) (2026-04-16)
+
+
+### Bug Fixes
+
+* notes permissions display ([576aa19](https://github.com/mini-app-polis/website-astro-wcs/commit/576aa1927906f64dd8c6582a4f90898905fa058b))
+
 ## [1.6.3](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.6.2...v1.6.3) (2026-04-16)
 
 
