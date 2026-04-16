@@ -62,6 +62,24 @@ if (!profile?.is_admin) {
   const show = (el) => el?.classList.remove("hidden");
   const hide = (el) => el?.classList.add("hidden");
   const base = API_BASE.replace(/\/$/, "");
+  const SESSION_LABELS = {
+    private_lesson: "Private lesson",
+    group_class: "Group class",
+    other: "Other",
+  };
+
+  function noteLabel(note) {
+    const parts = [];
+    if (note.session_date) parts.push(note.session_date);
+    if (note.session_type) parts.push(SESSION_LABELS[note.session_type] || note.session_type);
+    if (note.session_type === "private_lesson") {
+      if (note.students?.length) parts.push(note.students.join(" + "));
+    } else {
+      if (note.organization) parts.push(note.organization);
+    }
+    if (note.instructors?.length) parts.push("w/ " + note.instructors.join(" + "));
+    return parts.join(" · ") || note.id;
+  }
 
   function pill(text, color = "slate") {
     const s = document.createElement("span");
@@ -221,7 +239,7 @@ if (!profile?.is_admin) {
 
       const noteTitle = document.createElement("span");
       noteTitle.className = "text-xs text-slate-300 truncate min-w-0";
-      noteTitle.textContent = note.title || note.id;
+      noteTitle.textContent = note.title || noteLabel(note);
 
       const hasGrant = grantedIds.has(note.id);
       const grantObj = grants.find((g) => g.note_id === note.id);
@@ -299,7 +317,7 @@ if (!profile?.is_admin) {
 
       const title = document.createElement("span");
       title.className = "text-sm text-slate-200 truncate";
-      title.textContent = note.title || note.id;
+      title.textContent = note.title || noteLabel(note);
 
       left.append(visibleBadge, title);
 
