@@ -1,3 +1,10 @@
+# [1.8.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.7.0...v1.8.0) (2026-04-17)
+
+
+### Features
+
+* supporting api auth upgrade ([184b128](https://github.com/mini-app-polis/website-astro-wcs/commit/184b128f80f76a0d490716b002e4cb141fc5b3db))
+
 # [1.7.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.6.4...v1.7.0) (2026-04-17)
 
 
