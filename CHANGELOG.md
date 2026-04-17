@@ -1,3 +1,10 @@
+# [1.7.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.6.4...v1.7.0) (2026-04-17)
+
+
+### Features
+
+* full auth pattern supported ([79f3c02](https://github.com/mini-app-polis/website-astro-wcs/commit/79f3c02cace9fd2de60cb8539a5736b417bc243a))
+
 ## [1.6.4](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.6.3...v1.6.4) (2026-04-16)
 
 
