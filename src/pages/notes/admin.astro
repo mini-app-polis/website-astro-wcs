@@ -353,7 +353,7 @@ if (!profile?.is_admin) {
           const PAGE = 100;
           let offset = 0;
           while (true) {
-            const res = await fetch(`${base}/v1/wcs/notes?limit=${PAGE}&offset=${offset}`, {
+            const res = await fetch(`${base}/v1/wcs/notes/all?limit=${PAGE}&offset=${offset}`, {
               headers: SESSION_TOKEN
                 ? { Authorization: `Bearer ${SESSION_TOKEN}` }
                 : {},
