@@ -16,12 +16,9 @@ const userId = await getAuthenticatedUserId(Astro.request, env);
 const sessionToken = getSessionToken(Astro.request);
 const isAuthenticated = !!userId;
 
-let isAdmin = false;
-
 if (userId && sessionToken && apiBase) {
   const { email, displayName } = await getClerkUserData(userId, env);
-  const profile = await upsertWcsProfile(sessionToken, email, displayName, apiBase);
-  isAdmin = profile?.is_admin ?? false;
+  await upsertWcsProfile(sessionToken, email, displayName, apiBase);
 }
 ---
 
@@ -41,7 +38,6 @@ if (userId && sessionToken && apiBase) {
       class="contents"
       data-notes-browser
       data-session-token={sessionToken ?? ""}
-      data-is-admin={isAdmin ? "true" : "false"}
     >
       <div id="notes-loading" class="text-sm text-slate-500">Loading…</div>
       <div id="notes-error" class="text-sm text-slate-500 hidden">Could not load notes.</div>

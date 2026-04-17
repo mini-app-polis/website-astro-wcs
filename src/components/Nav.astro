@@ -213,15 +213,15 @@ function isActive(href: string) {
       </a>
     </Show>
     <Show when="signed-in">
-      <UserButton />
       {isAdmin && (
         <a
           href="/admin"
-          class="ml-3 font-mono text-xs uppercase tracking-widest text-slate-400 transition-colors hover:text-accent"
+          class="mr-3 inline-flex items-center rounded-full border border-white/10 px-3 py-1.5 font-mono text-xs uppercase tracking-widest text-slate-400 transition-colors hover:border-accent/50 hover:text-accent"
         >
           Admin
         </a>
       )}
+      <UserButton />
     </Show>
   </div>
 </div>
