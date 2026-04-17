@@ -1,6 +1,11 @@
 ---
 import Page from "../../layouts/Page.astro";
-import { getAuthenticatedUserId, getClerkUserData, upsertWcsProfile } from "../../lib/auth";
+import {
+  getAuthenticatedUserId,
+  getClerkUserData,
+  getSessionToken,
+  upsertWcsProfile,
+} from "../../lib/auth";
 import { getApiBase } from "../../lib/api";
 
 const runtime = Astro.locals.runtime;
@@ -8,14 +13,15 @@ const env = runtime?.env as Record<string, string> | undefined;
 const apiBase = getApiBase(env?.KAIANO_API_BASE_URL);
 
 const userId = await getAuthenticatedUserId(Astro.request, env);
+const sessionToken = getSessionToken(Astro.request);
 
-if (!userId) {
+if (!userId || !sessionToken) {
   return Astro.redirect("/sign-in");
 }
 
-const clerkUserData = apiBase ? await getClerkUserData(userId, env) : { email: "", displayName: "" };
+const clerkUserData = await getClerkUserData(userId, env);
 const profile = apiBase
-  ? await upsertWcsProfile(userId, clerkUserData.email, clerkUserData.displayName, apiBase)
+  ? await upsertWcsProfile(sessionToken, clerkUserData.email, clerkUserData.displayName, apiBase)
   : null;
 
 if (!profile?.is_admin) {
@@ -24,7 +30,13 @@ if (!profile?.is_admin) {
 ---
 
 <Page title="Admin" subtitle="WCS access management">
-  <div class="space-y-10" data-admin data-user-id={userId} data-api-base={apiBase}>
+  <div
+    class="space-y-10"
+    data-admin
+    data-user-id={userId}
+    data-api-base={apiBase}
+    data-session-token={sessionToken}
+  >
     <div class="flex gap-1 border-b border-white/10 pb-0">
       {["users", "notes"].map((tab) => (
         <button
@@ -55,9 +67,11 @@ if (!profile?.is_admin) {
 
 <script type="module">
   const root = document.querySelector("[data-admin]");
-  const USER_ID = root?.dataset.userId ?? "";
   const API_BASE = root?.dataset.apiBase ?? "";
-  const H = USER_ID ? { "X-Owner-Id": USER_ID, "Content-Type": "application/json" } : {};
+  const SESSION_TOKEN = root?.dataset.sessionToken ?? "";
+  const H = SESSION_TOKEN
+    ? { Authorization: `Bearer ${SESSION_TOKEN}`, "Content-Type": "application/json" }
+    : { "Content-Type": "application/json" };
 
   const show = (el) => el?.classList.remove("hidden");
   const hide = (el) => el?.classList.add("hidden");

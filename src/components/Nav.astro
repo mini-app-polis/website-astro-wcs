@@ -1,6 +1,6 @@
 ---
 import { Show, UserButton } from "@clerk/astro/components";
-import { getAuthenticatedUserId, getWcsProfile } from "../lib/auth";
+import { getAuthenticatedUserId, getSessionToken, getWcsProfile } from "../lib/auth";
 import { getApiBase } from "../lib/api";
 
 const { pathname } = Astro.url;
@@ -11,8 +11,9 @@ const userId = await getAuthenticatedUserId(Astro.request, env);
 
 let isAdmin = false;
 try {
-  if (userId && apiBase) {
-    isAdmin = (await getWcsProfile(userId, apiBase))?.is_admin ?? false;
+  const sessionToken = getSessionToken(Astro.request);
+  if (sessionToken && apiBase) {
+    isAdmin = (await getWcsProfile(sessionToken, apiBase))?.is_admin ?? false;
   }
 } catch {
   // Nav must never crash the page — isAdmin stays false
