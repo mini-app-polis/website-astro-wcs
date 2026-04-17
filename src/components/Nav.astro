@@ -61,9 +61,16 @@ const allLinks: SubItem[] = items.flatMap((item) =>
     : [{ href: item.href!, label: item.label }],
 );
 
+// Static sub-pages that should NOT cause their parent to highlight
+const STATIC_SUBPAGES = new Set(["/notes/admin"]);
+
 function isActive(href: string) {
   if (href === "/") return pathname === "/";
-  return pathname === href || pathname.startsWith(`${href}/`);
+  if (pathname === href) return true;
+  // Don't highlight parent when on a static sibling sub-page
+  if (STATIC_SUBPAGES.has(pathname)) return false;
+  // Highlight parent for dynamic sub-routes (e.g. /sets/[id], /notes/[id])
+  return pathname.startsWith(`${href}/`);
 }
 ---
 

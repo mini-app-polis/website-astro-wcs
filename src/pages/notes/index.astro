@@ -41,6 +41,7 @@ if (userId && sessionToken && apiBase) {
       class="contents"
       data-notes-browser
       data-session-token={sessionToken ?? ""}
+      data-is-admin={isAdmin ? "true" : "false"}
     >
       <div id="notes-loading" class="text-sm text-slate-500">Loading…</div>
       <div id="notes-error" class="text-sm text-slate-500 hidden">Could not load notes.</div>
@@ -104,6 +105,8 @@ if (userId && sessionToken && apiBase) {
         const BASE      = document.documentElement.dataset.apiUrl || "";
         const SESSION_TOKEN =
           document.querySelector("[data-notes-browser]")?.dataset.sessionToken ?? "";
+        const IS_ADMIN =
+          document.querySelector("[data-notes-browser]")?.dataset.isAdmin === "true";
         const loadingEl = document.getElementById("notes-loading");
         const errorEl   = document.getElementById("notes-error");
         const emptyEl   = document.getElementById("notes-empty");
@@ -341,7 +344,9 @@ if (userId && sessionToken && apiBase) {
             const PAGE = 100;
             let offset = 0;
             while (true) {
-              const res = await fetch(`${base}/v1/wcs/notes?limit=${PAGE}&offset=${offset}`, {
+              const params = new URLSearchParams({ limit: String(PAGE), offset: String(offset) });
+              if (IS_ADMIN) params.set("as_user", "true");
+              const res = await fetch(`${base}/v1/wcs/notes?${params}`, {
                 headers: SESSION_TOKEN
                   ? { Authorization: `Bearer ${SESSION_TOKEN}` }
                   : {},
