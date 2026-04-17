@@ -40,7 +40,6 @@ if (userId && sessionToken && apiBase) {
     <div
       class="contents"
       data-notes-browser
-      data-user-id={userId ?? ""}
       data-session-token={sessionToken ?? ""}
     >
       <div class="mb-4">
@@ -55,7 +54,6 @@ if (userId && sessionToken && apiBase) {
 
       <script type="module">
         const BASE = document.documentElement.dataset.apiUrl || "";
-        const USER_ID = document.querySelector("[data-notes-browser]")?.dataset.userId ?? "";
         const SESSION_TOKEN =
           document.querySelector("[data-notes-browser]")?.dataset.sessionToken ?? "";
         const id = window.location.pathname.split("/").filter(Boolean).pop();

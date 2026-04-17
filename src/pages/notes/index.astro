@@ -40,7 +40,6 @@ if (userId && sessionToken && apiBase) {
     <div
       class="contents"
       data-notes-browser
-      data-user-id={userId ?? ""}
       data-session-token={sessionToken ?? ""}
     >
       <div id="notes-loading" class="text-sm text-slate-500">Loading…</div>
@@ -103,7 +102,6 @@ if (userId && sessionToken && apiBase) {
 
       <script type="module">
         const BASE      = document.documentElement.dataset.apiUrl || "";
-        const USER_ID = document.querySelector("[data-notes-browser]")?.dataset.userId ?? "";
         const SESSION_TOKEN =
           document.querySelector("[data-notes-browser]")?.dataset.sessionToken ?? "";
         const loadingEl = document.getElementById("notes-loading");
@@ -343,7 +341,7 @@ if (userId && sessionToken && apiBase) {
             const PAGE = 100;
             let offset = 0;
             while (true) {
-              const res = await fetch(`${base}/v1/wcs/notes?limit=${PAGE}&offset=${offset}&as_user=true`, {
+              const res = await fetch(`${base}/v1/wcs/notes?limit=${PAGE}&offset=${offset}`, {
                 headers: SESSION_TOKEN
                   ? { Authorization: `Bearer ${SESSION_TOKEN}` }
                   : {},
