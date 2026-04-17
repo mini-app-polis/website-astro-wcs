@@ -1,3 +1,10 @@
+## [1.8.1](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.8.0...v1.8.1) (2026-04-17)
+
+
+### Bug Fixes
+
+* follow up to auth change for admin view ([3e21a1b](https://github.com/mini-app-polis/website-astro-wcs/commit/3e21a1ba6261599dcc7e5745b738be666f5f2188))
+
 # [1.8.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.7.0...v1.8.0) (2026-04-17)
 
 
