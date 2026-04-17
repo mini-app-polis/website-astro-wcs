@@ -1,3 +1,10 @@
+# [1.9.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.8.1...v1.9.0) (2026-04-17)
+
+
+### Features
+
+* supporting new endpoint for original functionality with updated auth ([bbe45e2](https://github.com/mini-app-polis/website-astro-wcs/commit/bbe45e2b1a6fda39a663fe10e4fe187aff017896))
+
 ## [1.8.1](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.8.0...v1.8.1) (2026-04-17)
 
 
