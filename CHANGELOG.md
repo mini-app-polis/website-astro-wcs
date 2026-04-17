@@ -1,3 +1,10 @@
+## [1.9.2](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.9.1...v1.9.2) (2026-04-17)
+
+
+### Bug Fixes
+
+* cleanup ([02357bc](https://github.com/mini-app-polis/website-astro-wcs/commit/02357bc78e4d5c7a6e3ece804670e50dc87d80e9))
+
 ## [1.9.1](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.9.0...v1.9.1) (2026-04-17)
 
 
