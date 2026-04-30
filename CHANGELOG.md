@@ -1,3 +1,10 @@
+## [1.9.3](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.9.2...v1.9.3) (2026-04-30)
+
+
+### Bug Fixes
+
+* visit to wcs.kaianolevine.com/submit-music will redirect to deejaytools.com ([484b4ff](https://github.com/mini-app-polis/website-astro-wcs/commit/484b4ff4527f9228f2bb947b5778e135a368b566))
+
 ## [1.9.2](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.9.1...v1.9.2) (2026-04-17)
 
 
