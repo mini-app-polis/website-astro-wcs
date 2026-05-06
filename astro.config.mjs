@@ -6,6 +6,9 @@ import clerk from "@clerk/astro";
 export default defineConfig({
   output: "server",
   adapter: cloudflare(),
+  redirects: {
+    "/book-now": "/booking/lessons",
+  },
   integrations: [clerk(), tailwind()],
   vite: {
     ssr: {
