@@ -1,3 +1,10 @@
+## [1.9.4](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.9.3...v1.9.4) (2026-05-06)
+
+
+### Bug Fixes
+
+* /book-now redirects to /booking/lessons ([a957671](https://github.com/mini-app-polis/website-astro-wcs/commit/a957671673044cfda7cc1e1c862eaa19ef1e6795))
+
 ## [1.9.3](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.9.2...v1.9.3) (2026-04-30)
 
 
