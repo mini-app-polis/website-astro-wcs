@@ -25,6 +25,7 @@ type NavItem = { href?: string; label: string; submenu?: SubItem[] };
 const moreSubmenu: SubItem[] = [
   { href: "/about", label: "About" },
   { href: "/notes", label: "Notes" },
+  { href: "/notes/ask", label: "Ask" },
   ...(isAdmin ? [{ href: "/notes/admin", label: "Notes (Admin)" }] : []),
 ];
 
