@@ -1,3 +1,11 @@
+# [1.11.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.10.0...v1.11.0) (2026-05-10)
+
+
+### Features
+
+* add Ask to More submenu ([b207a41](https://github.com/mini-app-polis/website-astro-wcs/commit/b207a41e0c509d82ab221a8a19977446f869b39b))
+* add refresh-embeddings panel to /notes/admin ([169e6d6](https://github.com/mini-app-polis/website-astro-wcs/commit/169e6d6c73ce8057bf55a49988acb21b5766a34c))
+
 # [1.10.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.9.4...v1.10.0) (2026-05-10)
 
 
