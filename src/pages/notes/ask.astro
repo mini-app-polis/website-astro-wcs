@@ -1,0 +1,287 @@
+---
+import Page from "../../layouts/Page.astro";
+import {
+  getAuthenticatedUserId,
+  getClerkUserData,
+  getSessionToken,
+  upsertWcsProfile,
+} from "../../lib/auth";
+import { getApiBase } from "../../lib/api";
+
+const runtime = Astro.locals.runtime;
+const env = runtime?.env as Record<string, string> | undefined;
+const apiBase = getApiBase(env?.KAIANO_API_BASE_URL);
+
+const userId = await getAuthenticatedUserId(Astro.request, env);
+const sessionToken = getSessionToken(Astro.request);
+const isAuthenticated = !!userId;
+
+if (userId && sessionToken && apiBase) {
+  const { email, displayName } = await getClerkUserData(userId, env);
+  await upsertWcsProfile(sessionToken, email, displayName, apiBase);
+}
+---
+
+<Page title="Ask" subtitle="Ask the agent about your WCS lesson notes">
+  {!isAuthenticated ? (
+    <div class="flex flex-col items-center justify-center min-h-[40vh] gap-6 text-center">
+      <p class="text-slate-400 font-light">This section is private.</p>
+      <a
+        href="/sign-in"
+        class="inline-flex items-center gap-2 rounded-full bg-accent px-6 py-2.5 font-mono text-xs font-medium uppercase tracking-widest text-canvas transition-opacity hover:opacity-90"
+      >
+        Sign in →
+      </a>
+    </div>
+  ) : (
+    <div
+      class="contents"
+      data-ask-app
+      data-session-token={sessionToken ?? ""}
+    >
+      <form id="ask-form" class="space-y-3">
+        <label for="ask-input" class="block text-xs font-mono text-slate-500">
+          Question
+        </label>
+        <textarea
+          id="ask-input"
+          rows="3"
+          maxlength="5000"
+          placeholder="What did Kyle teach about anchor step timing?"
+          class="w-full rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-sm text-slate-200 placeholder:text-slate-600 outline-none focus:border-accent/50 transition-colors resize-none"
+        ></textarea>
+        <div class="flex items-center justify-between gap-3">
+          <p class="text-xs text-slate-600">
+            Single-turn — each question is independent.
+          </p>
+          <button
+            id="ask-submit"
+            type="submit"
+            disabled
+            class="inline-flex items-center gap-2 rounded-full bg-accent px-6 py-2.5 font-mono text-xs font-semibold text-canvas transition-opacity hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <span id="ask-submit-label">Ask →</span>
+          </button>
+        </div>
+      </form>
+
+      <div id="ask-loading" class="hidden mt-8 text-sm text-slate-500">
+        Thinking…
+      </div>
+      <div id="ask-error" class="hidden mt-8 rounded-xl border border-red-500/20 bg-red-500/5 px-4 py-3 text-sm text-red-300">
+        Something went wrong. Try again, or check the API status.
+      </div>
+
+      <article id="ask-result" class="hidden mt-8 space-y-6">
+        <div
+          id="ask-budget-warning"
+          class="hidden rounded-xl border border-amber-500/25 bg-amber-500/5 px-4 py-3 text-xs text-amber-200 font-mono"
+        >
+          ⚠ This answer may be incomplete — the agent ran out of its tool or token budget.
+        </div>
+
+        <div
+          id="ask-answer"
+          class="text-base text-slate-100 leading-relaxed"
+          style="white-space: pre-wrap;"
+        ></div>
+
+        <div id="ask-sources-section" class="hidden border-t border-white/8 pt-6">
+          <h3 class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-4">
+            Sources
+          </h3>
+          <ol id="ask-citations" class="space-y-3 list-none p-0"></ol>
+        </div>
+
+        <p
+          id="ask-trace"
+          class="text-[0.65rem] font-mono text-slate-700"
+        ></p>
+      </article>
+
+      <script type="module">
+        const BASE = document.documentElement.dataset.apiUrl || "";
+        const SESSION_TOKEN =
+          document.querySelector("[data-ask-app]")?.dataset.sessionToken ?? "";
+
+        const form        = document.getElementById("ask-form");
+        const input       = document.getElementById("ask-input");
+        const submitBtn   = document.getElementById("ask-submit");
+        const submitLabel = document.getElementById("ask-submit-label");
+        const loadingEl   = document.getElementById("ask-loading");
+        const errorEl     = document.getElementById("ask-error");
+        const resultEl    = document.getElementById("ask-result");
+        const budgetEl    = document.getElementById("ask-budget-warning");
+        const answerEl    = document.getElementById("ask-answer");
+        const sourcesEl   = document.getElementById("ask-sources-section");
+        const citationsEl = document.getElementById("ask-citations");
+        const traceEl     = document.getElementById("ask-trace");
+
+        const TYPE_LABEL = { note: "Note", chunk: "Transcript" };
+
+        const show = el => el.classList.remove("hidden");
+        const hide = el => el.classList.add("hidden");
+
+        function setSubmitting(on) {
+          submitBtn.disabled = on || !input.value.trim();
+          submitLabel.textContent = on ? "Asking…" : "Ask →";
+        }
+
+        function formatDate(iso) {
+          if (!iso) return "";
+          const [y, m, d] = iso.split("-").map(Number);
+          if (!y || !m || !d) return "";
+          return new Date(y, m - 1, d).toLocaleDateString("en-US", {
+            month: "short", day: "numeric", year: "numeric",
+          });
+        }
+
+        function renderAnswer(text) {
+          answerEl.innerHTML = "";
+          const parts = text.split(/(\[\d+\])/g);
+          for (const part of parts) {
+            const m = part.match(/^\[(\d+)\]$/);
+            if (m) {
+              const sup = document.createElement("sup");
+              sup.className = "ml-0.5";
+              const a = document.createElement("a");
+              a.href = `#citation-${m[1]}`;
+              a.textContent = part;
+              a.className =
+                "text-accent hover:underline font-mono text-xs no-underline";
+              sup.appendChild(a);
+              answerEl.appendChild(sup);
+            } else {
+              answerEl.appendChild(document.createTextNode(part));
+            }
+          }
+        }
+
+        function renderCitation(c) {
+          const li = document.createElement("li");
+          li.id = `citation-${c.marker}`;
+          li.className =
+            "flex items-start gap-3 rounded-lg border border-white/8 bg-surface/40 px-4 py-3";
+
+          const marker = document.createElement("span");
+          marker.className =
+            "shrink-0 inline-flex items-center justify-center h-6 w-6 rounded-full border border-accent/30 bg-accent/10 text-accent font-mono text-xs";
+          marker.textContent = String(c.marker);
+          li.appendChild(marker);
+
+          const body = document.createElement("div");
+          body.className = "flex-1 min-w-0 space-y-1";
+
+          const meta = document.createElement("div");
+          meta.className = "flex items-center gap-2 text-[0.65rem] font-mono text-slate-500 uppercase tracking-widest";
+          const typeLabel = document.createElement("span");
+          typeLabel.textContent = TYPE_LABEL[c.type] || c.type;
+          meta.appendChild(typeLabel);
+          if (c.session_date) {
+            const dot = document.createElement("span");
+            dot.textContent = "·";
+            dot.className = "text-slate-700";
+            meta.appendChild(dot);
+            const date = document.createElement("span");
+            date.textContent = formatDate(c.session_date);
+            meta.appendChild(date);
+          }
+          body.appendChild(meta);
+
+          const titleText = c.title || "Untitled";
+          if (c.source_url) {
+            const link = document.createElement("a");
+            link.href = c.source_url;
+            link.className =
+              "block text-sm text-slate-100 hover:text-accent transition-colors";
+            link.textContent = titleText;
+            body.appendChild(link);
+          } else {
+            const span = document.createElement("span");
+            span.className = "block text-sm text-slate-300";
+            span.textContent = titleText;
+            body.appendChild(span);
+          }
+
+          li.appendChild(body);
+          return li;
+        }
+
+        function renderResult(data) {
+          hide(loadingEl);
+          hide(errorEl);
+
+          if (data.budget_exhausted) show(budgetEl); else hide(budgetEl);
+
+          renderAnswer(data.answer || "");
+
+          citationsEl.innerHTML = "";
+          const citations = Array.isArray(data.citations) ? data.citations : [];
+          if (citations.length > 0) {
+            for (const c of citations) citationsEl.appendChild(renderCitation(c));
+            show(sourcesEl);
+          } else {
+            hide(sourcesEl);
+          }
+
+          traceEl.textContent = data.tool_trace_id
+            ? `trace: ${data.tool_trace_id}`
+            : "";
+
+          show(resultEl);
+        }
+
+        async function ask(question) {
+          if (!BASE) {
+            show(errorEl);
+            return;
+          }
+          hide(resultEl);
+          hide(errorEl);
+          show(loadingEl);
+          setSubmitting(true);
+          try {
+            const res = await fetch(`${BASE.replace(/\/$/, "")}/v1/wcs/ask`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                ...(SESSION_TOKEN
+                  ? { Authorization: `Bearer ${SESSION_TOKEN}` }
+                  : {}),
+              },
+              body: JSON.stringify({ question }),
+            });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const json = await res.json();
+            renderResult(json.data ?? {});
+          } catch (err) {
+            hide(loadingEl);
+            hide(resultEl);
+            show(errorEl);
+          } finally {
+            setSubmitting(false);
+          }
+        }
+
+        input.addEventListener("input", () => setSubmitting(false));
+
+        form.addEventListener("submit", e => {
+          e.preventDefault();
+          const q = input.value.trim();
+          if (!q) return;
+          ask(q);
+        });
+
+        // Cmd/Ctrl-Enter submits.
+        input.addEventListener("keydown", e => {
+          if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+            e.preventDefault();
+            form.requestSubmit();
+          }
+        });
+
+        setSubmitting(false);
+      </script>
+    </div>
+  )}
+</Page>
