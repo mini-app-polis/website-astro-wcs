@@ -1,3 +1,10 @@
+# [1.10.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.9.4...v1.10.0) (2026-05-10)
+
+
+### Features
+
+* add /notes/ask page for WCS Q&A agent ([6180554](https://github.com/mini-app-polis/website-astro-wcs/commit/618055482c811874be85d524a4f869555d8642ef))
+
 ## [1.9.4](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.9.3...v1.9.4) (2026-05-06)
 
 
