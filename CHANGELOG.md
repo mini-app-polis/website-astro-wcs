@@ -1,3 +1,10 @@
+## [1.11.1](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.11.0...v1.11.1) (2026-05-10)
+
+
+### Bug Fixes
+
+* moving to private ask page ([230f17b](https://github.com/mini-app-polis/website-astro-wcs/commit/230f17b6cfd3b74893ab36370060ebc863a64366))
+
 # [1.11.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.10.0...v1.11.0) (2026-05-10)
 
 
