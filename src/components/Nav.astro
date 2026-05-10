@@ -25,8 +25,14 @@ type NavItem = { href?: string; label: string; submenu?: SubItem[] };
 const moreSubmenu: SubItem[] = [
   { href: "/about", label: "About" },
   { href: "/notes", label: "Notes" },
-  { href: "/notes/ask", label: "Ask" },
-  ...(isAdmin ? [{ href: "/notes/admin", label: "Notes (Admin)" }] : []),
+  // Ask is admin-only for now (page itself is also gated). Restore for all
+  // signed-in users once the agent is ready for general access.
+  ...(isAdmin
+    ? [
+        { href: "/notes/ask", label: "Ask" },
+        { href: "/notes/admin", label: "Notes (Admin)" },
+      ]
+    : []),
 ];
 
 const items: NavItem[] = [
