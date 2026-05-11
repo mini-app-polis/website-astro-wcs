@@ -1,3 +1,10 @@
+# [1.12.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.11.1...v1.12.0) (2026-05-11)
+
+
+### Features
+
+* processing messaging and feedback ([fd34bcb](https://github.com/mini-app-polis/website-astro-wcs/commit/fd34bcb813203e2664b5c3826417432d2af79f85))
+
 ## [1.11.1](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.11.0...v1.11.1) (2026-05-10)
 
 
