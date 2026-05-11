@@ -85,18 +85,9 @@ if (!profile?.is_admin) {
       <article id="ask-result" class="hidden mt-8 space-y-6">
         <div
           id="ask-budget-warning"
-          class="hidden rounded-xl border border-amber-500/25 bg-amber-500/5 px-4 py-3 text-xs text-amber-200 font-mono flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+          class="hidden rounded-xl border border-amber-500/25 bg-amber-500/5 px-4 py-3 text-xs text-amber-200 font-mono"
         >
-          <span id="ask-budget-text">
-            ⚠ This answer may be incomplete — the agent ran out of its tool or token budget.
-          </span>
-          <button
-            id="ask-retry-deep"
-            type="button"
-            class="hidden self-start sm:self-auto shrink-0 inline-flex items-center gap-1.5 rounded-full border border-amber-400/40 bg-amber-400/10 px-4 py-1.5 font-semibold text-amber-100 transition-colors hover:bg-amber-400/20 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Retry with deeper search →
-          </button>
+          ⚠ This answer may be incomplete — the agent ran out of its tool or token budget.
         </div>
 
         <div
@@ -133,18 +124,10 @@ if (!profile?.is_admin) {
         const errorEl        = document.getElementById("ask-error");
         const resultEl       = document.getElementById("ask-result");
         const budgetEl       = document.getElementById("ask-budget-warning");
-        const budgetTextEl   = document.getElementById("ask-budget-text");
-        const retryDeepBtn   = document.getElementById("ask-retry-deep");
         const answerEl       = document.getElementById("ask-answer");
         const sourcesEl      = document.getElementById("ask-sources-section");
         const citationsEl    = document.getElementById("ask-citations");
         const traceEl        = document.getElementById("ask-trace");
-
-        // The question + depth used for the most recent run. The retry-deep
-        // button reuses these to re-submit at higher budget when the agent
-        // signals budget_exhausted.
-        let lastQuestion = "";
-        let lastDepth = "normal";
 
         // Phased loading feedback — message advances based on elapsed
         // seconds. Thresholds are tuned to roughly track the typical agent
@@ -162,10 +145,10 @@ if (!profile?.is_admin) {
         let loadingTimer = null;
         let loadingStartedAt = 0;
 
-        function startLoadingFeedback(depth) {
+        function startLoadingFeedback() {
           loadingStartedAt = Date.now();
           loadingTextEl.textContent = LOADING_PHASES[0].text;
-          loadingTimeEl.textContent = depth === "deep" ? "deep · 0s" : "0s";
+          loadingTimeEl.textContent = "0s";
           // Update twice a second — cheap, and elapsed counter looks live.
           loadingTimer = setInterval(() => {
             const sec = Math.floor((Date.now() - loadingStartedAt) / 1000);
@@ -174,8 +157,7 @@ if (!profile?.is_admin) {
               if (sec >= p.atSec) phaseText = p.text;
             }
             loadingTextEl.textContent = phaseText;
-            loadingTimeEl.textContent =
-              depth === "deep" ? `deep · ${sec}s` : `${sec}s`;
+            loadingTimeEl.textContent = `${sec}s`;
           }, 500);
         }
 
@@ -348,23 +330,7 @@ if (!profile?.is_admin) {
           hide(loadingEl);
           hide(errorEl);
 
-          if (data.budget_exhausted) {
-            show(budgetEl);
-            if (lastDepth === "deep") {
-              // Already retried at deep; further escalation isn't available.
-              budgetTextEl.textContent =
-                "⚠ This answer may be incomplete — even at deeper search the agent ran out of budget.";
-              hide(retryDeepBtn);
-            } else {
-              budgetTextEl.textContent =
-                "⚠ This answer may be incomplete — the agent ran out of its tool or token budget.";
-              show(retryDeepBtn);
-              retryDeepBtn.disabled = false;
-            }
-          } else {
-            hide(budgetEl);
-            hide(retryDeepBtn);
-          }
+          if (data.budget_exhausted) show(budgetEl); else hide(budgetEl);
 
           renderAnswer(data.answer || "");
 
@@ -377,24 +343,51 @@ if (!profile?.is_admin) {
             hide(sourcesEl);
           }
 
-          traceEl.textContent = data.tool_trace_id
-            ? `trace: ${data.tool_trace_id}`
-            : "";
+          traceEl.textContent = buildTraceLine(data);
 
           show(resultEl);
         }
 
-        async function ask(question, depth = "normal") {
+        // Compact "K" formatter for token counts. 4096 → "4.1K", 580 → "580".
+        function formatTokens(n) {
+          if (typeof n !== "number" || !isFinite(n) || n < 0) return "";
+          if (n < 1000) return String(n);
+          return (n / 1000).toFixed(1).replace(/\.0$/, "") + "K";
+        }
+
+        function formatCost(usd) {
+          if (typeof usd !== "number" || !isFinite(usd)) return "";
+          // Four decimal places: enough resolution for sub-cent runs without
+          // pretending we know better. Strip trailing zeros for readability.
+          return "$" + usd.toFixed(4).replace(/0+$/, "").replace(/\.$/, ".0");
+        }
+
+        // Build the small grey "trace + usage" footer line that appears under
+        // the citations. Pieces are omitted gracefully when the field is
+        // missing (the backend drops cost_usd when the model isn't priced).
+        function buildTraceLine(data) {
+          const parts = [];
+          if (data.tool_trace_id) parts.push(`trace: ${data.tool_trace_id}`);
+          const u = data.usage;
+          if (u) {
+            if (typeof u.cost_usd === "number") parts.push(formatCost(u.cost_usd));
+            const tok =
+              formatTokens(u.input_tokens) + " in / " + formatTokens(u.output_tokens) + " out";
+            parts.push(tok);
+            if (u.model) parts.push(u.model);
+          }
+          return parts.join(" · ");
+        }
+
+        async function ask(question) {
           if (!BASE) {
             show(errorEl);
             return;
           }
-          lastQuestion = question;
-          lastDepth = depth;
           hide(resultEl);
           hide(errorEl);
           show(loadingEl);
-          startLoadingFeedback(depth);
+          startLoadingFeedback();
           setSubmitting(true);
           try {
             const res = await fetch(`${BASE.replace(/\/$/, "")}/v1/wcs/ask`, {
@@ -405,7 +398,7 @@ if (!profile?.is_admin) {
                   ? { Authorization: `Bearer ${SESSION_TOKEN}` }
                   : {}),
               },
-              body: JSON.stringify({ question, depth }),
+              body: JSON.stringify({ question }),
             });
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const json = await res.json();
@@ -426,14 +419,7 @@ if (!profile?.is_admin) {
           e.preventDefault();
           const q = input.value.trim();
           if (!q) return;
-          // Fresh submission from the form always starts at "normal" depth.
-          ask(q, "normal");
-        });
-
-        retryDeepBtn.addEventListener("click", () => {
-          if (!lastQuestion) return;
-          retryDeepBtn.disabled = true;
-          ask(lastQuestion, "deep");
+          ask(q);
         });
 
         // Cmd/Ctrl-Enter submits.
