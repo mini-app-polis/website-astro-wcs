@@ -1,3 +1,10 @@
+## [1.13.2](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.13.1...v1.13.2) (2026-05-11)
+
+
+### Bug Fixes
+
+* remove caching ([7c2745e](https://github.com/mini-app-polis/website-astro-wcs/commit/7c2745e8d95502eace345fa6510dc58c4f0d331f))
+
 ## [1.13.1](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.13.0...v1.13.1) (2026-05-11)
 
 
