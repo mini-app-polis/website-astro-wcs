@@ -365,21 +365,14 @@ if (!profile?.is_admin) {
         // Build the small grey "trace + usage" footer line that appears under
         // the citations. Pieces are omitted gracefully when the field is
         // missing (the backend drops cost_usd when the model isn't priced).
-        // When prompt caching is active, ``input_tokens`` is the *fresh* input
-        // count only; cache reads are shown separately as "(+Xk cached)" so
-        // the in-count doesn't appear to have dropped post-caching.
         function buildTraceLine(data) {
           const parts = [];
           if (data.tool_trace_id) parts.push(`trace: ${data.tool_trace_id}`);
           const u = data.usage;
           if (u) {
             if (typeof u.cost_usd === "number") parts.push(formatCost(u.cost_usd));
-            let tok = formatTokens(u.input_tokens);
-            const cached = u.cache_read_tokens;
-            if (typeof cached === "number" && cached > 0) {
-              tok += " (+" + formatTokens(cached) + " cached)";
-            }
-            tok += " in / " + formatTokens(u.output_tokens) + " out";
+            const tok =
+              formatTokens(u.input_tokens) + " in / " + formatTokens(u.output_tokens) + " out";
             parts.push(tok);
             if (u.model) parts.push(u.model);
           }
