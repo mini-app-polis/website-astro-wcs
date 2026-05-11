@@ -64,8 +64,19 @@ if (!profile?.is_admin) {
         </div>
       </form>
 
-      <div id="ask-loading" class="hidden mt-8 text-sm text-slate-500">
-        Thinking…
+      <div
+        id="ask-loading"
+        class="hidden mt-8 flex items-center gap-3 text-sm text-slate-400"
+        role="status"
+        aria-live="polite"
+      >
+        <span class="inline-flex items-center gap-1" aria-hidden="true">
+          <span class="h-1.5 w-1.5 rounded-full bg-accent/80 animate-pulse" style="animation-delay: 0ms;"></span>
+          <span class="h-1.5 w-1.5 rounded-full bg-accent/80 animate-pulse" style="animation-delay: 200ms;"></span>
+          <span class="h-1.5 w-1.5 rounded-full bg-accent/80 animate-pulse" style="animation-delay: 400ms;"></span>
+        </span>
+        <span id="ask-loading-text">Thinking…</span>
+        <span id="ask-loading-elapsed" class="ml-auto font-mono text-xs text-slate-600"></span>
       </div>
       <div id="ask-error" class="hidden mt-8 rounded-xl border border-red-500/20 bg-red-500/5 px-4 py-3 text-sm text-red-300">
         Something went wrong. Try again, or check the API status.
@@ -74,9 +85,18 @@ if (!profile?.is_admin) {
       <article id="ask-result" class="hidden mt-8 space-y-6">
         <div
           id="ask-budget-warning"
-          class="hidden rounded-xl border border-amber-500/25 bg-amber-500/5 px-4 py-3 text-xs text-amber-200 font-mono"
+          class="hidden rounded-xl border border-amber-500/25 bg-amber-500/5 px-4 py-3 text-xs text-amber-200 font-mono flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
         >
-          ⚠ This answer may be incomplete — the agent ran out of its tool or token budget.
+          <span id="ask-budget-text">
+            ⚠ This answer may be incomplete — the agent ran out of its tool or token budget.
+          </span>
+          <button
+            id="ask-retry-deep"
+            type="button"
+            class="hidden self-start sm:self-auto shrink-0 inline-flex items-center gap-1.5 rounded-full border border-amber-400/40 bg-amber-400/10 px-4 py-1.5 font-semibold text-amber-100 transition-colors hover:bg-amber-400/20 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Retry with deeper search →
+          </button>
         </div>
 
         <div
@@ -103,23 +123,101 @@ if (!profile?.is_admin) {
         const SESSION_TOKEN =
           document.querySelector("[data-ask-app]")?.dataset.sessionToken ?? "";
 
-        const form        = document.getElementById("ask-form");
-        const input       = document.getElementById("ask-input");
-        const submitBtn   = document.getElementById("ask-submit");
-        const submitLabel = document.getElementById("ask-submit-label");
-        const loadingEl   = document.getElementById("ask-loading");
-        const errorEl     = document.getElementById("ask-error");
-        const resultEl    = document.getElementById("ask-result");
-        const budgetEl    = document.getElementById("ask-budget-warning");
-        const answerEl    = document.getElementById("ask-answer");
-        const sourcesEl   = document.getElementById("ask-sources-section");
-        const citationsEl = document.getElementById("ask-citations");
-        const traceEl     = document.getElementById("ask-trace");
+        const form           = document.getElementById("ask-form");
+        const input          = document.getElementById("ask-input");
+        const submitBtn      = document.getElementById("ask-submit");
+        const submitLabel    = document.getElementById("ask-submit-label");
+        const loadingEl      = document.getElementById("ask-loading");
+        const loadingTextEl  = document.getElementById("ask-loading-text");
+        const loadingTimeEl  = document.getElementById("ask-loading-elapsed");
+        const errorEl        = document.getElementById("ask-error");
+        const resultEl       = document.getElementById("ask-result");
+        const budgetEl       = document.getElementById("ask-budget-warning");
+        const budgetTextEl   = document.getElementById("ask-budget-text");
+        const retryDeepBtn   = document.getElementById("ask-retry-deep");
+        const answerEl       = document.getElementById("ask-answer");
+        const sourcesEl      = document.getElementById("ask-sources-section");
+        const citationsEl    = document.getElementById("ask-citations");
+        const traceEl        = document.getElementById("ask-trace");
 
-        const TYPE_LABEL = { note: "Note", chunk: "Transcript" };
+        // The question + depth used for the most recent run. The retry-deep
+        // button reuses these to re-submit at higher budget when the agent
+        // signals budget_exhausted.
+        let lastQuestion = "";
+        let lastDepth = "normal";
+
+        // Phased loading feedback — message advances based on elapsed
+        // seconds. Thresholds are tuned to roughly track the typical agent
+        // sequence (search → read → synthesize). They aren't tied to actual
+        // backend events, but they describe what the agent is genuinely
+        // doing most of the time, so they're honest by construction.
+        const LOADING_PHASES = [
+          { atSec: 0,  text: "Thinking…" },
+          { atSec: 3,  text: "Searching your notes…" },
+          { atSec: 8,  text: "Reading lesson details…" },
+          { atSec: 18, text: "Pulling related sessions…" },
+          { atSec: 35, text: "Synthesizing across notes…" },
+          { atSec: 70, text: "Still working — complex questions take longer…" },
+        ];
+        let loadingTimer = null;
+        let loadingStartedAt = 0;
+
+        function startLoadingFeedback(depth) {
+          loadingStartedAt = Date.now();
+          loadingTextEl.textContent = LOADING_PHASES[0].text;
+          loadingTimeEl.textContent = depth === "deep" ? "deep · 0s" : "0s";
+          // Update twice a second — cheap, and elapsed counter looks live.
+          loadingTimer = setInterval(() => {
+            const sec = Math.floor((Date.now() - loadingStartedAt) / 1000);
+            let phaseText = LOADING_PHASES[0].text;
+            for (const p of LOADING_PHASES) {
+              if (sec >= p.atSec) phaseText = p.text;
+            }
+            loadingTextEl.textContent = phaseText;
+            loadingTimeEl.textContent =
+              depth === "deep" ? `deep · ${sec}s` : `${sec}s`;
+          }, 500);
+        }
+
+        function stopLoadingFeedback() {
+          if (loadingTimer !== null) {
+            clearInterval(loadingTimer);
+            loadingTimer = null;
+          }
+        }
+
+        // Mirrors the constants used by /notes (notes browser) so citation
+        // cards label sessions the same way users already recognize.
+        const SESSION_LABELS = {
+          private_lesson: "Private lesson",
+          group_class:    "Group class",
+          other:          "Other",
+        };
+
+        const TYPE_BADGE = {
+          private_lesson: "bg-violet-500/10 text-violet-300 border-violet-500/25",
+          group_class:    "bg-sky-500/10 text-sky-300 border-sky-500/25",
+          other:          "bg-slate-500/10 text-slate-400 border-slate-500/25",
+        };
+
+        // Fallback badge styling for chunk citations that have no linked note
+        // (no session_type to derive from) — labelled "Transcript" instead.
+        const TRANSCRIPT_BADGE_CLS =
+          "bg-slate-500/10 text-slate-400 border-slate-500/25";
 
         const show = el => el.classList.remove("hidden");
         const hide = el => el.classList.add("hidden");
+
+        // Same as /notes — primary "with" label depends on session_type.
+        function noteInstructors(c) {
+          return c.instructors?.length ? c.instructors.join(" + ") : "";
+        }
+        function noteWith(c) {
+          if (c.session_type === "private_lesson") {
+            return c.students?.length ? c.students.join(" + ") : "";
+          }
+          return c.organization || "";
+        }
 
         function setSubmitting(on) {
           submitBtn.disabled = on || !input.value.trim();
@@ -159,47 +257,87 @@ if (!profile?.is_admin) {
         function renderCitation(c) {
           const li = document.createElement("li");
           li.id = `citation-${c.marker}`;
-          li.className =
-            "flex items-start gap-3 rounded-lg border border-white/8 bg-surface/40 px-4 py-3";
+          li.className = "flex items-start gap-3";
 
+          // Marker badge (anchor target for inline [N] markers in the answer).
           const marker = document.createElement("span");
           marker.className =
-            "shrink-0 inline-flex items-center justify-center h-6 w-6 rounded-full border border-accent/30 bg-accent/10 text-accent font-mono text-xs";
+            "mt-3 shrink-0 inline-flex items-center justify-center h-6 w-6 rounded-full border border-accent/30 bg-accent/10 text-accent font-mono text-xs";
           marker.textContent = String(c.marker);
           li.appendChild(marker);
 
-          const body = document.createElement("div");
-          body.className = "flex-1 min-w-0 space-y-1";
+          // Card body — wrap in <a> when we have a source_url so the whole
+          // card is clickable (matches the /notes browser cards).
+          const linkable = !!c.source_url;
+          const body = document.createElement(linkable ? "a" : "div");
+          if (linkable) body.href = c.source_url;
+          body.className =
+            "flex-1 min-w-0 flex flex-col gap-2 rounded-lg border border-white/8 bg-surface/40 px-4 py-3" +
+            (linkable
+              ? " transition-colors hover:border-accent/25 hover:bg-surface"
+              : "");
 
-          const meta = document.createElement("div");
-          meta.className = "flex items-center gap-2 text-[0.65rem] font-mono text-slate-500 uppercase tracking-widest";
-          const typeLabel = document.createElement("span");
-          typeLabel.textContent = TYPE_LABEL[c.type] || c.type;
-          meta.appendChild(typeLabel);
-          if (c.session_date) {
-            const dot = document.createElement("span");
-            dot.textContent = "·";
-            dot.className = "text-slate-700";
-            meta.appendChild(dot);
-            const date = document.createElement("span");
-            date.textContent = formatDate(c.session_date);
-            meta.appendChild(date);
-          }
-          body.appendChild(meta);
+          // Top row: date (left) + session-type badge (right). Chunk citations
+          // without a linked note have no session_type → render as "Transcript".
+          const topRow = document.createElement("div");
+          topRow.className = "flex items-center justify-between gap-2";
 
-          const titleText = c.title || "Untitled";
-          if (c.source_url) {
-            const link = document.createElement("a");
-            link.href = c.source_url;
-            link.className =
-              "block text-sm text-slate-100 hover:text-accent transition-colors";
-            link.textContent = titleText;
-            body.appendChild(link);
+          const dateEl = document.createElement("span");
+          dateEl.className = "font-mono text-xs text-slate-200 font-medium";
+          dateEl.textContent = c.session_date ? formatDate(c.session_date) : "";
+
+          let badgeText, badgeCls;
+          if (c.session_type) {
+            badgeText = SESSION_LABELS[c.session_type] || c.session_type;
+            badgeCls = TYPE_BADGE[c.session_type] || TYPE_BADGE.other;
           } else {
-            const span = document.createElement("span");
-            span.className = "block text-sm text-slate-300";
-            span.textContent = titleText;
-            body.appendChild(span);
+            badgeText = "Transcript";
+            badgeCls = TRANSCRIPT_BADGE_CLS;
+          }
+          const badge = document.createElement("span");
+          badge.className =
+            `inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-mono ${badgeCls}`;
+          badge.textContent = badgeText;
+
+          topRow.appendChild(dateEl);
+          topRow.appendChild(badge);
+          body.appendChild(topRow);
+
+          // Primary label (students for private lessons, otherwise org) +
+          // "[with instructors]" suffix — same as /notes.
+          const primaryLabel = noteWith(c);
+          const instructors = noteInstructors(c);
+          if (primaryLabel) {
+            const primaryEl = document.createElement("p");
+            primaryEl.className = "text-sm font-medium text-slate-100 leading-snug";
+
+            const nameSpan = document.createElement("span");
+            nameSpan.textContent = primaryLabel;
+            primaryEl.appendChild(nameSpan);
+
+            if (instructors) {
+              const withSpan = document.createElement("span");
+              withSpan.className = "font-normal text-slate-500";
+              withSpan.textContent = " [with " + instructors + "]";
+              primaryEl.appendChild(withSpan);
+            }
+            body.appendChild(primaryEl);
+          }
+
+          // Title row — dimmed when there's a primary label above (acts as a
+          // sub-label), primary-styled when it's the only thing we have to
+          // show. Only fall back to "Untitled" when we have *nothing* — date,
+          // primary label, and title are all empty.
+          const rawTitle = (c.title || "").trim();
+          const titleText =
+            rawTitle || (primaryLabel || c.session_date ? "" : "Untitled");
+          if (titleText) {
+            const titleEl = document.createElement("p");
+            titleEl.className = primaryLabel
+              ? "text-sm text-slate-400 leading-snug"
+              : "text-sm font-medium text-slate-100 leading-snug";
+            titleEl.textContent = titleText;
+            body.appendChild(titleEl);
           }
 
           li.appendChild(body);
@@ -210,7 +348,23 @@ if (!profile?.is_admin) {
           hide(loadingEl);
           hide(errorEl);
 
-          if (data.budget_exhausted) show(budgetEl); else hide(budgetEl);
+          if (data.budget_exhausted) {
+            show(budgetEl);
+            if (lastDepth === "deep") {
+              // Already retried at deep; further escalation isn't available.
+              budgetTextEl.textContent =
+                "⚠ This answer may be incomplete — even at deeper search the agent ran out of budget.";
+              hide(retryDeepBtn);
+            } else {
+              budgetTextEl.textContent =
+                "⚠ This answer may be incomplete — the agent ran out of its tool or token budget.";
+              show(retryDeepBtn);
+              retryDeepBtn.disabled = false;
+            }
+          } else {
+            hide(budgetEl);
+            hide(retryDeepBtn);
+          }
 
           renderAnswer(data.answer || "");
 
@@ -230,14 +384,17 @@ if (!profile?.is_admin) {
           show(resultEl);
         }
 
-        async function ask(question) {
+        async function ask(question, depth = "normal") {
           if (!BASE) {
             show(errorEl);
             return;
           }
+          lastQuestion = question;
+          lastDepth = depth;
           hide(resultEl);
           hide(errorEl);
           show(loadingEl);
+          startLoadingFeedback(depth);
           setSubmitting(true);
           try {
             const res = await fetch(`${BASE.replace(/\/$/, "")}/v1/wcs/ask`, {
@@ -248,7 +405,7 @@ if (!profile?.is_admin) {
                   ? { Authorization: `Bearer ${SESSION_TOKEN}` }
                   : {}),
               },
-              body: JSON.stringify({ question }),
+              body: JSON.stringify({ question, depth }),
             });
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const json = await res.json();
@@ -258,6 +415,7 @@ if (!profile?.is_admin) {
             hide(resultEl);
             show(errorEl);
           } finally {
+            stopLoadingFeedback();
             setSubmitting(false);
           }
         }
@@ -268,7 +426,14 @@ if (!profile?.is_admin) {
           e.preventDefault();
           const q = input.value.trim();
           if (!q) return;
-          ask(q);
+          // Fresh submission from the form always starts at "normal" depth.
+          ask(q, "normal");
+        });
+
+        retryDeepBtn.addEventListener("click", () => {
+          if (!lastQuestion) return;
+          retryDeepBtn.disabled = true;
+          ask(lastQuestion, "deep");
         });
 
         // Cmd/Ctrl-Enter submits.
