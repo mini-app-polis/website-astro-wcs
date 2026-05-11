@@ -1,3 +1,10 @@
+# [1.13.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.12.0...v1.13.0) (2026-05-11)
+
+
+### Features
+
+* render cost/tokens in ask trace footer ([02464e1](https://github.com/mini-app-polis/website-astro-wcs/commit/02464e17fa92b9b1091ca5c67c38e99d6c4ca4f2))
+
 # [1.12.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.11.1...v1.12.0) (2026-05-11)
 
 
