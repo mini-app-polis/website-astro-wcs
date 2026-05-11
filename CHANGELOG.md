@@ -1,3 +1,10 @@
+## [1.13.1](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.13.0...v1.13.1) (2026-05-11)
+
+
+### Bug Fixes
+
+* adding price visibility ([8fe581b](https://github.com/mini-app-polis/website-astro-wcs/commit/8fe581b9e85ef386c93c034069ecc224256a7dd2))
+
 # [1.13.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.12.0...v1.13.0) (2026-05-11)
 
 
