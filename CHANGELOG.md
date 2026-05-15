@@ -1,3 +1,10 @@
+# [1.14.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.13.2...v1.14.0) (2026-05-15)
+
+
+### Features
+
+* admin menu restructure ([6b1d052](https://github.com/mini-app-polis/website-astro-wcs/commit/6b1d0527e1b84ed51345de1b32dd0328a02aaa32))
+
 ## [1.13.2](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.13.1...v1.13.2) (2026-05-11)
 
 
