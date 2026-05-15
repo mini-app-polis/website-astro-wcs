@@ -1,3 +1,10 @@
+## [1.14.3](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.14.2...v1.14.3) (2026-05-15)
+
+
+### Bug Fixes
+
+* admin menu ([63e74b5](https://github.com/mini-app-polis/website-astro-wcs/commit/63e74b5fae088ed242161b3a29aa56ad6663dee7))
+
 ## [1.14.2](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.14.1...v1.14.2) (2026-05-15)
 
 
