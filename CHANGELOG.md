@@ -1,3 +1,10 @@
+# [1.15.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.14.3...v1.15.0) (2026-05-15)
+
+
+### Features
+
+* adding not data editing ([c99a713](https://github.com/mini-app-polis/website-astro-wcs/commit/c99a7135a0bf20968d8916e64df7e8fea2df236a))
+
 ## [1.14.3](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.14.2...v1.14.3) (2026-05-15)
 
 
