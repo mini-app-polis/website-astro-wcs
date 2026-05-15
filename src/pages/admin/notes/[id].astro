@@ -1,0 +1,366 @@
+---
+import Page from "../../../layouts/Page.astro";
+import {
+  getAuthenticatedUserId,
+  getClerkUserData,
+  getSessionToken,
+  upsertWcsProfile,
+} from "../../../lib/auth";
+import { getApiBase } from "../../../lib/api";
+
+const runtime = Astro.locals.runtime;
+const env = runtime?.env as Record<string, string> | undefined;
+const apiBase = getApiBase(env?.KAIANO_API_BASE_URL);
+
+const userId = await getAuthenticatedUserId(Astro.request, env);
+const sessionToken = getSessionToken(Astro.request);
+
+if (!userId || !sessionToken) {
+  return Astro.redirect("/sign-in");
+}
+
+const clerkUserData = await getClerkUserData(userId, env);
+const profile = apiBase
+  ? await upsertWcsProfile(sessionToken, clerkUserData.email, clerkUserData.displayName, apiBase)
+  : null;
+
+if (!profile?.is_admin) {
+  return Astro.redirect("/");
+}
+
+const { id } = Astro.params;
+---
+
+<Page title="Edit Note" subtitle="Update metadata, people, and visibility">
+  <div
+    class="space-y-6"
+    data-admin-note-edit
+    data-api-base={apiBase}
+    data-session-token={sessionToken}
+    data-note-id={id}
+  >
+    <div>
+      <a href="/admin/notes" class="text-xs text-slate-500 hover:text-slate-300 transition-colors">
+        ← Manage Notes
+      </a>
+    </div>
+
+    <div id="edit-loading" class="text-sm text-slate-500">Loading…</div>
+    <div id="edit-error" class="text-sm text-red-300 hidden"></div>
+
+    <form id="edit-form" class="hidden space-y-8">
+      <!-- Metadata section -->
+      <section class="space-y-4">
+        <h2 class="text-xs font-mono uppercase tracking-widest text-slate-500">Metadata</h2>
+
+        <div class="grid gap-4 sm:grid-cols-2">
+          <label class="block">
+            <span class="block text-xs font-mono text-slate-400 mb-1.5">Date</span>
+            <input
+              type="date"
+              id="field-session-date"
+              class="w-full rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2 text-sm text-slate-100 outline-none focus:border-accent/50 transition-colors"
+            />
+          </label>
+
+          <label class="block">
+            <span class="block text-xs font-mono text-slate-400 mb-1.5">Type</span>
+            <select
+              id="field-session-type"
+              class="w-full rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2 text-sm text-slate-100 outline-none focus:border-accent/50 transition-colors"
+            >
+              <option value="private_lesson">Private lesson</option>
+              <option value="group_class">Group class</option>
+              <option value="other">Other</option>
+            </select>
+          </label>
+        </div>
+
+        <label class="block">
+          <span class="block text-xs font-mono text-slate-400 mb-1.5">Title</span>
+          <input
+            type="text"
+            id="field-title"
+            class="w-full rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2 text-sm text-slate-100 outline-none focus:border-accent/50 transition-colors"
+          />
+        </label>
+
+        <label class="block">
+          <span class="block text-xs font-mono text-slate-400 mb-1.5">Organization</span>
+          <input
+            type="text"
+            id="field-organization"
+            placeholder="e.g. SWINGesota"
+            class="w-full rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 outline-none focus:border-accent/50 transition-colors"
+          />
+        </label>
+      </section>
+
+      <!-- People section -->
+      <section class="space-y-4">
+        <h2 class="text-xs font-mono uppercase tracking-widest text-slate-500">People</h2>
+
+        <div>
+          <span class="block text-xs font-mono text-slate-400 mb-1.5">Students</span>
+          <div data-chips="students" class="flex flex-wrap items-center gap-2"></div>
+          <div class="mt-2 flex items-center gap-2">
+            <input
+              type="text"
+              data-chip-input="students"
+              placeholder="Add a student and press Enter"
+              class="flex-1 rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 outline-none focus:border-accent/50 transition-colors"
+            />
+            <button
+              type="button"
+              data-chip-add="students"
+              class="rounded-lg border border-white/10 px-3 py-2 text-xs font-mono text-slate-400 hover:border-accent/50 hover:text-accent transition-colors"
+            >
+              Add
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <span class="block text-xs font-mono text-slate-400 mb-1.5">Instructors</span>
+          <div data-chips="instructors" class="flex flex-wrap items-center gap-2"></div>
+          <div class="mt-2 flex items-center gap-2">
+            <input
+              type="text"
+              data-chip-input="instructors"
+              placeholder="Add an instructor and press Enter"
+              class="flex-1 rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 outline-none focus:border-accent/50 transition-colors"
+            />
+            <button
+              type="button"
+              data-chip-add="instructors"
+              class="rounded-lg border border-white/10 px-3 py-2 text-xs font-mono text-slate-400 hover:border-accent/50 hover:text-accent transition-colors"
+            >
+              Add
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Visibility section -->
+      <section class="space-y-4">
+        <h2 class="text-xs font-mono uppercase tracking-widest text-slate-500">Visibility</h2>
+
+        <label class="flex items-center gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            id="field-is-default-visible"
+            class="h-4 w-4 rounded border-white/10 bg-white/[0.02] text-accent focus:ring-accent/50"
+          />
+          <span class="text-sm text-slate-300">Visible to all signed-in users by default</span>
+        </label>
+      </section>
+
+      <!-- Actions -->
+      <div class="flex items-center gap-3 pt-2">
+        <button
+          type="button"
+          id="save-btn"
+          class="rounded-full bg-accent px-5 py-2 font-mono text-xs font-semibold text-canvas transition-opacity hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          Save changes
+        </button>
+        <a
+          href="/admin/notes"
+          class="rounded-full border border-white/10 px-5 py-2 font-mono text-xs text-slate-400 transition-colors hover:border-white/20 hover:text-slate-100"
+        >
+          Cancel
+        </a>
+        <p id="save-status" class="text-xs font-mono text-slate-400 hidden"></p>
+      </div>
+    </form>
+  </div>
+</Page>
+
+<script type="module">
+  const root = document.querySelector("[data-admin-note-edit]");
+  const API_BASE = root?.dataset.apiBase ?? "";
+  const SESSION_TOKEN = root?.dataset.sessionToken ?? "";
+  const NOTE_ID = root?.dataset.noteId ?? "";
+  const base = API_BASE.replace(/\/$/, "");
+  const H = SESSION_TOKEN
+    ? { Authorization: `Bearer ${SESSION_TOKEN}`, "Content-Type": "application/json" }
+    : { "Content-Type": "application/json" };
+
+  const loadingEl = document.getElementById("edit-loading");
+  const errorEl   = document.getElementById("edit-error");
+  const formEl    = document.getElementById("edit-form");
+  const saveBtn   = document.getElementById("save-btn");
+  const saveStat  = document.getElementById("save-status");
+
+  const dateEl   = document.getElementById("field-session-date");
+  const typeEl   = document.getElementById("field-session-type");
+  const titleEl  = document.getElementById("field-title");
+  const orgEl    = document.getElementById("field-organization");
+  const visibleEl = document.getElementById("field-is-default-visible");
+
+  // Local state. Arrays are edited via chips and serialized on save.
+  const state = {
+    students: [],
+    instructors: [],
+  };
+
+  function showError(msg) {
+    if (!errorEl) return;
+    errorEl.textContent = msg;
+    errorEl.classList.remove("hidden");
+  }
+
+  function clearError() {
+    if (!errorEl) return;
+    errorEl.classList.add("hidden");
+    errorEl.textContent = "";
+  }
+
+  function renderChips(field) {
+    const wrap = document.querySelector(`[data-chips="${field}"]`);
+    if (!wrap) return;
+    wrap.innerHTML = "";
+    state[field].forEach((value, idx) => {
+      const chip = document.createElement("span");
+      chip.className =
+        "inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-slate-200";
+
+      const text = document.createElement("span");
+      text.textContent = value;
+      chip.appendChild(text);
+
+      const x = document.createElement("button");
+      x.type = "button";
+      x.setAttribute("aria-label", `Remove ${value}`);
+      x.className = "ml-1 text-slate-500 hover:text-red-400 transition-colors";
+      x.textContent = "×";
+      x.addEventListener("click", () => {
+        state[field].splice(idx, 1);
+        renderChips(field);
+      });
+      chip.appendChild(x);
+
+      wrap.appendChild(chip);
+    });
+  }
+
+  function wireChipInput(field) {
+    const input = document.querySelector(`[data-chip-input="${field}"]`);
+    const addBtn = document.querySelector(`[data-chip-add="${field}"]`);
+    if (!input || !addBtn) return;
+    const add = () => {
+      const v = input.value.trim();
+      if (!v) return;
+      if (!state[field].includes(v)) state[field].push(v);
+      input.value = "";
+      renderChips(field);
+    };
+    addBtn.addEventListener("click", add);
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === ",") {
+        e.preventDefault();
+        add();
+      }
+    });
+  }
+
+  async function loadNote() {
+    if (!base) {
+      showError("API base URL not configured.");
+      loadingEl?.classList.add("hidden");
+      return;
+    }
+    if (!NOTE_ID) {
+      showError("Missing note id.");
+      loadingEl?.classList.add("hidden");
+      return;
+    }
+    try {
+      const res = await fetch(`${base}/v1/wcs/notes/${NOTE_ID}`, { headers: H });
+      if (!res.ok) {
+        showError(`Could not load note (HTTP ${res.status}).`);
+        loadingEl?.classList.add("hidden");
+        return;
+      }
+      const json = await res.json();
+      const note = json?.data ?? null;
+      if (!note) {
+        showError("Note not found.");
+        loadingEl?.classList.add("hidden");
+        return;
+      }
+
+      // Populate fields
+      dateEl.value      = note.session_date ?? "";
+      typeEl.value      = note.session_type ?? "private_lesson";
+      titleEl.value     = note.title ?? "";
+      orgEl.value       = note.organization ?? "";
+      visibleEl.checked = !!note.is_default_visible;
+
+      state.students    = Array.isArray(note.students) ? [...note.students] : [];
+      state.instructors = Array.isArray(note.instructors) ? [...note.instructors] : [];
+      renderChips("students");
+      renderChips("instructors");
+
+      loadingEl?.classList.add("hidden");
+      formEl?.classList.remove("hidden");
+    } catch (err) {
+      showError(String(err?.message ?? err));
+      loadingEl?.classList.add("hidden");
+    }
+  }
+
+  async function save() {
+    if (!base || !NOTE_ID) return;
+    clearError();
+    saveBtn.disabled = true;
+    saveStat.textContent = "Saving…";
+    saveStat.classList.remove("hidden");
+    saveStat.classList.remove("text-red-300", "text-teal-300");
+    saveStat.classList.add("text-slate-400");
+
+    const body = {
+      session_date: dateEl.value || null,
+      session_type: typeEl.value || null,
+      title: titleEl.value.trim(),
+      organization: orgEl.value.trim(),
+      students: state.students,
+      instructors: state.instructors,
+      is_default_visible: !!visibleEl.checked,
+    };
+
+    try {
+      // NOTE: assumes backend exposes PATCH /v1/wcs/admin/notes/:id taking a
+      // partial body of the editable fields. If the actual endpoint differs,
+      // adjust the path / method / body shape here.
+      const res = await fetch(`${base}/v1/wcs/admin/notes/${NOTE_ID}`, {
+        method: "PATCH",
+        headers: H,
+        body: JSON.stringify(body),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const code = json?.error?.code ?? `HTTP ${res.status}`;
+        const msg  = json?.error?.message ?? "";
+        saveStat.classList.remove("text-slate-400");
+        saveStat.classList.add("text-red-300");
+        saveStat.textContent = msg ? `${code}: ${msg}` : code;
+        return;
+      }
+      saveStat.classList.remove("text-slate-400");
+      saveStat.classList.add("text-teal-300");
+      saveStat.textContent = "Saved.";
+    } catch (err) {
+      saveStat.classList.remove("text-slate-400");
+      saveStat.classList.add("text-red-300");
+      saveStat.textContent = String(err?.message ?? err);
+    } finally {
+      saveBtn.disabled = false;
+    }
+  }
+
+  wireChipInput("students");
+  wireChipInput("instructors");
+  saveBtn?.addEventListener("click", save);
+  loadNote();
+</script>

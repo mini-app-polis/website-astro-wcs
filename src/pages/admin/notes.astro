@@ -119,9 +119,17 @@ if (!profile?.is_admin) {
 
       left.append(visibleBadge, title);
 
+      const actions = document.createElement("div");
+      actions.className = "flex items-center gap-3 shrink-0";
+
+      const editLink = document.createElement("a");
+      editLink.href = `/admin/notes/${note.id}`;
+      editLink.className = "text-xs font-mono text-slate-400 hover:text-accent transition-colors";
+      editLink.textContent = "Edit";
+
       const toggleBtn = document.createElement("button");
       toggleBtn.type = "button";
-      toggleBtn.className = "text-xs font-mono text-slate-400 hover:text-accent transition-colors shrink-0";
+      toggleBtn.className = "text-xs font-mono text-slate-400 hover:text-accent transition-colors";
       toggleBtn.textContent = note.is_default_visible ? "Hide" : "Show";
 
       toggleBtn.addEventListener("click", async () => {
@@ -145,7 +153,8 @@ if (!profile?.is_admin) {
         toggleBtn.disabled = false;
       });
 
-      row.append(left, toggleBtn);
+      actions.append(editLink, toggleBtn);
+      row.append(left, actions);
       listEl.appendChild(row);
     }
   }
