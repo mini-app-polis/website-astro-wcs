@@ -1,6 +1,11 @@
 ---
 import { Show, UserButton } from "@clerk/astro/components";
-import { getAuthenticatedUserId, getSessionToken, getWcsProfile } from "../lib/auth";
+import {
+  getAuthenticatedUserId,
+  getClerkUserData,
+  getSessionToken,
+  upsertWcsProfile,
+} from "../lib/auth";
 import { getApiBase } from "../lib/api";
 
 const { pathname } = Astro.url;
@@ -12,8 +17,20 @@ const userId = await getAuthenticatedUserId(Astro.request, env);
 let isAdmin = false;
 try {
   const sessionToken = getSessionToken(Astro.request);
-  if (sessionToken && apiBase) {
-    isAdmin = (await getWcsProfile(sessionToken, apiBase))?.is_admin ?? false;
+  if (userId && sessionToken && apiBase) {
+    // Upsert (not just read) so the WCS profile row is guaranteed to exist on
+    // the very first request after sign-in. Previously Nav called the
+    // read-only getWcsProfile, which returned 404/null until some other page
+    // (e.g. /notes) had a chance to create the row — making the Admin link
+    // only appear after a reload.
+    const { email, displayName } = await getClerkUserData(userId, env);
+    const profile = await upsertWcsProfile(
+      sessionToken,
+      email,
+      displayName,
+      apiBase,
+    );
+    isAdmin = profile?.is_admin ?? false;
   }
 } catch {
   // Nav must never crash the page — isAdmin stays false
@@ -25,14 +42,13 @@ type NavItem = { href?: string; label: string; submenu?: SubItem[] };
 const moreSubmenu: SubItem[] = [
   { href: "/about", label: "About" },
   { href: "/notes", label: "Notes" },
-  // Ask is admin-only for now (page itself is also gated). Restore for all
-  // signed-in users once the agent is ready for general access.
-  ...(isAdmin
-    ? [
-        { href: "/notes/ask", label: "Ask" },
-        { href: "/notes/admin", label: "Notes (Admin)" },
-      ]
-    : []),
+];
+
+const adminSubmenu: SubItem[] = [
+  { href: "/admin/users", label: "Users" },
+  { href: "/admin/notes", label: "Notes" },
+  { href: "/notes/admin", label: "Notes (Admin)" },
+  { href: "/notes/ask", label: "Ask" },
 ];
 
 const items: NavItem[] = [
@@ -59,6 +75,14 @@ const items: NavItem[] = [
     label: "More",
     submenu: moreSubmenu,
   },
+  ...(isAdmin
+    ? [
+        {
+          label: "Admin",
+          submenu: adminSubmenu,
+        },
+      ]
+    : []),
 ];
 
 // Flatten all hrefs for the mobile drawer
@@ -68,8 +92,10 @@ const allLinks: SubItem[] = items.flatMap((item) =>
     : [{ href: item.href!, label: item.label }],
 );
 
-// Static sub-pages that should NOT cause their parent to highlight
-const STATIC_SUBPAGES = new Set(["/notes/admin"]);
+// Static sub-pages that should NOT cause their parent to highlight.
+// These are admin pages that live under /notes/* but belong to the Admin
+// submenu, so the More > Notes parent shouldn't activate when visiting them.
+const STATIC_SUBPAGES = new Set(["/notes/admin", "/notes/ask"]);
 
 function isActive(href: string) {
   if (href === "/") return pathname === "/";
@@ -150,14 +176,6 @@ function isActive(href: string) {
       </a>
     </Show>
     <Show when="signed-in">
-      {isAdmin && (
-        <a
-          href="/admin"
-          class="mr-3 inline-flex items-center rounded-full border border-white/10 px-3 py-1.5 font-mono text-xs uppercase tracking-widest text-slate-400 transition-colors hover:border-accent/50 hover:text-accent"
-        >
-          Admin
-        </a>
-      )}
       <UserButton />
     </Show>
   </div>
@@ -220,14 +238,6 @@ function isActive(href: string) {
       </a>
     </Show>
     <Show when="signed-in">
-      {isAdmin && (
-        <a
-          href="/admin"
-          class="mr-3 inline-flex items-center rounded-full border border-white/10 px-3 py-1.5 font-mono text-xs uppercase tracking-widest text-slate-400 transition-colors hover:border-accent/50 hover:text-accent"
-        >
-          Admin
-        </a>
-      )}
       <UserButton />
     </Show>
   </div>

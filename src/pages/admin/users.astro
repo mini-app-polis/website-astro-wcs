@@ -1,0 +1,250 @@
+---
+import Page from "../../layouts/Page.astro";
+import {
+  getAuthenticatedUserId,
+  getClerkUserData,
+  getSessionToken,
+  upsertWcsProfile,
+} from "../../lib/auth";
+import { getApiBase } from "../../lib/api";
+
+const runtime = Astro.locals.runtime;
+const env = runtime?.env as Record<string, string> | undefined;
+const apiBase = getApiBase(env?.KAIANO_API_BASE_URL);
+
+const userId = await getAuthenticatedUserId(Astro.request, env);
+const sessionToken = getSessionToken(Astro.request);
+
+if (!userId || !sessionToken) {
+  return Astro.redirect("/sign-in");
+}
+
+const clerkUserData = await getClerkUserData(userId, env);
+const profile = apiBase
+  ? await upsertWcsProfile(sessionToken, clerkUserData.email, clerkUserData.displayName, apiBase)
+  : null;
+
+if (!profile?.is_admin) {
+  return Astro.redirect("/");
+}
+---
+
+<Page title="Users" subtitle="WCS access management">
+  <div
+    class="space-y-4"
+    data-admin-users
+    data-api-base={apiBase}
+    data-session-token={sessionToken}
+  >
+    <p class="text-xs font-mono text-slate-500">Signed-in users and their WCS access level.</p>
+    <div id="users-loading" class="text-sm text-slate-500">Loading…</div>
+    <div id="users-error" class="text-sm text-slate-500 hidden">Could not load users.</div>
+    <div id="users-list" class="hidden space-y-2"></div>
+  </div>
+</Page>
+
+<script type="module">
+  const root = document.querySelector("[data-admin-users]");
+  const API_BASE = root?.dataset.apiBase ?? "";
+  const SESSION_TOKEN = root?.dataset.sessionToken ?? "";
+  const H = SESSION_TOKEN
+    ? { Authorization: `Bearer ${SESSION_TOKEN}`, "Content-Type": "application/json" }
+    : { "Content-Type": "application/json" };
+
+  const show = (el) => el?.classList.remove("hidden");
+  const hide = (el) => el?.classList.add("hidden");
+  const base = API_BASE.replace(/\/$/, "");
+  const SESSION_LABELS = {
+    private_lesson: "Private lesson",
+    group_class: "Group class",
+    other: "Other",
+  };
+
+  function noteLabel(note) {
+    const parts = [];
+    if (note.session_date) parts.push(note.session_date);
+    if (note.session_type) parts.push(SESSION_LABELS[note.session_type] || note.session_type);
+    if (note.session_type === "private_lesson") {
+      if (note.students?.length) parts.push(note.students.join(" + "));
+    } else {
+      if (note.organization) parts.push(note.organization);
+    }
+    if (note.instructors?.length) parts.push("w/ " + note.instructors.join(" + "));
+    if (note.title) parts.push(note.title);
+    return parts.join(" · ") || note.id;
+  }
+
+  function pill(text, color = "slate") {
+    const s = document.createElement("span");
+    s.className = `inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-mono bg-${color}-500/10 text-${color}-300 border-${color}-500/25`;
+    s.textContent = text;
+    return s;
+  }
+
+  let allUsers = [];
+  let grantsPanel = null;
+
+  async function loadUsers() {
+    const loadEl = document.getElementById("users-loading");
+    const errEl = document.getElementById("users-error");
+    const listEl = document.getElementById("users-list");
+    try {
+      const res = await fetch(`${base}/v1/wcs/admin/users`, { headers: H });
+      if (!res.ok) throw new Error("bad response");
+      const json = await res.json();
+      allUsers = json.data ?? [];
+      hide(loadEl);
+      renderUsers(listEl);
+      show(listEl);
+    } catch {
+      hide(loadEl);
+      show(errEl);
+    }
+  }
+
+  function renderUsers(listEl) {
+    listEl.innerHTML = "";
+    if (allUsers.length === 0) {
+      listEl.innerHTML = `<p class="text-sm text-slate-500">No users yet.</p>`;
+      return;
+    }
+    for (const user of allUsers) {
+      const row = document.createElement("div");
+      row.className = "flex items-center justify-between gap-4 rounded-xl border border-white/8 bg-surface/60 px-4 py-3";
+
+      const left = document.createElement("div");
+      left.className = "min-w-0";
+      const name = document.createElement("p");
+      name.className = "text-sm font-medium text-slate-100 truncate";
+      name.textContent = user.display_name || user.email || user.user_id;
+      const email = document.createElement("p");
+      email.className = "text-xs text-slate-500 truncate font-mono";
+      email.textContent = user.email || user.user_id;
+      left.append(name, email);
+
+      const right = document.createElement("div");
+      right.className = "flex items-center gap-3 shrink-0";
+
+      if (user.is_admin) right.appendChild(pill("admin", "violet"));
+
+      const adminBtn = document.createElement("button");
+      adminBtn.type = "button";
+      adminBtn.className = "text-xs font-mono text-slate-400 hover:text-slate-100 transition-colors";
+      adminBtn.textContent = user.is_admin ? "Revoke admin" : "Make admin";
+      adminBtn.addEventListener("click", async () => {
+        adminBtn.disabled = true;
+        await fetch(`${base}/v1/wcs/admin/users/${user.user_id}`, {
+          method: "PATCH",
+          headers: H,
+          body: JSON.stringify({ is_admin: !user.is_admin }),
+        });
+        allUsers = allUsers.map((u) =>
+          u.user_id === user.user_id ? { ...u, is_admin: !u.is_admin } : u,
+        );
+        renderUsers(listEl);
+      });
+
+      const grantsBtn = document.createElement("button");
+      grantsBtn.type = "button";
+      grantsBtn.className = "text-xs font-mono text-slate-400 hover:text-accent transition-colors";
+      grantsBtn.textContent = "Manage grants →";
+      grantsBtn.addEventListener("click", () => openGrantsPanel(user));
+
+      right.append(adminBtn, grantsBtn);
+      row.append(left, right);
+      listEl.appendChild(row);
+    }
+  }
+
+  async function openGrantsPanel(user) {
+    grantsPanel?.remove();
+    grantsPanel = null;
+
+    const listEl = document.getElementById("users-list");
+    const panel = document.createElement("div");
+    panel.className = "rounded-xl border border-accent/20 bg-surface/80 p-5 space-y-4";
+    grantsPanel = panel;
+
+    const header = document.createElement("div");
+    header.className = "flex items-center justify-between";
+    const title = document.createElement("p");
+    title.className = "text-sm font-medium text-slate-100";
+    title.textContent = `Grants — ${user.display_name || user.email}`;
+    const closeBtn = document.createElement("button");
+    closeBtn.type = "button";
+    closeBtn.className = "text-xs text-slate-500 hover:text-slate-100";
+    closeBtn.textContent = "Close";
+    closeBtn.addEventListener("click", () => {
+      panel.remove();
+      grantsPanel = null;
+    });
+    header.append(title, closeBtn);
+    panel.appendChild(header);
+
+    const grantsList = document.createElement("div");
+    grantsList.className = "space-y-2";
+    grantsList.textContent = "Loading grants…";
+    panel.appendChild(grantsList);
+
+    listEl.appendChild(panel);
+
+    const [grantsRes, notesRes] = await Promise.all([
+      fetch(`${base}/v1/wcs/admin/grants?user_id=${user.user_id}`, { headers: H }),
+      fetch(`${base}/v1/wcs/notes/all?limit=100`, { headers: H }),
+    ]);
+    const grants = (await grantsRes.json()).data ?? [];
+    const notes = (await notesRes.json()).data ?? [];
+
+    grantsList.innerHTML = "";
+
+    if (notes.length === 0) {
+      grantsList.textContent = "No notes found.";
+      return;
+    }
+
+    const grantedIds = new Set(grants.map((g) => g.note_id));
+
+    for (const note of notes) {
+      const noteRow = document.createElement("div");
+      noteRow.className = "flex items-center justify-between gap-3 rounded-lg border border-white/6 bg-white/[0.02] px-3 py-2";
+
+      const noteTitle = document.createElement("span");
+      noteTitle.className = "text-xs text-slate-300 truncate min-w-0";
+      noteTitle.textContent = noteLabel(note);
+
+      const hasGrant = grantedIds.has(note.id);
+      const grantObj = grants.find((g) => g.note_id === note.id);
+
+      const toggleBtn = document.createElement("button");
+      toggleBtn.type = "button";
+      toggleBtn.className = `text-xs font-mono shrink-0 transition-colors ${hasGrant ? "text-accent hover:text-red-400" : "text-slate-500 hover:text-accent"}`;
+      toggleBtn.textContent = hasGrant ? "Revoke" : "Grant";
+      toggleBtn.addEventListener("click", async () => {
+        toggleBtn.disabled = true;
+        if (hasGrant && grantObj) {
+          await fetch(`${base}/v1/wcs/admin/grants/${grantObj.id}`, { method: "DELETE", headers: H });
+          grantedIds.delete(note.id);
+          toggleBtn.textContent = "Grant";
+          toggleBtn.className = "text-xs font-mono shrink-0 transition-colors text-slate-500 hover:text-accent";
+        } else {
+          const res = await fetch(`${base}/v1/wcs/admin/grants`, {
+            method: "POST",
+            headers: H,
+            body: JSON.stringify({ user_id: user.user_id, note_id: note.id }),
+          });
+          const newGrant = (await res.json()).data;
+          grantedIds.add(note.id);
+          grants.push(newGrant);
+          toggleBtn.textContent = "Revoke";
+          toggleBtn.className = "text-xs font-mono shrink-0 transition-colors text-accent hover:text-red-400";
+        }
+        toggleBtn.disabled = false;
+      });
+
+      noteRow.append(noteTitle, toggleBtn);
+      grantsList.appendChild(noteRow);
+    }
+  }
+
+  loadUsers();
+</script>

@@ -1,0 +1,154 @@
+---
+import Page from "../../layouts/Page.astro";
+import {
+  getAuthenticatedUserId,
+  getClerkUserData,
+  getSessionToken,
+  upsertWcsProfile,
+} from "../../lib/auth";
+import { getApiBase } from "../../lib/api";
+
+const runtime = Astro.locals.runtime;
+const env = runtime?.env as Record<string, string> | undefined;
+const apiBase = getApiBase(env?.KAIANO_API_BASE_URL);
+
+const userId = await getAuthenticatedUserId(Astro.request, env);
+const sessionToken = getSessionToken(Astro.request);
+
+if (!userId || !sessionToken) {
+  return Astro.redirect("/sign-in");
+}
+
+const clerkUserData = await getClerkUserData(userId, env);
+const profile = apiBase
+  ? await upsertWcsProfile(sessionToken, clerkUserData.email, clerkUserData.displayName, apiBase)
+  : null;
+
+if (!profile?.is_admin) {
+  return Astro.redirect("/");
+}
+---
+
+<Page title="Notes" subtitle="Default note visibility">
+  <div
+    class="space-y-4"
+    data-admin-notes
+    data-api-base={apiBase}
+    data-session-token={sessionToken}
+  >
+    <p class="text-xs font-mono text-slate-500">Toggle which notes are visible to all signed-in users.</p>
+    <div id="notes-loading" class="text-sm text-slate-500">Loading…</div>
+    <div id="notes-error" class="text-sm text-slate-500 hidden">Could not load notes.</div>
+    <div id="notes-list" class="hidden space-y-2"></div>
+  </div>
+</Page>
+
+<script type="module">
+  const root = document.querySelector("[data-admin-notes]");
+  const API_BASE = root?.dataset.apiBase ?? "";
+  const SESSION_TOKEN = root?.dataset.sessionToken ?? "";
+  const H = SESSION_TOKEN
+    ? { Authorization: `Bearer ${SESSION_TOKEN}`, "Content-Type": "application/json" }
+    : { "Content-Type": "application/json" };
+
+  const show = (el) => el?.classList.remove("hidden");
+  const hide = (el) => el?.classList.add("hidden");
+  const base = API_BASE.replace(/\/$/, "");
+  const SESSION_LABELS = {
+    private_lesson: "Private lesson",
+    group_class: "Group class",
+    other: "Other",
+  };
+
+  function noteLabel(note) {
+    const parts = [];
+    if (note.session_date) parts.push(note.session_date);
+    if (note.session_type) parts.push(SESSION_LABELS[note.session_type] || note.session_type);
+    if (note.session_type === "private_lesson") {
+      if (note.students?.length) parts.push(note.students.join(" + "));
+    } else {
+      if (note.organization) parts.push(note.organization);
+    }
+    if (note.instructors?.length) parts.push("w/ " + note.instructors.join(" + "));
+    if (note.title) parts.push(note.title);
+    return parts.join(" · ") || note.id;
+  }
+
+  async function loadNotes() {
+    const loadEl = document.getElementById("notes-loading");
+    const errEl = document.getElementById("notes-error");
+    const listEl = document.getElementById("notes-list");
+    try {
+      const res = await fetch(`${base}/v1/wcs/notes/all?limit=100`, { headers: H });
+      if (!res.ok) throw new Error("bad response");
+      const json = await res.json();
+      const notes = json.data ?? [];
+      hide(loadEl);
+      renderNotes(listEl, notes);
+      show(listEl);
+    } catch {
+      hide(loadEl);
+      show(errEl);
+    }
+  }
+
+  function renderNotes(listEl, notes) {
+    listEl.innerHTML = "";
+    if (notes.length === 0) {
+      listEl.innerHTML = `<p class="text-sm text-slate-500">No notes found.</p>`;
+      return;
+    }
+    for (const note of notes) {
+      const row = document.createElement("div");
+      row.className = "flex items-center justify-between gap-4 rounded-xl border border-white/8 bg-surface/60 px-4 py-3";
+
+      const left = document.createElement("div");
+      left.className = "min-w-0 flex items-center gap-3";
+
+      const visibleBadge = document.createElement("span");
+      visibleBadge.className = `inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-mono shrink-0 ${
+        note.is_default_visible
+          ? "bg-teal-500/10 text-teal-300 border-teal-500/25"
+          : "bg-slate-500/10 text-slate-400 border-slate-500/25"
+      }`;
+      visibleBadge.textContent = note.is_default_visible ? "visible" : "hidden";
+
+      const title = document.createElement("span");
+      title.className = "text-sm text-slate-200 truncate";
+      title.textContent = noteLabel(note);
+
+      left.append(visibleBadge, title);
+
+      const toggleBtn = document.createElement("button");
+      toggleBtn.type = "button";
+      toggleBtn.className = "text-xs font-mono text-slate-400 hover:text-accent transition-colors shrink-0";
+      toggleBtn.textContent = note.is_default_visible ? "Hide" : "Show";
+
+      toggleBtn.addEventListener("click", async () => {
+        toggleBtn.disabled = true;
+        const newVal = !note.is_default_visible;
+        const res = await fetch(`${base}/v1/wcs/admin/notes/${note.id}/visibility`, {
+          method: "PATCH",
+          headers: H,
+          body: JSON.stringify({ is_default_visible: newVal }),
+        });
+        if (res.ok) {
+          note.is_default_visible = newVal;
+          visibleBadge.textContent = newVal ? "visible" : "hidden";
+          visibleBadge.className = `inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-mono shrink-0 ${
+            newVal
+              ? "bg-teal-500/10 text-teal-300 border-teal-500/25"
+              : "bg-slate-500/10 text-slate-400 border-slate-500/25"
+          }`;
+          toggleBtn.textContent = newVal ? "Hide" : "Show";
+        }
+        toggleBtn.disabled = false;
+      });
+
+      row.append(left, toggleBtn);
+      listEl.appendChild(row);
+    }
+  }
+
+  loadNotes();
+</script>
