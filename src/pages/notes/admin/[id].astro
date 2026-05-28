@@ -1,0 +1,94 @@
+---
+import Page from "../../../layouts/Page.astro";
+import {
+  getAuthenticatedUserId,
+  getClerkUserData,
+  getSessionToken,
+  upsertWcsProfile,
+} from "../../../lib/auth";
+import { getApiBase } from "../../../lib/api";
+
+const runtime = Astro.locals.runtime;
+const env = runtime?.env as Record<string, string> | undefined;
+const apiBase = getApiBase(env?.KAIANO_API_BASE_URL);
+
+const userId = await getAuthenticatedUserId(Astro.request, env);
+const sessionToken = getSessionToken(Astro.request);
+
+if (!userId || !sessionToken) {
+  return Astro.redirect("/sign-in");
+}
+
+const { email, displayName } = await getClerkUserData(userId, env);
+const profile = apiBase ? await upsertWcsProfile(sessionToken, email, displayName, apiBase) : null;
+
+if (!profile?.is_admin) {
+  return Astro.redirect("/notes");
+}
+
+const { id } = Astro.params;
+---
+
+<Page title="Lesson (Admin)" subtitle="Full source view">
+  <div
+    class="contents"
+    data-notes-browser
+    data-session-token={sessionToken}
+    data-source-id={id ?? ""}
+  >
+    <div class="mb-4">
+      <a href="/notes/admin" class="text-xs text-slate-500 hover:text-slate-300 transition-colors">
+        ← All notes (admin)
+      </a>
+    </div>
+
+    <div id="note-loading" class="text-sm text-slate-500">Loading…</div>
+    <div id="note-error" class="text-sm text-slate-500 hidden">Source not found.</div>
+    <div id="note-content" class="space-y-8 hidden"></div>
+
+    <script type="module">
+      import { renderSourceView } from "../../../lib/wcs-source-detail.ts";
+
+      const BASE = document.documentElement.dataset.apiUrl || "";
+      const SESSION_TOKEN =
+        document.querySelector("[data-notes-browser]")?.dataset.sessionToken ?? "";
+      const id = document.querySelector("[data-notes-browser]")?.dataset.sourceId ?? "";
+      const loadingEl = document.getElementById("note-loading");
+      const errorEl = document.getElementById("note-error");
+      const contentEl = document.getElementById("note-content");
+
+      function show(el) { el.classList.remove("hidden"); }
+      function hide(el) { el.classList.add("hidden"); }
+
+      async function load() {
+        if (!BASE || !id) { hide(loadingEl); show(errorEl); return; }
+        try {
+          const res = await fetch(
+            `${BASE.replace(/\/$/, "")}/v1/wcs/wiki/admin/sources/${id}`,
+            {
+              headers: SESSION_TOKEN
+                ? { Authorization: `Bearer ${SESSION_TOKEN}` }
+                : {},
+            }
+          );
+          if (res.status === 403) {
+            errorEl.textContent = "Admin access required.";
+            throw new Error("forbidden");
+          }
+          if (!res.ok) throw new Error("not found");
+          const json = await res.json();
+          const view = json.data;
+          if (!view?.source) throw new Error("no data");
+          hide(loadingEl);
+          renderSourceView(contentEl, view);
+          show(contentEl);
+        } catch {
+          hide(loadingEl);
+          show(errorEl);
+        }
+      }
+
+      load();
+    </script>
+  </div>
+</Page>

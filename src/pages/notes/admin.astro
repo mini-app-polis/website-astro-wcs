@@ -255,7 +255,7 @@ if (!profile?.is_admin) {
         const instructors = sourceInstructors(source);
 
         const a = document.createElement("a");
-        a.href = `/notes/${source.id}`;
+        a.href = `/notes/admin/${source.id}`;
         a.className =
           "group flex flex-col gap-3 rounded-xl border border-white/8 bg-surface/60 p-5 " +
           "transition-colors hover:border-accent/25 hover:bg-surface";
