@@ -50,7 +50,7 @@ if (userId && sessionToken && apiBase) {
       <div id="note-error" class="text-sm text-slate-500 hidden">Lesson not found.</div>
       <div id="note-content" class="space-y-8 hidden"></div>
 
-      <script type="module">
+      <script>
         import { renderSourceView } from "../../lib/wcs-source-detail.ts";
 
         const BASE = document.documentElement.dataset.apiUrl || "";
