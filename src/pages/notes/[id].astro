@@ -39,6 +39,7 @@ if (userId && sessionToken && apiBase) {
       data-notes-browser
       data-session-token={sessionToken ?? ""}
       data-source-id={Astro.params.id ?? ""}
+      data-mode="public"
     >
       <div class="mb-4">
         <a href="/notes" class="text-xs text-slate-500 hover:text-slate-300 transition-colors">
@@ -50,54 +51,7 @@ if (userId && sessionToken && apiBase) {
       <div id="note-error" class="text-sm text-slate-500 hidden">Lesson not found.</div>
       <div id="note-content" class="space-y-8 hidden"></div>
 
-      <script>
-        import { renderSourceView } from "../../lib/wcs-source-detail.ts";
-
-        const BASE = document.documentElement.dataset.apiUrl || "";
-        const SESSION_TOKEN =
-          document.querySelector("[data-notes-browser]")?.dataset.sessionToken ?? "";
-        const id = document.querySelector("[data-notes-browser]")?.dataset.sourceId ?? "";
-        const loadingEl = document.getElementById("note-loading");
-        const errorEl = document.getElementById("note-error");
-        const contentEl = document.getElementById("note-content");
-
-        function show(el) { el.classList.remove("hidden"); }
-        function hide(el) { el.classList.add("hidden"); }
-
-        async function load() {
-          if (!BASE || !id) { hide(loadingEl); show(errorEl); return; }
-          try {
-            const res = await fetch(`${BASE.replace(/\/$/, "")}/v1/wcs/wiki/sources/${id}`, {
-              headers: SESSION_TOKEN
-                ? { Authorization: `Bearer ${SESSION_TOKEN}` }
-                : {},
-            });
-            if (res.status === 403) {
-              errorEl.textContent = "You don't have access to this lesson.";
-              throw new Error("forbidden");
-            }
-            if (res.status === 401) {
-              console.warn("[notes] wiki/sources detail auth failed", {
-                status: res.status,
-                authorization: SESSION_TOKEN ? "Bearer <redacted>" : "(none)",
-              });
-              throw new Error("auth");
-            }
-            if (!res.ok) throw new Error("not found");
-            const json = await res.json();
-            const view = json.data;
-            if (!view?.source) throw new Error("no data");
-            hide(loadingEl);
-            renderSourceView(contentEl, view);
-            show(contentEl);
-          } catch {
-            hide(loadingEl);
-            show(errorEl);
-          }
-        }
-
-        load();
-      </script>
+      <script is:inline src="/wcs-source-detail.js"></script>
     </div>
   )}
 </Page>

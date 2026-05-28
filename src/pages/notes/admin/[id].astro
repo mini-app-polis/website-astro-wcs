@@ -35,6 +35,7 @@ const { id } = Astro.params;
     data-notes-browser
     data-session-token={sessionToken}
     data-source-id={id ?? ""}
+    data-mode="admin"
   >
     <div class="mb-4">
       <a href="/notes/admin" class="text-xs text-slate-500 hover:text-slate-300 transition-colors">
@@ -45,50 +46,7 @@ const { id } = Astro.params;
     <div id="note-loading" class="text-sm text-slate-500">Loading…</div>
     <div id="note-error" class="text-sm text-slate-500 hidden">Source not found.</div>
     <div id="note-content" class="space-y-8 hidden"></div>
-
-    <script>
-      import { renderSourceView } from "../../../lib/wcs-source-detail.ts";
-
-      const BASE = document.documentElement.dataset.apiUrl || "";
-      const SESSION_TOKEN =
-        document.querySelector("[data-notes-browser]")?.dataset.sessionToken ?? "";
-      const id = document.querySelector("[data-notes-browser]")?.dataset.sourceId ?? "";
-      const loadingEl = document.getElementById("note-loading");
-      const errorEl = document.getElementById("note-error");
-      const contentEl = document.getElementById("note-content");
-
-      function show(el) { el.classList.remove("hidden"); }
-      function hide(el) { el.classList.add("hidden"); }
-
-      async function load() {
-        if (!BASE || !id) { hide(loadingEl); show(errorEl); return; }
-        try {
-          const res = await fetch(
-            `${BASE.replace(/\/$/, "")}/v1/wcs/wiki/admin/sources/${id}`,
-            {
-              headers: SESSION_TOKEN
-                ? { Authorization: `Bearer ${SESSION_TOKEN}` }
-                : {},
-            }
-          );
-          if (res.status === 403) {
-            errorEl.textContent = "Admin access required.";
-            throw new Error("forbidden");
-          }
-          if (!res.ok) throw new Error("not found");
-          const json = await res.json();
-          const view = json.data;
-          if (!view?.source) throw new Error("no data");
-          hide(loadingEl);
-          renderSourceView(contentEl, view);
-          show(contentEl);
-        } catch {
-          hide(loadingEl);
-          show(errorEl);
-        }
-      }
-
-      load();
-    </script>
   </div>
+
+  <script is:inline src="/wcs-source-detail.js"></script>
 </Page>
