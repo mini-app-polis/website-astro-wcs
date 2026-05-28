@@ -60,7 +60,7 @@ export type WcsTechniqueRequirementItem = {
 
 export type WcsSourceReferenceItem = {
   id: string;
-  referenced_name?: string;
+  referenced_name: string;
   context: string;
   ref_type: string;
   origin: string;

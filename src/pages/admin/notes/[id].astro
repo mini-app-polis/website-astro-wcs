@@ -271,34 +271,33 @@ const { id } = Astro.params;
       return;
     }
     if (!NOTE_ID) {
-      showError("Missing note id.");
+      showError("Missing lesson id.");
       loadingEl?.classList.add("hidden");
       return;
     }
     try {
-      const res = await fetch(`${base}/v1/wcs/notes/${NOTE_ID}`, { headers: H });
+      const res = await fetch(`${base}/v1/wcs/wiki/admin/sources/${NOTE_ID}`, { headers: H });
       if (!res.ok) {
-        showError(`Could not load note (HTTP ${res.status}).`);
+        showError(`Could not load lesson (HTTP ${res.status}).`);
         loadingEl?.classList.add("hidden");
         return;
       }
       const json = await res.json();
-      const note = json?.data ?? null;
-      if (!note) {
-        showError("Note not found.");
+      const source = json?.data?.source ?? null;
+      if (!source) {
+        showError("Lesson not found.");
         loadingEl?.classList.add("hidden");
         return;
       }
 
-      // Populate fields
-      dateEl.value      = note.session_date ?? "";
-      typeEl.value      = note.session_type ?? "private_lesson";
-      titleEl.value     = note.title ?? "";
-      orgEl.value       = note.organization ?? "";
-      visibleEl.checked = !!note.is_default_visible;
+      dateEl.value      = source.session_date ?? "";
+      typeEl.value      = source.session_type ?? "private_lesson";
+      titleEl.value     = source.title ?? "";
+      orgEl.value       = source.organization ?? "";
+      visibleEl.checked = !!source.is_default_visible;
 
-      state.students    = Array.isArray(note.students) ? [...note.students] : [];
-      state.instructors = Array.isArray(note.instructors) ? [...note.instructors] : [];
+      state.students    = Array.isArray(source.students_raw) ? [...source.students_raw] : [];
+      state.instructors = Array.isArray(source.instructors_raw) ? [...source.instructors_raw] : [];
       renderChips("students");
       renderChips("instructors");
 
@@ -324,16 +323,13 @@ const { id } = Astro.params;
       session_type: typeEl.value || null,
       title: titleEl.value.trim(),
       organization: orgEl.value.trim(),
-      students: state.students,
-      instructors: state.instructors,
+      students_raw: state.students,
+      instructors_raw: state.instructors,
       is_default_visible: !!visibleEl.checked,
     };
 
     try {
-      // NOTE: assumes backend exposes PATCH /v1/wcs/admin/notes/:id taking a
-      // partial body of the editable fields. If the actual endpoint differs,
-      // adjust the path / method / body shape here.
-      const res = await fetch(`${base}/v1/wcs/admin/notes/${NOTE_ID}`, {
+      const res = await fetch(`${base}/v1/wcs/admin/sources/${NOTE_ID}`, {
         method: "PATCH",
         headers: H,
         body: JSON.stringify(body),

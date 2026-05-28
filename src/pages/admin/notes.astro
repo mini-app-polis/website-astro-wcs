@@ -60,18 +60,18 @@ if (!profile?.is_admin) {
     other: "Other",
   };
 
-  function noteLabel(note) {
+  function sourceLabel(source) {
     const parts = [];
-    if (note.session_date) parts.push(note.session_date);
-    if (note.session_type) parts.push(SESSION_LABELS[note.session_type] || note.session_type);
-    if (note.session_type === "private_lesson") {
-      if (note.students?.length) parts.push(note.students.join(" + "));
+    if (source.session_date) parts.push(source.session_date);
+    if (source.session_type) parts.push(SESSION_LABELS[source.session_type] || source.session_type);
+    if (source.session_type === "private_lesson") {
+      if (source.students_raw?.length) parts.push(source.students_raw.join(" + "));
     } else {
-      if (note.organization) parts.push(note.organization);
+      if (source.organization) parts.push(source.organization);
     }
-    if (note.instructors?.length) parts.push("w/ " + note.instructors.join(" + "));
-    if (note.title) parts.push(note.title);
-    return parts.join(" · ") || note.id;
+    if (source.instructors_raw?.length) parts.push("w/ " + source.instructors_raw.join(" + "));
+    if (source.title) parts.push(source.title);
+    return parts.join(" · ") || source.id;
   }
 
   async function loadNotes() {
@@ -79,12 +79,21 @@ if (!profile?.is_admin) {
     const errEl = document.getElementById("notes-error");
     const listEl = document.getElementById("notes-list");
     try {
-      const res = await fetch(`${base}/v1/wcs/notes/all?limit=100`, { headers: H });
-      if (!res.ok) throw new Error("bad response");
-      const json = await res.json();
-      const notes = json.data ?? [];
+      const PAGE = 100;
+      let offset = 0;
+      const sources = [];
+      while (true) {
+        const params = new URLSearchParams({ limit: String(PAGE), offset: String(offset) });
+        const res = await fetch(`${base}/v1/wcs/wiki/admin/sources?${params}`, { headers: H });
+        if (!res.ok) throw new Error("bad response");
+        const json = await res.json();
+        const page = json.data ?? [];
+        sources.push(...page);
+        if (page.length < PAGE) break;
+        offset += PAGE;
+      }
       hide(loadEl);
-      renderNotes(listEl, notes);
+      renderNotes(listEl, sources);
       show(listEl);
     } catch {
       hide(loadEl);
@@ -92,13 +101,13 @@ if (!profile?.is_admin) {
     }
   }
 
-  function renderNotes(listEl, notes) {
+  function renderNotes(listEl, sources) {
     listEl.innerHTML = "";
-    if (notes.length === 0) {
-      listEl.innerHTML = `<p class="text-sm text-slate-500">No notes found.</p>`;
+    if (sources.length === 0) {
+      listEl.innerHTML = `<p class="text-sm text-slate-500">No lessons found.</p>`;
       return;
     }
-    for (const note of notes) {
+    for (const source of sources) {
       const row = document.createElement("div");
       row.className = "flex items-center justify-between gap-4 rounded-xl border border-white/8 bg-surface/60 px-4 py-3";
 
@@ -107,15 +116,15 @@ if (!profile?.is_admin) {
 
       const visibleBadge = document.createElement("span");
       visibleBadge.className = `inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-mono shrink-0 ${
-        note.is_default_visible
+        source.is_default_visible
           ? "bg-teal-500/10 text-teal-300 border-teal-500/25"
           : "bg-slate-500/10 text-slate-400 border-slate-500/25"
       }`;
-      visibleBadge.textContent = note.is_default_visible ? "visible" : "hidden";
+      visibleBadge.textContent = source.is_default_visible ? "visible" : "hidden";
 
       const title = document.createElement("span");
       title.className = "text-sm text-slate-200 truncate";
-      title.textContent = noteLabel(note);
+      title.textContent = sourceLabel(source);
 
       left.append(visibleBadge, title);
 
@@ -123,32 +132,34 @@ if (!profile?.is_admin) {
       actions.className = "flex items-center gap-3 shrink-0";
 
       const editLink = document.createElement("a");
-      editLink.href = `/admin/notes/${note.id}`;
+      editLink.href = `/admin/notes/${source.id}`;
       editLink.className = "text-xs font-mono text-slate-400 hover:text-accent transition-colors";
       editLink.textContent = "Edit";
 
       const toggleBtn = document.createElement("button");
       toggleBtn.type = "button";
       toggleBtn.className = "text-xs font-mono text-slate-400 hover:text-accent transition-colors";
-      toggleBtn.textContent = note.is_default_visible ? "Hide" : "Show";
+      toggleBtn.textContent = source.is_default_visible ? "Hide" : "Show";
 
       toggleBtn.addEventListener("click", async () => {
         toggleBtn.disabled = true;
-        const newVal = !note.is_default_visible;
-        const res = await fetch(`${base}/v1/wcs/admin/notes/${note.id}/visibility`, {
+        const newVal = !source.is_default_visible;
+        const res = await fetch(`${base}/v1/wcs/admin/sources/${source.id}/visibility`, {
           method: "PATCH",
           headers: H,
           body: JSON.stringify({ is_default_visible: newVal }),
         });
         if (res.ok) {
-          note.is_default_visible = newVal;
-          visibleBadge.textContent = newVal ? "visible" : "hidden";
+          const updated = (await res.json().catch(() => ({})))?.data;
+          const visible = updated?.is_default_visible ?? newVal;
+          source.is_default_visible = visible;
+          visibleBadge.textContent = visible ? "visible" : "hidden";
           visibleBadge.className = `inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-mono shrink-0 ${
-            newVal
+            visible
               ? "bg-teal-500/10 text-teal-300 border-teal-500/25"
               : "bg-slate-500/10 text-slate-400 border-slate-500/25"
           }`;
-          toggleBtn.textContent = newVal ? "Hide" : "Show";
+          toggleBtn.textContent = visible ? "Hide" : "Show";
         }
         toggleBtn.disabled = false;
       });

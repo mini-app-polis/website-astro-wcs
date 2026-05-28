@@ -138,16 +138,18 @@ if (!profile?.is_admin) {
       const SESSION_LABELS = {
         private_lesson: "Private lesson",
         group_class:    "Group class",
+        workshop:       "Workshop",
         other:          "Other",
       };
 
       const TYPE_BADGE = {
         private_lesson: "bg-violet-500/10 text-violet-300 border-violet-500/25",
         group_class:    "bg-sky-500/10 text-sky-300 border-sky-500/25",
+        workshop:       "bg-amber-500/10 text-amber-300 border-amber-500/25",
         other:          "bg-slate-500/10 text-slate-400 border-slate-500/25",
       };
 
-      let allNotes          = [];
+      let allSources        = [];
       let selectedType      = "";
       let selectedOrg       = "";
       let selectedInstructor = "";
@@ -156,15 +158,14 @@ if (!profile?.is_admin) {
       const show = el => el.classList.remove("hidden");
       const hide = el => el.classList.add("hidden");
 
-      function noteInstructors(note) {
-        return note.instructors?.length ? note.instructors.join(" + ") : "";
+      function sourceInstructors(source) {
+        return source.instructors_raw?.length ? source.instructors_raw.join(" + ") : "";
       }
 
-      // Used for the "With" filter axis
-      function noteWith(note) {
-        if (note.session_type === "private_lesson")
-          return note.students?.length ? note.students.join(" + ") : "";
-        return note.organization || "";
+      function sourceWith(source) {
+        if (source.session_type === "private_lesson")
+          return source.students_raw?.length ? source.students_raw.join(" + ") : "";
+        return source.organization || "";
       }
 
       function formatDate(iso) {
@@ -175,24 +176,24 @@ if (!profile?.is_admin) {
         });
       }
 
-      function matchesSearch(note, q) {
+      function matchesSearch(source, q) {
         if (!q) return true;
         const haystack = [
-          note.title,
-          note.organization,
-          ...(note.students || []),
-          ...(note.instructors || []),
-          SESSION_LABELS[note.session_type] || note.session_type,
+          source.title,
+          source.organization,
+          ...(source.students_raw || []),
+          ...(source.instructors_raw || []),
+          SESSION_LABELS[source.session_type] || source.session_type,
         ].join(" ").toLowerCase();
         return haystack.includes(q.toLowerCase());
       }
 
-      function filterNotes(notes) {
-        return notes.filter(note => {
-          if (selectedType && note.session_type !== selectedType) return false;
-          if (selectedOrg  && noteWith(note) !== selectedOrg)     return false;
-          if (selectedInstructor && !noteInstructors(note).split(" + ").includes(selectedInstructor)) return false;
-          if (!matchesSearch(note, searchQuery))                  return false;
+      function filterSources(sources) {
+        return sources.filter(source => {
+          if (selectedType && source.session_type !== selectedType) return false;
+          if (selectedOrg  && sourceWith(source) !== selectedOrg)     return false;
+          if (selectedInstructor && !sourceInstructors(source).split(" + ").includes(selectedInstructor)) return false;
+          if (!matchesSearch(source, searchQuery))                    return false;
           return true;
         });
       }
@@ -208,10 +209,10 @@ if (!profile?.is_admin) {
         });
       }
 
-      function buildOrgButtons(notes) {
+      function buildOrgButtons(sources) {
         const wrap = document.querySelector("[data-org-buttons]");
         if (!wrap) return;
-        const orgs = [...new Set(notes.map(noteWith).filter(Boolean))].sort();
+        const orgs = [...new Set(sources.map(sourceWith).filter(Boolean))].sort();
         wrap.querySelectorAll("button[data-org]:not([data-org=''])").forEach(b => b.remove());
         for (const org of orgs) {
           const btn = document.createElement("button");
@@ -226,12 +227,12 @@ if (!profile?.is_admin) {
         orgs.length ? show(orgRow) : hide(orgRow);
       }
 
-      function buildInstructorButtons(notes) {
+      function buildInstructorButtons(sources) {
         const wrap = document.querySelector("[data-instructor-buttons]");
         const row  = document.getElementById("notes-instructor-row");
         if (!wrap || !row) return;
         const instructors = [...new Set(
-          notes.flatMap(n => n.instructors || []).filter(Boolean)
+          sources.flatMap(s => s.instructors_raw || []).filter(Boolean)
         )].sort();
         wrap.querySelectorAll("button[data-instructor]:not([data-instructor=''])").forEach(b => b.remove());
         for (const instr of instructors) {
@@ -247,42 +248,32 @@ if (!profile?.is_admin) {
         instructors.length ? show(row) : hide(row);
       }
 
-      function buildCard(note) {
-        const org       = noteWith(note);
-        const typeLabel = SESSION_LABELS[note.session_type] || note.session_type;
-        const badgeCls  = TYPE_BADGE[note.session_type] || TYPE_BADGE.other;
-        const nj        = note.notes_json || {};
-
-        // Count non-empty sections for footer
-        const sectionCount = [
-          nj.key_concepts, nj.vocabulary_terms, nj.drills,
-          nj.common_mistakes, nj.action_items, nj.quotes,
-        ].filter(s => Array.isArray(s) && s.length > 0).length;
+      function buildCard(source) {
+        const withVal     = sourceWith(source);
+        const typeLabel   = SESSION_LABELS[source.session_type] || source.session_type;
+        const badgeCls    = TYPE_BADGE[source.session_type] || TYPE_BADGE.other;
+        const instructors = sourceInstructors(source);
 
         const a = document.createElement("a");
-        a.href = `/notes/${note.id}`;
+        a.href = `/notes/${source.id}`;
         a.className =
           "group flex flex-col gap-3 rounded-xl border border-white/8 bg-surface/60 p-5 " +
           "transition-colors hover:border-accent/25 hover:bg-surface";
+        a.style.position = "relative";
 
-        // Visibility dot
-        if (typeof note.is_default_visible !== "undefined") {
-          const dot = document.createElement("span");
-          dot.className = note.is_default_visible
-            ? "absolute top-3 right-3 h-1.5 w-1.5 rounded-full bg-teal-400"
-            : "absolute top-3 right-3 h-1.5 w-1.5 rounded-full bg-slate-600";
-          dot.title = note.is_default_visible ? "Visible to signed-in users" : "Hidden";
-          a.style.position = "relative";
-          a.appendChild(dot);
-        }
+        const visDot = document.createElement("span");
+        visDot.className = source.is_default_visible
+          ? "absolute top-3 right-3 h-1.5 w-1.5 rounded-full bg-teal-400"
+          : "absolute top-3 right-3 h-1.5 w-1.5 rounded-full bg-slate-600";
+        visDot.title = source.is_default_visible ? "Visible to signed-in users" : "Hidden";
+        a.appendChild(visDot);
 
-        // Date + type badge
         const topRow = document.createElement("div");
         topRow.className = "flex items-center justify-between gap-2";
 
         const dateEl = document.createElement("span");
         dateEl.className = "font-mono text-xs text-slate-200 font-medium";
-        dateEl.textContent = formatDate(note.session_date);
+        dateEl.textContent = formatDate(source.session_date);
 
         const badge = document.createElement("span");
         badge.className =
@@ -293,15 +284,12 @@ if (!profile?.is_admin) {
         topRow.appendChild(badge);
         a.appendChild(topRow);
 
-        // Primary label + "with [instructors]" inline
-        const instructors = noteInstructors(note);
-        const noteWithVal = noteWith(note);
-        if (noteWithVal) {
+        if (withVal) {
           const primaryEl = document.createElement("p");
           primaryEl.className = "text-sm font-medium text-slate-100 leading-snug";
 
           const primaryName = document.createElement("span");
-          primaryName.textContent = noteWithVal;
+          primaryName.textContent = withVal;
           primaryEl.appendChild(primaryName);
 
           if (instructors) {
@@ -312,47 +300,33 @@ if (!profile?.is_admin) {
           }
 
           a.appendChild(primaryEl);
+        } else if (instructors) {
+          const instrEl = document.createElement("p");
+          instrEl.className = "text-sm font-medium text-slate-100 leading-snug";
+          instrEl.textContent = instructors;
+          a.appendChild(instrEl);
         }
 
-        // Title - always 2 lines tall, clipped with ellipsis
         const titleEl = document.createElement("p");
-        const hasPrimary = !!noteWithVal;
+        const hasPrimary = !!withVal;
         titleEl.className = hasPrimary
           ? "text-sm text-slate-400 leading-snug overflow-hidden"
           : "text-sm font-medium text-slate-100 leading-snug overflow-hidden";
         titleEl.style.cssText =
           "display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; " +
           "overflow: hidden; min-height: calc(1.25em * 2 * 1.375);";
-        titleEl.textContent = note.title?.trim() || "";
+        titleEl.textContent = source.title?.trim() || "";
         a.appendChild(titleEl);
-
-        // Footer: section count
-        if (sectionCount > 0) {
-          const footer = document.createElement("div");
-          footer.className =
-            "mt-auto pt-3 border-t border-white/6 flex items-center gap-1.5";
-
-          const dot = document.createElement("span");
-          dot.className = "h-1 w-1 rounded-full bg-accent/50 shrink-0";
-
-          const tally = document.createElement("span");
-          tally.className = "font-mono text-xs text-slate-600";
-          tally.textContent = `${sectionCount} section${sectionCount !== 1 ? "s" : ""}`;
-
-          footer.appendChild(dot);
-          footer.appendChild(tally);
-          a.appendChild(footer);
-        }
 
         return a;
       }
 
       function render() {
-        const filtered = filterNotes(allNotes);
+        const filtered = filterSources(allSources);
 
-        countEl.textContent = filtered.length === allNotes.length
-          ? `${allNotes.length} note${allNotes.length !== 1 ? "s" : ""}`
-          : `${filtered.length} of ${allNotes.length}`;
+        countEl.textContent = filtered.length === allSources.length
+          ? `${allSources.length} lesson${allSources.length !== 1 ? "s" : ""}`
+          : `${filtered.length} of ${allSources.length}`;
         show(countEl);
 
         gridEl.innerHTML = "";
@@ -362,7 +336,7 @@ if (!profile?.is_admin) {
         }
 
         hide(emptyEl);
-        for (const note of filtered) gridEl.appendChild(buildCard(note));
+        for (const source of filtered) gridEl.appendChild(buildCard(source));
         show(gridEl);
       }
 
@@ -373,7 +347,8 @@ if (!profile?.is_admin) {
           const PAGE = 100;
           let offset = 0;
           while (true) {
-            const res = await fetch(`${base}/v1/wcs/notes/all?limit=${PAGE}&offset=${offset}`, {
+            const params = new URLSearchParams({ limit: String(PAGE), offset: String(offset) });
+            const res = await fetch(`${base}/v1/wcs/wiki/admin/sources?${params}`, {
               headers: SESSION_TOKEN
                 ? { Authorization: `Bearer ${SESSION_TOKEN}` }
                 : {},
@@ -381,13 +356,13 @@ if (!profile?.is_admin) {
             if (!res.ok) throw new Error("bad response");
             const json = await res.json();
             const page = json.data ?? [];
-            allNotes.push(...page);
+            allSources.push(...page);
             if (page.length < PAGE) break;
             offset += PAGE;
           }
           hide(loadingEl);
-          buildOrgButtons(allNotes);
-          buildInstructorButtons(allNotes);
+          buildOrgButtons(allSources);
+          buildInstructorButtons(allSources);
           show(filtersEl);
           render();
         } catch {
