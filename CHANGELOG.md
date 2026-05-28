@@ -1,3 +1,10 @@
+# [1.16.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.15.0...v1.16.0) (2026-05-28)
+
+
+### Features
+
+* rewrite notes pages for WCS entity substrate ([512b42a](https://github.com/mini-app-polis/website-astro-wcs/commit/512b42ab6664f06a8edc38066bb8b35fbc1b9ee2))
+
 # [1.15.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.14.3...v1.15.0) (2026-05-15)
 
 
