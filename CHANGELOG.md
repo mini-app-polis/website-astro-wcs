@@ -1,3 +1,10 @@
+# [1.17.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.16.0...v1.17.0) (2026-05-28)
+
+
+### Features
+
+* repoint notes website pages to the entity substrate ([0617d09](https://github.com/mini-app-polis/website-astro-wcs/commit/0617d09e03f701a8c3a318c53f258bc2a3e9a9cb))
+
 # [1.16.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.15.0...v1.16.0) (2026-05-28)
 
 
