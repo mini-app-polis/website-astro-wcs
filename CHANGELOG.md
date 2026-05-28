@@ -1,3 +1,10 @@
+## [1.18.1](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.18.0...v1.18.1) (2026-05-28)
+
+
+### Bug Fixes
+
+* notes detail pages were not bundling renderSourceView import ([b2b5b7a](https://github.com/mini-app-polis/website-astro-wcs/commit/b2b5b7a1b43fdab4e7ad8aea84cceab9073f7395))
+
 # [1.18.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.17.0...v1.18.0) (2026-05-28)
 
 
