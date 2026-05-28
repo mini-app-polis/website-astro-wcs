@@ -16,14 +16,13 @@ const userId = await getAuthenticatedUserId(Astro.request, env);
 const sessionToken = getSessionToken(Astro.request);
 const isAuthenticated = !!userId;
 
-// Upsert profile for side effect — ensures row exists, updates last_seen_at.
 if (userId && sessionToken && apiBase) {
   const { email, displayName } = await getClerkUserData(userId, env);
   await upsertWcsProfile(sessionToken, email, displayName, apiBase);
 }
 ---
 
-<Page title="Note">
+<Page title="Lesson">
   {!isAuthenticated ? (
     <div class="flex flex-col items-center justify-center min-h-[40vh] gap-6 text-center">
       <p class="text-slate-400 font-light">This section is private.</p>
@@ -42,12 +41,12 @@ if (userId && sessionToken && apiBase) {
     >
       <div class="mb-4">
         <a href="/notes" class="text-xs text-slate-500 hover:text-slate-300 transition-colors">
-          ← All notes
+          ← All lessons
         </a>
       </div>
 
       <div id="note-loading" class="text-sm text-slate-500">Loading…</div>
-      <div id="note-error" class="text-sm text-slate-500 hidden">Note not found.</div>
+      <div id="note-error" class="text-sm text-slate-500 hidden">Lesson not found.</div>
       <div id="note-content" class="space-y-8 hidden"></div>
 
       <script type="module">
@@ -59,10 +58,32 @@ if (userId && sessionToken && apiBase) {
         const errorEl = document.getElementById("note-error");
         const contentEl = document.getElementById("note-content");
 
+        const SESSION_LABELS = {
+          private_lesson: "Private lesson",
+          group_class: "Group class",
+          workshop: "Workshop",
+          other: "Other",
+        };
+
+        const ATTRIBUTION_KIND_LABELS = {
+          taught: "Taught",
+          demonstrated: "Demonstrated",
+          drilled: "Drilled",
+        };
+
         function formatDate(iso) {
           if (!iso) return "";
-          return new Date(iso).toLocaleDateString("en-US", {
-            year: "numeric", month: "short", day: "numeric"
+          const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(iso);
+          const d = dateOnly
+            ? (() => {
+                const [y, m, day] = iso.split("-").map(Number);
+                return new Date(y, m - 1, day);
+              })()
+            : new Date(iso);
+          return d.toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
           });
         }
 
@@ -76,71 +97,259 @@ if (userId && sessionToken && apiBase) {
           return h;
         }
 
-        function bullet(text, dimColor = false) {
-          const li = document.createElement("li");
-          li.className = "flex gap-2 text-sm text-slate-300";
-          const dot = document.createElement("span");
-          dot.className = `mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${dimColor ? "bg-accent/60" : "bg-accent"}`;
-          const t = document.createElement("span");
-          t.textContent = text;
-          li.appendChild(dot);
-          li.appendChild(t);
-          return li;
+        function kindLabel(kind) {
+          if (!kind || kind === "taught") return null;
+          return ATTRIBUTION_KIND_LABELS[kind] ||
+            kind.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
         }
 
-        function asStrings(arr) {
-          if (!Array.isArray(arr)) return [];
-          return arr.flatMap((item) => {
-            if (typeof item === "string") return [item];
-            if (typeof item === "object" && item !== null) {
-              const text = item.concept ?? item.action ?? item.observation ??
-                item.note ?? item.name ?? item.term ?? null;
-              const detail = item.detail ?? item.rationale ?? item.context ??
-                item.definition ?? item.correction ?? item.description ?? item.summary ?? null;
-              if (text && detail) return [String(text) + " — " + String(detail)];
-              if (text) return [String(text)];
+        function sourceInstructors(source) {
+          return source.instructors_raw?.length ? source.instructors_raw.join(" + ") : "";
+        }
+
+        function sourceWith(source) {
+          if (source.session_type === "private_lesson") {
+            return source.students_raw?.length ? source.students_raw.join(" + ") : "";
+          }
+          return source.organization || "";
+        }
+
+        function buildDisplayTitle(source) {
+          const parts = [];
+          if (source.session_date) parts.push(formatDate(source.session_date));
+          parts.push(SESSION_LABELS[source.session_type] || source.session_type);
+          const withVal = sourceWith(source);
+          if (withVal) parts.push(withVal);
+          const instructors = sourceInstructors(source);
+          if (instructors && source.session_type !== "private_lesson") {
+            parts.push(instructors);
+          }
+          if (source.title?.trim()) parts.push(source.title.trim());
+          return parts.join(" · ");
+        }
+
+        function appendSubDetail(parent, label, text) {
+          if (!text) return;
+          const row = document.createElement("p");
+          row.className = "text-xs text-slate-400 mt-1";
+          const strong = document.createElement("span");
+          strong.className = "text-slate-500";
+          strong.textContent = label + ": ";
+          row.appendChild(strong);
+          row.appendChild(document.createTextNode(text));
+          parent.appendChild(row);
+        }
+
+        function renderAttributions(attributions) {
+          if (!attributions?.length) return null;
+          const section = document.createElement("section");
+          section.appendChild(sectionHeader("Teaching"));
+          const wrapper = document.createElement("div");
+          wrapper.className = "space-y-4";
+
+          const sorted = [...attributions].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+          for (const attr of sorted) {
+            const card = document.createElement("div");
+            card.className = "rounded-lg border border-white/8 bg-surface/40 px-4 py-3";
+
+            const head = document.createElement("div");
+            head.className = "flex flex-wrap items-baseline gap-2 mb-1";
+
+            if (attr.raw_term) {
+              const term = document.createElement("p");
+              term.className = "text-sm font-medium text-slate-200";
+              term.textContent = attr.raw_term;
+              head.appendChild(term);
             }
-            return [];
-          });
+
+            const label = kindLabel(attr.attribution_kind);
+            if (label) {
+              const badge = document.createElement("span");
+              badge.className =
+                "inline-flex rounded-full border border-white/10 px-2 py-0.5 text-[10px] font-mono uppercase tracking-wide text-slate-500";
+              badge.textContent = label;
+              head.appendChild(badge);
+            }
+
+            if (head.childNodes.length) card.appendChild(head);
+
+            if (attr.prose) {
+              const prose = document.createElement("p");
+              prose.className = "text-sm text-slate-300 leading-relaxed";
+              prose.textContent = attr.prose;
+              card.appendChild(prose);
+            }
+
+            appendSubDetail(card, "Goal", attr.drill_goal);
+            if (Array.isArray(attr.drill_steps) && attr.drill_steps.length > 0) {
+              const stepsLabel = document.createElement("p");
+              stepsLabel.className = "text-xs text-slate-500 mt-2 mb-1";
+              stepsLabel.textContent = "Steps";
+              card.appendChild(stepsLabel);
+              const ol = document.createElement("ol");
+              ol.className = "space-y-1";
+              attr.drill_steps.forEach((step, i) => {
+                const li = document.createElement("li");
+                li.className = "text-sm text-slate-300 flex gap-2";
+                const num = document.createElement("span");
+                num.className = "text-slate-600 shrink-0 font-mono text-xs";
+                num.textContent = String(i + 1) + ".";
+                const t = document.createElement("span");
+                t.textContent = step;
+                li.appendChild(num);
+                li.appendChild(t);
+                ol.appendChild(li);
+              });
+              card.appendChild(ol);
+            }
+            if (attr.mistake_text || attr.correction_text) {
+              const mc = document.createElement("p");
+              mc.className = "text-sm mt-2";
+              if (attr.mistake_text) {
+                const m = document.createElement("span");
+                m.className = "text-slate-300";
+                m.textContent = attr.mistake_text;
+                mc.appendChild(m);
+              }
+              if (attr.correction_text) {
+                const arrow = document.createElement("span");
+                arrow.className = "text-slate-500";
+                arrow.textContent = " → ";
+                const c = document.createElement("span");
+                c.className = "text-slate-300";
+                c.textContent = attr.correction_text;
+                mc.appendChild(arrow);
+                mc.appendChild(c);
+              }
+              card.appendChild(mc);
+            }
+
+            wrapper.appendChild(card);
+          }
+
+          section.appendChild(wrapper);
+          return section;
         }
 
-        function renderBulletList(label, items, dim = false) {
-          const strings = asStrings(items);
-          if (!strings.length) return null;
+        function renderDefinitions(definitions) {
+          if (!definitions?.length) return null;
+          const section = document.createElement("section");
+          section.appendChild(sectionHeader("Definitions"));
+          const dl = document.createElement("dl");
+          dl.className = "space-y-3";
+          const sorted = [...definitions].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+          for (const item of sorted) {
+            const div = document.createElement("div");
+            const dt = document.createElement("dt");
+            dt.className = "text-sm font-medium text-slate-200";
+            dt.textContent = item.term ?? "";
+            div.appendChild(dt);
+            if (item.definition) {
+              const dd = document.createElement("dd");
+              dd.className = "text-sm text-slate-400 mt-0.5 leading-relaxed";
+              dd.textContent = item.definition;
+              div.appendChild(dd);
+            }
+            dl.appendChild(div);
+          }
+          section.appendChild(dl);
+          return section;
+        }
+
+        function renderSkillCards(label, items) {
+          if (!items?.length) return null;
           const section = document.createElement("section");
           section.appendChild(sectionHeader(label));
+          const wrapper = document.createElement("div");
+          wrapper.className = "space-y-4";
+          for (const item of items) {
+            const card = document.createElement("div");
+            card.className = "rounded-lg border border-white/8 bg-surface/40 px-4 py-3";
+            if (item.skill_name) {
+              const name = document.createElement("p");
+              name.className = "font-medium text-sm text-slate-200";
+              name.textContent = item.skill_name;
+              card.appendChild(name);
+            }
+            if (item.prose) {
+              const prose = document.createElement("p");
+              prose.className = "text-sm text-slate-300 mt-1 leading-relaxed";
+              prose.textContent = item.prose;
+              card.appendChild(prose);
+            }
+            if (item.focus_context) {
+              const ctx = document.createElement("p");
+              ctx.className = "text-xs text-slate-500 mt-1";
+              ctx.textContent = item.focus_context;
+              card.appendChild(ctx);
+            }
+            wrapper.appendChild(card);
+          }
+          section.appendChild(wrapper);
+          return section;
+        }
+
+        function renderRelations(relations) {
+          if (!relations?.length) return null;
+          const section = document.createElement("section");
+          section.appendChild(sectionHeader("Relations"));
           const ul = document.createElement("ul");
-          ul.className = "space-y-1.5";
-          strings.forEach((s) => ul.appendChild(bullet(s, dim)));
+          ul.className = "space-y-3";
+          for (const rel of relations) {
+            const li = document.createElement("li");
+            li.className = "text-sm text-slate-300";
+            const label = kindLabel(rel.relation_kind);
+            if (label) {
+              const badge = document.createElement("span");
+              badge.className =
+                "inline-block mr-2 rounded-full border border-white/10 px-2 py-0.5 text-[10px] font-mono uppercase tracking-wide text-slate-500";
+              badge.textContent = label;
+              li.appendChild(badge);
+            }
+            li.appendChild(document.createTextNode(rel.prose || ""));
+            ul.appendChild(li);
+          }
           section.appendChild(ul);
           return section;
         }
 
-        const SESSION_LABELS = {
-          private_lesson: "Private lesson",
-          group_class: "Group class",
-          other: "Other",
-        };
-
-        function buildDisplayTitle(note) {
-          const parts = [];
-          if (note.session_date) parts.push(note.session_date);
-          parts.push(SESSION_LABELS[note.session_type] || note.session_type);
-          if (note.session_type === "private_lesson") {
-            if (note.students && note.students.length > 0) {
-              parts.push(note.students.join(" + "));
+        function renderReferences(references) {
+          if (!references?.length) return null;
+          const section = document.createElement("section");
+          section.appendChild(sectionHeader("People mentioned"));
+          const wrapper = document.createElement("div");
+          wrapper.className = "space-y-3";
+          for (const ref of references) {
+            const div = document.createElement("div");
+            div.className = "text-sm";
+            const name = ref.referenced_name?.trim();
+            if (name) {
+              const nameEl = document.createElement("span");
+              nameEl.className = "font-medium text-slate-200";
+              nameEl.textContent = name;
+              div.appendChild(nameEl);
             }
-          } else {
-            if (note.organization) parts.push(note.organization);
+            if (ref.ref_type) {
+              const typeEl = document.createElement("span");
+              typeEl.className = "ml-2 text-xs font-mono text-slate-500";
+              typeEl.textContent = ref.ref_type.replace(/_/g, " ");
+              div.appendChild(typeEl);
+            }
+            if (ref.context) {
+              const ctx = document.createElement("p");
+              ctx.className = "text-slate-400 mt-0.5 leading-relaxed";
+              ctx.textContent = ref.context;
+              div.appendChild(ctx);
+            }
+            wrapper.appendChild(div);
           }
-          if (note.title && note.title.trim()) parts.push(note.title.trim());
-          return parts.join(" | ");
+          section.appendChild(wrapper);
+          return section;
         }
 
-        function renderNote(note) {
-          const nj = note.notes_json || {};
-
-          const displayTitle = buildDisplayTitle(note);
+        function renderSourceView(view) {
+          const source = view.source;
+          const displayTitle = buildDisplayTitle(source);
           if (displayTitle) {
             document.title = displayTitle + " — Kaiano Levine";
             const h1 = document.querySelector("h1");
@@ -150,197 +359,51 @@ if (userId && sessionToken && apiBase) {
           const existingSub = document.querySelector("header p");
           if (existingSub) existingSub.remove();
 
-          if (nj.summary) {
-            const p = document.createElement("p");
-            p.className = "text-slate-300 leading-relaxed";
-            p.textContent = String(nj.summary);
-            contentEl.appendChild(p);
+          const sections = [
+            renderAttributions(view.attributions),
+            renderDefinitions(view.definitions),
+            renderSkillCards("Drills", view.drill_purposes),
+            renderSkillCards("Technique requirements", view.technique_requirements),
+            renderRelations(view.relations),
+            renderReferences(view.references),
+          ];
+          for (const section of sections) {
+            if (section) contentEl.appendChild(section);
           }
 
-          const concepts = renderBulletList("Key concepts", nj.key_concepts);
-          if (concepts) contentEl.appendChild(concepts);
-
-          if (Array.isArray(nj.vocabulary_terms) && nj.vocabulary_terms.length > 0) {
-            const section = document.createElement("section");
-            section.appendChild(sectionHeader("Vocabulary"));
-            const dl = document.createElement("dl");
-            dl.className = "space-y-2";
-            nj.vocabulary_terms.forEach((item) => {
-              const div = document.createElement("div");
-              const dt = document.createElement("dt");
-              dt.className = "text-sm font-medium text-slate-200";
-              dt.textContent = String(item.term ?? "");
-              div.appendChild(dt);
-              if (item.definition) {
-                const dd = document.createElement("dd");
-                dd.className = "text-sm text-slate-400";
-                dd.textContent = String(item.definition);
-                div.appendChild(dd);
-              }
-              dl.appendChild(div);
-            });
-            section.appendChild(dl);
-            contentEl.appendChild(section);
+          if (source.created_at) {
+            const footer = document.createElement("div");
+            footer.className = "border-t border-white/8 pt-4 text-xs text-slate-600";
+            footer.textContent = "Added " + formatDate(source.created_at);
+            contentEl.appendChild(footer);
           }
-
-          if (Array.isArray(nj.drills) && nj.drills.length > 0) {
-            const section = document.createElement("section");
-            section.appendChild(sectionHeader("Drills"));
-            const wrapper = document.createElement("div");
-            wrapper.className = "space-y-4";
-            nj.drills.forEach((drill) => {
-              const card = document.createElement("div");
-              card.className = "rounded-lg border border-white/8 bg-surface/40 px-4 py-3";
-              const name = document.createElement("p");
-              name.className = "font-medium text-sm text-slate-200";
-              name.textContent = String(drill.name ?? "");
-              card.appendChild(name);
-              if (drill.goal) {
-                const goal = document.createElement("p");
-                goal.className = "text-xs text-slate-400 mt-0.5";
-                goal.textContent = String(drill.goal);
-                card.appendChild(goal);
-              }
-              if (Array.isArray(drill.steps) && drill.steps.length > 0) {
-                const ol = document.createElement("ol");
-                ol.className = "mt-2 space-y-1";
-                drill.steps.forEach((step, i) => {
-                  const li = document.createElement("li");
-                  li.className = "text-sm text-slate-300 flex gap-2";
-                  const num = document.createElement("span");
-                  num.className = "text-slate-600 shrink-0";
-                  num.textContent = String(i + 1) + ".";
-                  const t = document.createElement("span");
-                  t.textContent = String(step);
-                  li.appendChild(num);
-                  li.appendChild(t);
-                  ol.appendChild(li);
-                });
-                card.appendChild(ol);
-              }
-              wrapper.appendChild(card);
-            });
-            section.appendChild(wrapper);
-            contentEl.appendChild(section);
-          }
-
-          if (Array.isArray(nj.common_mistakes) && nj.common_mistakes.length > 0) {
-            const section = document.createElement("section");
-            section.appendChild(sectionHeader("Common mistakes"));
-            const wrapper = document.createElement("div");
-            wrapper.className = "space-y-2";
-            nj.common_mistakes.forEach((item) => {
-              const div = document.createElement("div");
-              div.className = "text-sm";
-              const m = document.createElement("span");
-              m.className = "text-slate-300";
-              m.textContent = String(item.mistake ?? "");
-              div.appendChild(m);
-              if (item.correction) {
-                const arrow = document.createElement("span");
-                arrow.className = "text-slate-500";
-                arrow.textContent = " → ";
-                const c = document.createElement("span");
-                c.className = "text-slate-300";
-                c.textContent = String(item.correction);
-                div.appendChild(arrow);
-                div.appendChild(c);
-              }
-              wrapper.appendChild(div);
-            });
-            section.appendChild(wrapper);
-            contentEl.appendChild(section);
-          }
-
-          const actions = renderBulletList("Action items", nj.action_items, true);
-          if (actions) contentEl.appendChild(actions);
-
-          const obs = renderBulletList("Observations", nj.student_observations);
-          if (obs) contentEl.appendChild(obs);
-
-          if (Array.isArray(nj.quotes) && nj.quotes.length > 0) {
-            const section = document.createElement("section");
-            section.appendChild(sectionHeader("Quotes"));
-            const wrapper = document.createElement("div");
-            wrapper.className = "space-y-3";
-            nj.quotes.forEach((q) => {
-              const quote = typeof q === "string" ? q : String(q.quote ?? "");
-              const speaker = typeof q === "object" ? String(q.speaker ?? "") : "";
-              const bq = document.createElement("blockquote");
-              bq.className = "border-l-2 border-accent/40 pl-4";
-              const p = document.createElement("p");
-              p.className = "text-sm italic text-slate-300";
-              p.textContent = "\u201c" + quote + "\u201d";
-              bq.appendChild(p);
-              if (speaker) {
-                const cite = document.createElement("p");
-                cite.className = "mt-1 text-xs text-slate-500";
-                cite.textContent = "— " + speaker;
-                bq.appendChild(cite);
-              }
-              wrapper.appendChild(bq);
-            });
-            section.appendChild(wrapper);
-            contentEl.appendChild(section);
-          }
-
-          const refs = renderBulletList("References", nj.references);
-          if (refs) contentEl.appendChild(refs);
-
-          if (Array.isArray(nj.suggested_new_sections) && nj.suggested_new_sections.length > 0) {
-            const section = document.createElement("section");
-            section.className = "rounded-lg border border-amber-500/20 bg-amber-500/5 px-4 py-4";
-            section.appendChild(sectionHeader("Schema feedback"));
-            const wrapper = document.createElement("div");
-            wrapper.className = "space-y-3";
-            nj.suggested_new_sections.forEach((s) => {
-              const div = document.createElement("div");
-              const name = document.createElement("p");
-              name.className = "text-sm font-medium text-amber-400/80";
-              name.textContent = String(s.suggested_name ?? "");
-              div.appendChild(name);
-              if (s.rationale) {
-                const r = document.createElement("p");
-                r.className = "text-xs text-slate-500 mt-0.5";
-                r.textContent = String(s.rationale);
-                div.appendChild(r);
-              }
-              if (s.sample_content) {
-                const sc = document.createElement("p");
-                sc.className = "text-xs text-slate-600 mt-1 italic";
-                sc.textContent = String(s.sample_content);
-                div.appendChild(sc);
-              }
-              wrapper.appendChild(div);
-            });
-            section.appendChild(wrapper);
-            contentEl.appendChild(section);
-          }
-
-          const footer = document.createElement("div");
-          footer.className = "border-t border-white/8 pt-4 text-xs text-slate-600";
-          footer.textContent = "Processed " + formatDate(note.created_at) + " · " + note.provider + "/" + note.model;
-          contentEl.appendChild(footer);
         }
 
         async function load() {
           if (!BASE || !id) { hide(loadingEl); show(errorEl); return; }
           try {
-            const res = await fetch(`${BASE.replace(/\/$/, "")}/v1/wcs/notes/${id}`, {
+            const res = await fetch(`${BASE.replace(/\/$/, "")}/v1/wcs/wiki/sources/${id}`, {
               headers: SESSION_TOKEN
                 ? { Authorization: `Bearer ${SESSION_TOKEN}` }
                 : {},
             });
             if (res.status === 403) {
-              errorEl.textContent = "You don't have access to this note.";
+              errorEl.textContent = "You don't have access to this lesson.";
               throw new Error("forbidden");
+            }
+            if (res.status === 401) {
+              console.warn("[notes] wiki/sources detail auth failed", {
+                status: res.status,
+                authorization: SESSION_TOKEN ? "Bearer <redacted>" : "(none)",
+              });
+              throw new Error("auth");
             }
             if (!res.ok) throw new Error("not found");
             const json = await res.json();
-            const note = json.data;
-            if (!note) throw new Error("no data");
+            const view = json.data;
+            if (!view?.source) throw new Error("no data");
             hide(loadingEl);
-            renderNote(note);
+            renderSourceView(view);
             show(contentEl);
           } catch {
             hide(loadingEl);
