@@ -1,3 +1,10 @@
+# [1.18.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.17.0...v1.18.0) (2026-05-28)
+
+
+### Features
+
+* admin read-detail page for notes browse ([0bb366e](https://github.com/mini-app-polis/website-astro-wcs/commit/0bb366eea87e52294218d6846e298d565686bef0))
+
 # [1.17.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.16.0...v1.17.0) (2026-05-28)
 
 
