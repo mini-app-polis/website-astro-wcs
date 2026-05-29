@@ -1,5 +1,6 @@
 ---
 import Page from "../../../layouts/Page.astro";
+import SourceDetail from "../../../components/SourceDetail";
 import {
   getAuthenticatedUserId,
   getClerkUserData,
@@ -26,27 +27,20 @@ if (!profile?.is_admin) {
   return Astro.redirect("/notes");
 }
 
-const { id } = Astro.params;
+const sourceId = Astro.params.id ?? "";
 ---
 
 <Page title="Lesson (Admin)" subtitle="Full source view">
-  <div
-    class="contents"
-    data-notes-browser
-    data-session-token={sessionToken}
-    data-source-id={id ?? ""}
-    data-mode="admin"
-  >
-    <div class="mb-4">
-      <a href="/notes/admin" class="text-xs text-slate-500 hover:text-slate-300 transition-colors">
-        ← All notes (admin)
-      </a>
-    </div>
-
-    <div id="note-loading" class="text-sm text-slate-500">Loading…</div>
-    <div id="note-error" class="text-sm text-slate-500 hidden">Source not found.</div>
-    <div id="note-content" class="space-y-8 hidden"></div>
+  <div class="mb-4">
+    <a href="/notes/admin" class="text-xs text-slate-500 hover:text-slate-300 transition-colors">
+      ← All notes (admin)
+    </a>
   </div>
-
-  <script is:inline src="/wcs-source-detail.js"></script>
+  <SourceDetail
+    client:load
+    sourceId={sourceId}
+    sessionToken={sessionToken}
+    apiBase={apiBase ?? ""}
+    mode="admin"
+  />
 </Page>

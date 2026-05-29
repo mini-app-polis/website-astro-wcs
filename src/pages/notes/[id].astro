@@ -1,5 +1,6 @@
 ---
 import Page from "../../layouts/Page.astro";
+import SourceDetail from "../../components/SourceDetail";
 import {
   getAuthenticatedUserId,
   getClerkUserData,
@@ -20,6 +21,8 @@ if (userId && sessionToken && apiBase) {
   const { email, displayName } = await getClerkUserData(userId, env);
   await upsertWcsProfile(sessionToken, email, displayName, apiBase);
 }
+
+const sourceId = Astro.params.id ?? "";
 ---
 
 <Page title="Lesson">
@@ -34,24 +37,19 @@ if (userId && sessionToken && apiBase) {
       </a>
     </div>
   ) : (
-    <div
-      class="contents"
-      data-notes-browser
-      data-session-token={sessionToken ?? ""}
-      data-source-id={Astro.params.id ?? ""}
-      data-mode="public"
-    >
+    <>
       <div class="mb-4">
         <a href="/notes" class="text-xs text-slate-500 hover:text-slate-300 transition-colors">
           ← All lessons
         </a>
       </div>
-
-      <div id="note-loading" class="text-sm text-slate-500">Loading…</div>
-      <div id="note-error" class="text-sm text-slate-500 hidden">Lesson not found.</div>
-      <div id="note-content" class="space-y-8 hidden"></div>
-
-      <script is:inline src="/wcs-source-detail.js"></script>
-    </div>
+      <SourceDetail
+        client:load
+        sourceId={sourceId}
+        sessionToken={sessionToken ?? ""}
+        apiBase={apiBase ?? ""}
+        mode="public"
+      />
+    </>
   )}
 </Page>

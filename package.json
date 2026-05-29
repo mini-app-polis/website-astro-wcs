@@ -9,8 +9,10 @@
   },
   "dependencies": {
     "@astrojs/cloudflare": "11.2.0",
+    "@astrojs/preact": "^5.1.4",
     "@clerk/astro": "3.0.8",
-    "astro": "4.16.19"
+    "astro": "4.16.19",
+    "preact": "^10.29.2"
   },
   "devDependencies": {
     "@astrojs/tailwind": "5.1.5",
