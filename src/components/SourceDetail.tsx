@@ -42,6 +42,7 @@ type Definition = {
   definition: string;
   position: number;
   origin: string;
+  entity_id?: string;
   entity_slug: string;
   entity_name: string;
   entity_kind: string;
@@ -130,6 +131,104 @@ const RELATION_KIND_LABELS: Record<string, string> = {
   refines: "refines",
   contrasts_with: "contrasts with",
 };
+
+// Build a stable content key for an attribution. Two attributions with the
+// same key are considered "the same teaching point" — typically because the
+// composer wrote one row per co-instructor on a co-taught lesson.
+function attributionContentKey(a: Attribution): string {
+  return JSON.stringify([
+    a.attribution_kind,
+    a.prose,
+    a.raw_term,
+    a.drill_goal ?? "",
+    Array.isArray(a.drill_steps) ? a.drill_steps : [],
+    a.mistake_text ?? "",
+    a.correction_text ?? "",
+  ]);
+}
+
+// Same idea for definitions: dedup by entity + term + definition prose, since
+// "shared center defined by Kaiano" and "shared center defined by Amy" are
+// duplicates of the same definition when the prose is identical.
+function definitionContentKey(d: Definition): string {
+  return JSON.stringify([d.entity_id, d.term, d.definition]);
+}
+
+// Collapse a list of attributions by content key. For each surviving row,
+// also return the set of instructor display names that contributed to it.
+// The surviving row is the one with the smallest position; that determines
+// the row's ordering downstream.
+type DedupedAttribution = {
+  row: Attribution;
+  instructorNames: string[];
+};
+
+function dedupAttributions(items: Attribution[]): DedupedAttribution[] {
+  const buckets = new Map<string, Attribution[]>();
+  for (const a of items) {
+    const k = attributionContentKey(a);
+    const arr = buckets.get(k) ?? [];
+    arr.push(a);
+    buckets.set(k, arr);
+  }
+  const result: DedupedAttribution[] = [];
+  for (const arr of buckets.values()) {
+    arr.sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+    const namesInOrder: string[] = [];
+    const seen = new Set<string>();
+    for (const a of arr) {
+      if (a.instructor_name && !seen.has(a.instructor_name)) {
+        seen.add(a.instructor_name);
+        namesInOrder.push(a.instructor_name);
+      }
+    }
+    result.push({ row: arr[0], instructorNames: namesInOrder });
+  }
+  return result;
+}
+
+type DedupedDefinition = {
+  row: Definition;
+  instructorNames: string[];
+};
+
+function dedupDefinitions(items: Definition[]): DedupedDefinition[] {
+  const buckets = new Map<string, Definition[]>();
+  for (const d of items) {
+    const k = definitionContentKey(d);
+    const arr = buckets.get(k) ?? [];
+    arr.push(d);
+    buckets.set(k, arr);
+  }
+  const result: DedupedDefinition[] = [];
+  for (const arr of buckets.values()) {
+    arr.sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+    const namesInOrder: string[] = [];
+    const seen = new Set<string>();
+    for (const d of arr) {
+      if (d.instructor_name && !seen.has(d.instructor_name)) {
+        seen.add(d.instructor_name);
+        namesInOrder.push(d.instructor_name);
+      }
+    }
+    result.push({ row: arr[0], instructorNames: namesInOrder });
+  }
+  return result;
+}
+
+function deriveByline(
+  distinctNames: string[],
+  sourceInstructorsRaw: string[],
+): string | null {
+  if (distinctNames.length === 1) return distinctNames[0];
+  if (distinctNames.length > 1) {
+    return sourceInstructorsRaw.length
+      ? sourceInstructorsRaw.join(" + ")
+      : distinctNames.join(" + ");
+  }
+  if (sourceInstructorsRaw.length) return sourceInstructorsRaw.join(" + ");
+  return null;
+}
 
 // ---------- Helpers ----------
 
@@ -301,7 +400,13 @@ function Hero({ view }: { view: View }) {
   return <p class="text-slate-300 leading-relaxed">{summary}</p>;
 }
 
-function Attributions({ items }: { items: Attribution[] }) {
+function Attributions({
+  items,
+  sourceInstructorsRaw,
+}: {
+  items: Attribution[];
+  sourceInstructorsRaw: string[];
+}) {
   if (!items.length) return null;
 
   const groups = new Map<string, Attribution[]>();
@@ -313,32 +418,44 @@ function Attributions({ items }: { items: Attribution[] }) {
   }
 
   const ordered = [...groups.entries()]
-    .map(([key, arr]) => ({
-      key,
-      arr: [...arr].sort(
-        (a, b) => (a.position ?? 0) - (b.position ?? 0),
-      ),
-      minPos: Math.min(...arr.map((a) => a.position ?? 0)),
-    }))
+    .map(([key, arr]) => {
+      const deduped = dedupAttributions(arr);
+      const minPos = Math.min(
+        ...deduped.map((d) => d.row.position ?? 0),
+        Infinity,
+      );
+      return { key, deduped, minPos };
+    })
     .sort((x, y) => x.minPos - y.minPos);
 
   return (
     <section>
-      <SectionHeader label="Teaching" count={items.length} />
+      <SectionHeader
+        label="Teaching"
+        count={ordered.reduce((sum, g) => sum + g.deduped.length, 0)}
+      />
       <div class="space-y-6">
-        {ordered.map(({ key, arr }) => {
-          const head = arr[0];
+        {ordered.map(({ key, deduped }) => {
+          const allNames = new Set<string>();
+          for (const d of deduped) {
+            for (const name of d.instructorNames) allNames.add(name);
+          }
+          const distinctNames = [...allNames];
+          const byline = deriveByline(distinctNames, sourceInstructorsRaw);
+
+          const head = deduped[0].row;
           const conceptName = head.entity_name || head.raw_term || "(unnamed)";
           const conceptSlug = head.entity_slug;
           const conceptKind = head.entity_kind;
 
-          const instructorIds = new Set(
-            arr.map((a) => a.instructor_slug ?? "").filter(Boolean),
-          );
-          const singleInstructor =
-            instructorIds.size === 1
-              ? { slug: arr[0].instructor_slug, name: arr[0].instructor_name }
-              : null;
+          const sorted = [
+            ...deduped.filter(
+              (d) => !d.row.mistake_text && !d.row.correction_text,
+            ),
+            ...deduped.filter(
+              (d) => d.row.mistake_text || d.row.correction_text,
+            ),
+          ];
 
           return (
             <article key={key} class="border-l-2 border-accent/30 pl-4">
@@ -350,22 +467,15 @@ function Attributions({ items }: { items: Attribution[] }) {
                     kind={conceptKind}
                   />
                 </h3>
-                {singleInstructor?.name && (
+                {byline && (
                   <p class="text-xs text-slate-500 mt-0.5">
-                    taught by{" "}
-                    <InstructorLink
-                      slug={singleInstructor.slug}
-                      name={singleInstructor.name}
-                    />
+                    taught by {byline}
                   </p>
                 )}
               </header>
 
               <div class="space-y-3">
-                {[
-                  ...arr.filter((a) => !a.mistake_text && !a.correction_text),
-                  ...arr.filter((a) => a.mistake_text || a.correction_text),
-                ].map((attr) => {
+                {sorted.map(({ row: attr }) => {
                   const isMistake =
                     !!attr.mistake_text || !!attr.correction_text;
                   const badge = kindLabel(attr.attribution_kind);
@@ -441,44 +551,52 @@ function Attributions({ items }: { items: Attribution[] }) {
   );
 }
 
-function Definitions({ items }: { items: Definition[] }) {
+function Definitions({
+  items,
+  sourceInstructorsRaw,
+}: {
+  items: Definition[];
+  sourceInstructorsRaw: string[];
+}) {
   if (!items.length) return null;
-  const sorted = [...items].sort(
-    (a, b) => (a.position ?? 0) - (b.position ?? 0),
+
+  const deduped = dedupDefinitions(items);
+  deduped.sort(
+    (a, b) => (a.row.position ?? 0) - (b.row.position ?? 0),
   );
+
   return (
     <section>
-      <SectionHeader label="Vocabulary" count={items.length} />
+      <SectionHeader label="Vocabulary" count={deduped.length} />
       <dl class="space-y-4">
-        {sorted.map((d) => (
-          <div key={d.id}>
-            <dt class="text-sm font-medium text-slate-100">
-              {d.entity_slug && d.entity_name ? (
-                <EntityLink
-                  slug={d.entity_slug}
-                  name={d.entity_name}
-                  kind={d.entity_kind}
-                />
-              ) : (
-                d.term
+        {deduped.map(({ row: d, instructorNames }) => {
+          const byline = deriveByline(instructorNames, sourceInstructorsRaw);
+          return (
+            <div key={d.id}>
+              <dt class="text-sm font-medium text-slate-100">
+                {d.entity_slug && d.entity_name ? (
+                  <EntityLink
+                    slug={d.entity_slug}
+                    name={d.entity_name}
+                    kind={d.entity_kind}
+                  />
+                ) : (
+                  d.term
+                )}
+              </dt>
+              {d.definition && (
+                <dd class="text-sm text-slate-300 mt-0.5 leading-relaxed">
+                  {d.definition}
+                </dd>
               )}
-            </dt>
-            {d.definition && (
-              <dd class="text-sm text-slate-300 mt-0.5 leading-relaxed">
-                {d.definition}
-              </dd>
-            )}
-            {d.instructor_name && (
-              <p class="text-xs text-slate-500 italic mt-1">
-                — defined by{" "}
-                <InstructorLink
-                  slug={d.instructor_slug}
-                  name={d.instructor_name}
-                />
-              </p>
-            )}
-          </div>
-        ))}
+              {byline && (
+                <p class="text-xs text-slate-500 italic mt-1">
+                  — defined by {byline}
+                </p>
+              )}
+            </div>
+          );
+        })}
       </dl>
     </section>
   );
@@ -646,9 +764,12 @@ function OperatorEditsCallout({
   drills: DrillPurpose[];
   techs: TechniqueRequirement[];
 }) {
+  const dedupedAttrs = dedupAttributions(attributions).map((d) => d.row);
+  const dedupedDefs = dedupDefinitions(definitions).map((d) => d.row);
+
   const edited =
-    attributions.filter((a) => a.origin && a.origin !== "extraction").length +
-    definitions.filter((d) => d.origin && d.origin !== "extraction").length +
+    dedupedAttrs.filter((a) => a.origin && a.origin !== "extraction").length +
+    dedupedDefs.filter((d) => d.origin && d.origin !== "extraction").length +
     relations.filter((r) => r.origin && r.origin !== "extraction").length +
     drills.filter((d) => d.origin && d.origin !== "extraction").length +
     techs.filter((t) => t.origin && t.origin !== "extraction").length;
@@ -756,8 +877,14 @@ export default function SourceDetail({
   return (
     <div class="space-y-10">
       <Hero view={view} />
-      <Attributions items={attributions} />
-      <Definitions items={definitions} />
+      <Attributions
+        items={attributions}
+        sourceInstructorsRaw={view.source.instructors_raw ?? []}
+      />
+      <Definitions
+        items={definitions}
+        sourceInstructorsRaw={view.source.instructors_raw ?? []}
+      />
       <DrillPurposes items={drills} />
       <TechniqueRequirements items={techs} />
       <Relations items={relations} />
