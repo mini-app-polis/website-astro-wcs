@@ -1,3 +1,10 @@
+## [1.18.3](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.18.2...v1.18.3) (2026-05-29)
+
+
+### Bug Fixes
+
+* **notes:** dedup co-taught attributions and definitions at render time ([ae4860c](https://github.com/mini-app-polis/website-astro-wcs/commit/ae4860c2ae180ec2694c82e54445f8806ba0376d))
+
 ## [1.18.2](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.18.1...v1.18.2) (2026-05-29)
 
 
