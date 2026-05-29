@@ -1,3 +1,10 @@
+## [1.18.2](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.18.1...v1.18.2) (2026-05-29)
+
+
+### Bug Fixes
+
+* **notes:** serve detail-page renderer as static asset to work around Astro hoisted-script SSR bug ([c7537a4](https://github.com/mini-app-polis/website-astro-wcs/commit/c7537a41fc30f96e6c959c94bb3b74c180ae7d45))
+
 ## [1.18.1](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.18.0...v1.18.1) (2026-05-28)
 
 
