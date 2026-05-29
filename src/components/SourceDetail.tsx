@@ -216,20 +216,6 @@ function dedupDefinitions(items: Definition[]): DedupedDefinition[] {
   return result;
 }
 
-function deriveByline(
-  distinctNames: string[],
-  sourceInstructorsRaw: string[],
-): string | null {
-  if (distinctNames.length === 1) return distinctNames[0];
-  if (distinctNames.length > 1) {
-    return sourceInstructorsRaw.length
-      ? sourceInstructorsRaw.join(" + ")
-      : distinctNames.join(" + ");
-  }
-  if (sourceInstructorsRaw.length) return sourceInstructorsRaw.join(" + ");
-  return null;
-}
-
 // ---------- Helpers ----------
 
 function formatDate(iso: string | null | undefined): string {
@@ -400,13 +386,7 @@ function Hero({ view }: { view: View }) {
   return <p class="text-slate-300 leading-relaxed">{summary}</p>;
 }
 
-function Attributions({
-  items,
-  sourceInstructorsRaw,
-}: {
-  items: Attribution[];
-  sourceInstructorsRaw: string[];
-}) {
+function Attributions({ items }: { items: Attribution[] }) {
   if (!items.length) return null;
 
   const groups = new Map<string, Attribution[]>();
@@ -436,13 +416,6 @@ function Attributions({
       />
       <div class="space-y-6">
         {ordered.map(({ key, deduped }) => {
-          const allNames = new Set<string>();
-          for (const d of deduped) {
-            for (const name of d.instructorNames) allNames.add(name);
-          }
-          const distinctNames = [...allNames];
-          const byline = deriveByline(distinctNames, sourceInstructorsRaw);
-
           const head = deduped[0].row;
           const conceptName = head.entity_name || head.raw_term || "(unnamed)";
           const conceptSlug = head.entity_slug;
@@ -459,20 +432,13 @@ function Attributions({
 
           return (
             <article key={key} class="border-l-2 border-accent/30 pl-4">
-              <header class="mb-2">
-                <h3 class="text-base font-medium text-slate-100">
-                  <EntityLink
-                    slug={conceptSlug}
-                    name={conceptName}
-                    kind={conceptKind}
-                  />
-                </h3>
-                {byline && (
-                  <p class="text-xs text-slate-500 mt-0.5">
-                    taught by {byline}
-                  </p>
-                )}
-              </header>
+              <h3 class="mb-2 text-base font-medium text-slate-100">
+                <EntityLink
+                  slug={conceptSlug}
+                  name={conceptName}
+                  kind={conceptKind}
+                />
+              </h3>
 
               <div class="space-y-3">
                 {sorted.map(({ row: attr }) => {
@@ -551,13 +517,7 @@ function Attributions({
   );
 }
 
-function Definitions({
-  items,
-  sourceInstructorsRaw,
-}: {
-  items: Definition[];
-  sourceInstructorsRaw: string[];
-}) {
+function Definitions({ items }: { items: Definition[] }) {
   if (!items.length) return null;
 
   const deduped = dedupDefinitions(items);
@@ -569,34 +529,26 @@ function Definitions({
     <section>
       <SectionHeader label="Vocabulary" count={deduped.length} />
       <dl class="space-y-4">
-        {deduped.map(({ row: d, instructorNames }) => {
-          const byline = deriveByline(instructorNames, sourceInstructorsRaw);
-          return (
-            <div key={d.id}>
-              <dt class="text-sm font-medium text-slate-100">
-                {d.entity_slug && d.entity_name ? (
-                  <EntityLink
-                    slug={d.entity_slug}
-                    name={d.entity_name}
-                    kind={d.entity_kind}
-                  />
-                ) : (
-                  d.term
-                )}
-              </dt>
-              {d.definition && (
-                <dd class="text-sm text-slate-300 mt-0.5 leading-relaxed">
-                  {d.definition}
-                </dd>
+        {deduped.map(({ row: d }) => (
+          <div key={d.id}>
+            <dt class="text-sm font-medium text-slate-100">
+              {d.entity_slug && d.entity_name ? (
+                <EntityLink
+                  slug={d.entity_slug}
+                  name={d.entity_name}
+                  kind={d.entity_kind}
+                />
+              ) : (
+                d.term
               )}
-              {byline && (
-                <p class="text-xs text-slate-500 italic mt-1">
-                  — defined by {byline}
-                </p>
-              )}
-            </div>
-          );
-        })}
+            </dt>
+            {d.definition && (
+              <dd class="text-sm text-slate-300 mt-0.5 leading-relaxed">
+                {d.definition}
+              </dd>
+            )}
+          </div>
+        ))}
       </dl>
     </section>
   );
@@ -877,14 +829,8 @@ export default function SourceDetail({
   return (
     <div class="space-y-10">
       <Hero view={view} />
-      <Attributions
-        items={attributions}
-        sourceInstructorsRaw={view.source.instructors_raw ?? []}
-      />
-      <Definitions
-        items={definitions}
-        sourceInstructorsRaw={view.source.instructors_raw ?? []}
-      />
+      <Attributions items={attributions} />
+      <Definitions items={definitions} />
       <DrillPurposes items={drills} />
       <TechniqueRequirements items={techs} />
       <Relations items={relations} />
