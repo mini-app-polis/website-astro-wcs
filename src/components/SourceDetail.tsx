@@ -28,6 +28,7 @@ type Attribution = {
   mistake_text?: string | null;
   correction_text?: string | null;
   origin: string;
+  entity_id?: string;
   entity_slug: string;
   entity_name: string;
   entity_kind: string;
@@ -187,29 +188,24 @@ function buildDisplayTitle(source: Source): string {
 
 function buildSummary(view: View): string {
   const s = view.source;
-  const bits: string[] = [];
   const instructors = sourceInstructors(s);
   const withVal = sourceWith(s);
-  const verb =
-    s.session_type === "private_lesson"
-      ? `with ${instructors || "an instructor"}${withVal ? ` for ${withVal}` : ""}`
-      : `with ${instructors || "instructors"}${withVal ? ` at ${withVal}` : ""}`;
-  bits.push(`${SESSION_LABELS[s.session_type] || s.session_type} ${verb}`);
+  const bits: string[] = [];
+  if (s.session_type === "private_lesson") {
+    bits.push(
+      `${SESSION_LABELS[s.session_type] || s.session_type}${
+        instructors ? ` with ${instructors}` : ""
+      }${withVal ? ` for ${withVal}` : ""}`,
+    );
+  } else {
+    bits.push(
+      `${SESSION_LABELS[s.session_type] || s.session_type}${
+        instructors ? ` with ${instructors}` : ""
+      }${withVal ? ` at ${withVal}` : ""}`,
+    );
+  }
   if (s.session_date) bits.push(formatDate(s.session_date));
-
-  const counts: string[] = [];
-  const attr = view.attributions?.length ?? 0;
-  const defs = view.definitions?.length ?? 0;
-  const drills = view.drill_purposes?.length ?? 0;
-  const techs = view.technique_requirements?.length ?? 0;
-  const rels = view.relations?.length ?? 0;
-  if (attr) counts.push(`${attr} ${attr === 1 ? "attribution" : "attributions"}`);
-  if (defs) counts.push(`${defs} ${defs === 1 ? "definition" : "definitions"}`);
-  if (drills) counts.push(`${drills} ${drills === 1 ? "drill" : "drills"}`);
-  if (techs) counts.push(`${techs} technique ${techs === 1 ? "requirement" : "requirements"}`);
-  if (rels) counts.push(`${rels} ${rels === 1 ? "relation" : "relations"}`);
-
-  return counts.length ? `${bits.join(" · ")} — ${counts.join(", ")}` : bits.join(" · ");
+  return bits.join(" · ");
 }
 
 function entityHref(slug: string, _kind: string): string {
@@ -307,79 +303,134 @@ function Hero({ view }: { view: View }) {
 
 function Attributions({ items }: { items: Attribution[] }) {
   if (!items.length) return null;
-  const sorted = [...items].sort(
-    (a, b) => (a.position ?? 0) - (b.position ?? 0),
-  );
+
+  const groups = new Map<string, Attribution[]>();
+  for (const a of items) {
+    const key = a.entity_slug || a.entity_id || a.raw_term || "unknown";
+    const arr = groups.get(key) ?? [];
+    arr.push(a);
+    groups.set(key, arr);
+  }
+
+  const ordered = [...groups.entries()]
+    .map(([key, arr]) => ({
+      key,
+      arr: [...arr].sort(
+        (a, b) => (a.position ?? 0) - (b.position ?? 0),
+      ),
+      minPos: Math.min(...arr.map((a) => a.position ?? 0)),
+    }))
+    .sort((x, y) => x.minPos - y.minPos);
+
   return (
     <section>
       <SectionHeader label="Teaching" count={items.length} />
-      <div class="space-y-4">
-        {sorted.map((attr) => {
-          const badge = kindLabel(attr.attribution_kind);
+      <div class="space-y-6">
+        {ordered.map(({ key, arr }) => {
+          const head = arr[0];
+          const conceptName = head.entity_name || head.raw_term || "(unnamed)";
+          const conceptSlug = head.entity_slug;
+          const conceptKind = head.entity_kind;
+
+          const instructorIds = new Set(
+            arr.map((a) => a.instructor_slug ?? "").filter(Boolean),
+          );
+          const singleInstructor =
+            instructorIds.size === 1
+              ? { slug: arr[0].instructor_slug, name: arr[0].instructor_name }
+              : null;
+
           return (
-            <div key={attr.id} class={CARD_CLASS}>
-              <div class="flex flex-wrap items-baseline gap-2 mb-1.5">
-                <p class="text-sm font-medium text-slate-200">
-                  {attr.instructor_name ? (
-                    <>
-                      <InstructorLink
-                        slug={attr.instructor_slug}
-                        name={attr.instructor_name}
-                      />
-                      <span class="text-slate-500"> on </span>
-                    </>
-                  ) : null}
+            <article key={key} class="border-l-2 border-accent/30 pl-4">
+              <header class="mb-2">
+                <h3 class="text-base font-medium text-slate-100">
                   <EntityLink
-                    slug={attr.entity_slug}
-                    name={attr.entity_name || attr.raw_term}
-                    kind={attr.entity_kind}
+                    slug={conceptSlug}
+                    name={conceptName}
+                    kind={conceptKind}
                   />
-                </p>
-                {badge && <KindBadge label={badge} />}
-              </div>
-
-              {attr.prose && (
-                <p class="text-sm text-slate-300 leading-relaxed">
-                  {attr.prose}
-                </p>
-              )}
-
-              {attr.drill_goal && (
-                <p class="text-xs text-slate-500 italic mt-1.5">
-                  Goal: {attr.drill_goal}
-                </p>
-              )}
-
-              {Array.isArray(attr.drill_steps) && attr.drill_steps.length > 0 && (
-                <>
-                  <p class="text-xs text-slate-500 mt-2.5 mb-1 font-mono uppercase tracking-wider">
-                    Steps
+                </h3>
+                {singleInstructor?.name && (
+                  <p class="text-xs text-slate-500 mt-0.5">
+                    taught by{" "}
+                    <InstructorLink
+                      slug={singleInstructor.slug}
+                      name={singleInstructor.name}
+                    />
                   </p>
-                  <ol class="space-y-1">
-                    {attr.drill_steps.map((step, j) => (
-                      <li key={j} class="text-sm text-slate-300 flex gap-2">
-                        <span class="text-slate-600 shrink-0">{j + 1}.</span>
-                        <span>{step}</span>
-                      </li>
-                    ))}
-                  </ol>
-                </>
-              )}
+                )}
+              </header>
 
-              {(attr.mistake_text || attr.correction_text) && (
-                <div class="mt-3 border-l-2 border-amber-500/40 pl-3 text-sm">
-                  {attr.mistake_text && (
-                    <span class="text-slate-300">{attr.mistake_text}</span>
-                  )}
-                  {attr.correction_text && (
-                    <>
-                      <span class="text-slate-500"> → </span>
-                      <span class="text-slate-200">{attr.correction_text}</span>
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
+              <div class="space-y-3">
+                {arr.map((attr) => {
+                  const isMistake =
+                    !!attr.mistake_text || !!attr.correction_text;
+                  const badge = kindLabel(attr.attribution_kind);
+
+                  if (isMistake) {
+                    return (
+                      <div
+                        key={attr.id}
+                        class="border-l-2 border-amber-500/50 pl-3 py-0.5 text-sm"
+                      >
+                        <p class="text-[10px] font-mono uppercase tracking-wider text-amber-400/70 mb-1">
+                          Common mistake
+                        </p>
+                        {attr.mistake_text && (
+                          <p class="text-slate-300 leading-relaxed">
+                            {attr.mistake_text}
+                          </p>
+                        )}
+                        {attr.correction_text && (
+                          <p class="text-slate-200 leading-relaxed mt-1">
+                            <span class="text-slate-500">Fix: </span>
+                            {attr.correction_text}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div key={attr.id} class="text-sm">
+                      {attr.prose && (
+                        <p class="text-slate-300 leading-relaxed">
+                          {badge && (
+                            <span class="mr-2 inline-flex items-baseline rounded-full border border-white/10 px-2 py-0.5 text-[10px] font-mono uppercase tracking-wide text-slate-500 align-baseline">
+                              {badge}
+                            </span>
+                          )}
+                          {attr.prose}
+                        </p>
+                      )}
+
+                      {attr.drill_goal && (
+                        <p class="text-xs text-slate-500 italic mt-1">
+                          Goal: {attr.drill_goal}
+                        </p>
+                      )}
+
+                      {Array.isArray(attr.drill_steps) &&
+                        attr.drill_steps.length > 0 && (
+                          <ol class="mt-2 space-y-1">
+                            {attr.drill_steps.map((step, j) => (
+                              <li
+                                key={j}
+                                class="text-sm text-slate-300 flex gap-2"
+                              >
+                                <span class="text-slate-600 shrink-0">
+                                  {j + 1}.
+                                </span>
+                                <span>{step}</span>
+                              </li>
+                            ))}
+                          </ol>
+                        )}
+                    </div>
+                  );
+                })}
+              </div>
+            </article>
           );
         })}
       </div>
@@ -395,31 +446,27 @@ function Definitions({ items }: { items: Definition[] }) {
   return (
     <section>
       <SectionHeader label="Vocabulary" count={items.length} />
-      <dl class="space-y-3">
+      <dl class="space-y-4">
         {sorted.map((d) => (
           <div key={d.id}>
-            <dt class="text-sm font-medium text-slate-200 flex flex-wrap items-baseline gap-2">
-              <span>{d.term}</span>
-              {d.entity_slug &&
-                d.entity_name &&
-                d.entity_name.toLowerCase() !== d.term.toLowerCase() && (
-                  <span class="text-[10px] font-mono text-slate-500">
-                    →{" "}
-                    <EntityLink
-                      slug={d.entity_slug}
-                      name={d.entity_name}
-                      kind={d.entity_kind}
-                    />
-                  </span>
-                )}
+            <dt class="text-sm font-medium text-slate-100">
+              {d.entity_slug && d.entity_name ? (
+                <EntityLink
+                  slug={d.entity_slug}
+                  name={d.entity_name}
+                  kind={d.entity_kind}
+                />
+              ) : (
+                d.term
+              )}
             </dt>
             {d.definition && (
-              <dd class="text-sm text-slate-400 mt-0.5 leading-relaxed">
+              <dd class="text-sm text-slate-300 mt-0.5 leading-relaxed">
                 {d.definition}
               </dd>
             )}
             {d.instructor_name && (
-              <p class="text-xs text-slate-500 mt-1 italic">
+              <p class="text-xs text-slate-500 italic mt-1">
                 — defined by{" "}
                 <InstructorLink
                   slug={d.instructor_slug}
@@ -439,32 +486,27 @@ function DrillPurposes({ items }: { items: DrillPurpose[] }) {
   return (
     <section>
       <SectionHeader label="Drills" count={items.length} />
-      <div class="space-y-4">
+      <div class="space-y-5">
         {items.map((d) => (
-          <div key={d.id} class={CARD_CLASS}>
-            <div class="flex flex-wrap items-center gap-2 mb-1">
-              <p class="font-medium text-sm text-slate-200">
-                <EntityLink
-                  slug={d.drill_entity_slug}
-                  name={d.drill_entity_name || d.skill_name}
-                  kind="drill"
-                />
-              </p>
-              {d.skill_name && d.skill_name !== d.drill_entity_name && (
-                <SkillPill label={d.skill_name} />
-              )}
-            </div>
+          <article key={d.id}>
+            <h3 class="text-sm font-medium text-slate-100">
+              <EntityLink
+                slug={d.drill_entity_slug}
+                name={d.drill_entity_name || d.skill_name}
+                kind="drill"
+              />
+            </h3>
             {d.prose && (
               <p class="text-sm text-slate-300 leading-relaxed mt-1">
                 {d.prose}
               </p>
             )}
             {d.focus_context && (
-              <p class="text-xs text-slate-500 italic mt-1.5">
+              <p class="text-xs text-slate-500 italic mt-1">
                 {d.focus_context}
               </p>
             )}
-          </div>
+          </article>
         ))}
       </div>
     </section>
@@ -476,27 +518,22 @@ function TechniqueRequirements({ items }: { items: TechniqueRequirement[] }) {
   return (
     <section>
       <SectionHeader label="Technique requirements" count={items.length} />
-      <div class="space-y-4">
+      <div class="space-y-5">
         {items.map((t) => (
-          <div key={t.id} class={CARD_CLASS}>
-            <div class="flex flex-wrap items-center gap-2 mb-1">
-              <p class="font-medium text-sm text-slate-200">
-                <EntityLink
-                  slug={t.technique_entity_slug}
-                  name={t.technique_entity_name || t.skill_name}
-                  kind="technique"
-                />
-              </p>
-              {t.skill_name && t.skill_name !== t.technique_entity_name && (
-                <SkillPill label={t.skill_name} />
-              )}
-            </div>
+          <article key={t.id}>
+            <h3 class="text-sm font-medium text-slate-100">
+              <EntityLink
+                slug={t.technique_entity_slug}
+                name={t.technique_entity_name || t.skill_name}
+                kind="technique"
+              />
+            </h3>
             {t.prose && (
               <p class="text-sm text-slate-300 leading-relaxed mt-1">
                 {t.prose}
               </p>
             )}
-          </div>
+          </article>
         ))}
       </div>
     </section>
@@ -507,27 +544,29 @@ function Relations({ items }: { items: Relation[] }) {
   if (!items.length) return null;
   return (
     <section>
-      <SectionHeader label="Relations" count={items.length} />
+      <SectionHeader label="How these connect" count={items.length} />
       <ul class="space-y-3">
         {items.map((r) => (
           <li key={r.id} class="text-sm">
-            <div class="flex flex-wrap items-baseline gap-2 text-slate-200">
+            <p class="text-slate-200">
               <EntityLink
                 slug={r.from_entity_slug}
                 name={r.from_entity_name}
                 kind={r.from_entity_kind}
               />
-              <span class="text-[10px] font-mono uppercase tracking-wide text-slate-500">
-                {relationLabel(r.relation_kind)} →
+              <span class="mx-2 text-[10px] font-mono uppercase tracking-wide text-slate-500">
+                {relationLabel(r.relation_kind)}
               </span>
               <EntityLink
                 slug={r.to_entity_slug}
                 name={r.to_entity_name}
                 kind={r.to_entity_kind}
               />
-            </div>
+            </p>
             {r.prose && (
-              <p class="text-slate-400 mt-1 leading-relaxed">{r.prose}</p>
+              <p class="text-xs text-slate-500 mt-1 leading-relaxed">
+                {r.prose}
+              </p>
             )}
           </li>
         ))}
@@ -541,27 +580,27 @@ function References({ items }: { items: Reference[] }) {
   return (
     <section>
       <SectionHeader label="People mentioned" count={items.length} />
-      <div class="space-y-3">
+      <ul class="space-y-3">
         {items.map((ref) => (
-          <div key={ref.id} class="text-sm">
-            <div class="flex flex-wrap items-baseline gap-2">
+          <li key={ref.id} class="text-sm">
+            <p class="text-slate-200">
               {ref.referenced_name && (
-                <span class="font-medium text-slate-200">
-                  {ref.referenced_name}
-                </span>
+                <span class="font-medium">{ref.referenced_name}</span>
               )}
               {ref.ref_type && (
-                <KindBadge label={ref.ref_type.replace(/_/g, " ")} />
+                <span class="ml-2 text-xs text-slate-500 lowercase">
+                  {ref.ref_type.replace(/_/g, " ")}
+                </span>
               )}
-            </div>
+            </p>
             {ref.context && (
-              <p class="text-slate-400 mt-0.5 leading-relaxed">
+              <p class="text-xs text-slate-400 mt-1 leading-relaxed">
                 {ref.context}
               </p>
             )}
-          </div>
+          </li>
         ))}
-      </div>
+      </ul>
     </section>
   );
 }
@@ -712,7 +751,7 @@ export default function SourceDetail({
   const references = view.references ?? [];
 
   return (
-    <div class="space-y-8">
+    <div class="space-y-10">
       <Hero view={view} />
       <Attributions items={attributions} />
       <Definitions items={definitions} />
