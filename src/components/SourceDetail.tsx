@@ -362,7 +362,10 @@ function Attributions({ items }: { items: Attribution[] }) {
               </header>
 
               <div class="space-y-3">
-                {arr.map((attr) => {
+                {[
+                  ...arr.filter((a) => !a.mistake_text && !a.correction_text),
+                  ...arr.filter((a) => a.mistake_text || a.correction_text),
+                ].map((attr) => {
                   const isMistake =
                     !!attr.mistake_text || !!attr.correction_text;
                   const badge = kindLabel(attr.attribution_kind);
