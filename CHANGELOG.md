@@ -1,3 +1,10 @@
+## [1.18.4](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.18.3...v1.18.4) (2026-06-07)
+
+
+### Bug Fixes
+
+* pinning version for astro preact ([0595e4e](https://github.com/mini-app-polis/website-astro-wcs/commit/0595e4ee93bbd88ed3cce882b46c42933a7be3e2))
+
 ## [1.18.3](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.18.2...v1.18.3) (2026-05-29)
 
 
