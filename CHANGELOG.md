@@ -1,3 +1,10 @@
+# [1.19.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.18.4...v1.19.0) (2026-09-04)
+
+
+### Features
+
+* **security:** call the shared security workflow, clear both criticals ([b1cd01f](https://github.com/mini-app-polis/website-astro-wcs/commit/b1cd01f3fdc590c9c069c6a69222810740ebe076))
+
 ## [1.18.4](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.18.3...v1.18.4) (2026-06-07)
 
 
