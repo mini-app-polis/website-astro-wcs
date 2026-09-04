@@ -1,11 +1,4 @@
-# Cloudflare Workers, not Pages. @astrojs/cloudflare v11 was the last
-# release supporting Pages; v12 onward targets Workers with static
-# assets, and the /_image SSRF is only fixed in v12.6.6+.
 name = "kaiano-wcs-website"
 compatibility_date = "2024-09-23"
 compatibility_flags = ["nodejs_compat"]
-
-# The adapter generates the worker entry at build time, so `main` is not
-# declared here — wrangler validates that field before the build exists.
-[assets]
-directory = "./dist"
+pages_build_output_dir = "dist"
