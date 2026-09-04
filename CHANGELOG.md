@@ -1,3 +1,10 @@
+## [2.0.1](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.0.0...v2.0.1) (2026-09-04)
+
+
+### Bug Fixes
+
+* **deps:** pin vulnerable transitives, 13 advisories down to 5 ([82636fa](https://github.com/mini-app-polis/website-astro-wcs/commit/82636fa1cd56d70d25275807b80c25d92bb7f497))
+
 # [2.0.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.20.0...v2.0.0) (2026-09-04)
 
 
