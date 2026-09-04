@@ -10,7 +10,7 @@
   "dependencies": {
     "@astrojs/cloudflare": "11.2.0",
     "@astrojs/preact": "5.1.4",
-    "@clerk/astro": "^3.4.20",
+    "@clerk/astro": "3.4.20",
     "astro": "4.16.19",
     "preact": "^10.29.2"
   },
