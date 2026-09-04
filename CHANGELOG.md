@@ -1,3 +1,57 @@
+# [2.0.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.20.0...v2.0.0) (2026-09-04)
+
+
+* fix(deps)!: upgrade to astro 7 and clear the security advisories ([b7ab775](https://github.com/mini-app-polis/website-astro-wcs/commit/b7ab775f946d5d8de9b35302995372b8a069cd57)), closes [#34d399](https://github.com/mini-app-polis/website-astro-wcs/issues/34d399) [#18181e](https://github.com/mini-app-polis/website-astro-wcs/issues/18181e) [#1f1f27](https://github.com/mini-app-polis/website-astro-wcs/issues/1f1f27) [#0d0d0f](https://github.com/mini-app-polis/website-astro-wcs/issues/0d0d0f) [#111115](https://github.com/mini-app-polis/website-astro-wcs/issues/111115)
+
+
+### Bug Fixes
+
+* **git:** never three-way merge a lockfile ([80d29dc](https://github.com/mini-app-polis/website-astro-wcs/commit/80d29dceda1e7e89d0842dc5f337e7e4f38b04da))
+
+
+### BREAKING CHANGES
+
+* deploys move from Cloudflare Pages to Cloudflare
+Workers, and Clerk goes from 3 to 4. Neither cutover is in this
+commit.
+
+Same advisories as website-astro-software, and they matter more here.
+That site is output "hybrid"; this one is output "server", so every
+page is server-rendered, and this is the site with authentication —
+which is exactly what the middleware auth bypass, the double URL
+encoding bypass and the Host-header SSRF advisories target. npm audit
+now reports zero.
+
+  astro                4.16.19 -> 7.3.1
+  @astrojs/cloudflare  11.2.0  -> 14.3.0
+  @clerk/astro         3.4.20  -> 4.1.0
+  @astrojs/preact      5.1.4   -> 6.0.5
+  @astrojs/tailwind    removed, replaced by @tailwindcss/vite
+  tailwindcss          3 -> 4
+  autoprefixer, postcss  removed
+
+@clerk/backend is now a declared dependency. src/middleware.ts has
+always imported it, and it resolved only because npm hoisted it out of
+@clerk/astro's tree — a Clerk major is precisely the event that
+changes that tree, so it should not have been implicit.
+
+Clerk 3 to 4 removes getAuth from @clerk/astro/server. That does not
+affect this site: it never imported it. Every symbol this site does
+import was checked against the installed v4 packages — createClerkClient
+and verifyToken from @clerk/backend, clerkClient.authenticateRequest
+used by the handshake middleware, and Show, UserButton and SignIn from
+@clerk/astro/components, whose pages compile.
+
+wrangler.toml becomes a Workers config: @astrojs/cloudflare v11 was the
+last release supporting Pages, and the /_image SSRF is only fixed in
+v12.6.6+, so nothing clears this audit and stays on Pages. `main` is
+not declared — the adapter generates the worker entry at build time and
+wrangler validates that field first.
+
+Tailwind config moves into CSS. tailwind.config.mjs is deleted; its
+theme.extend values become @theme in global.css and darkMode: "class"
+becomes @custom-variant. Verified in the built stylesheet: accent
+
 # [1.20.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v1.19.0...v1.20.0) (2026-09-04)
 
 
