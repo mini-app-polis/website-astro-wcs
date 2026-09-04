@@ -7,6 +7,22 @@ on:
     branches: [main]
 
 jobs:
+  # Delegates to the fleet's shared security workflow: gitleaks over
+  # full history, `npm audit` against the resolved dependency set, and
+  # semgrep. sbom: false because SEC-005 does not apply to a static-site.
+  #
+  # `release` deliberately does NOT depend on this job. The audit cannot
+  # pass until astro 4 -> 7 and @astrojs/cloudflare 11 -> 14 are done,
+  # and gating the site's releases on an unscoped major migration would
+  # freeze deploys rather than fix anything. The job reports; it does not
+  # block. Add `security` to release's `needs` once the audit is green.
+  security:
+    uses: mini-app-polis/.github/.github/workflows/security.yml@v1
+    with:
+      language: typescript
+      package-manager: npm
+      sbom: false
+
   build:
     runs-on: ubuntu-latest
 
