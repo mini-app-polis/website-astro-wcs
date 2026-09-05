@@ -1,3 +1,57 @@
+# [4.0.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v3.0.1...v4.0.0) (2026-09-05)
+
+
+* fix(routing)!: carry note ids in a query parameter, delete the rewrites ([700c3a2](https://github.com/mini-app-polis/website-astro-wcs/commit/700c3a2d490a829083f22ef4ecce26b8294c8463))
+
+
+### BREAKING CHANGES
+
+* deep links to individual notes move from /notes/<id> to
+/notes/detail?id=<id>, and likewise for /notes/admin and /admin/notes. Existing
+bookmarks to those private pages will not resolve.
+
+The rewrites looped in production:
+
+    /notes/*  ->  /notes/detail
+
+/notes/detail matches /notes/*, so it rewrote to itself, indefinitely. Same
+shape for /notes/admin/*. Behind the loop sat a second fault that had not
+surfaced yet: /notes/ask and /notes/admin also match /notes/*, so the shell
+would have swallowed both.
+
+The comment I shipped with those rules claimed real files win over rewrite
+rules. That was an assumption, I flagged it as unverifiable, and I shipped it
+anyway. It is wrong.
+
+Repairing it in place keeps the same shape - an exception per real sibling
+route, and a new one every time a page is added under /notes. That is a rule
+that breaks silently, later, when nobody remembers it. _redirects is a flat
+first-match list, not a router.
+
+So the rewrites are gone entirely and public/_redirects is back to its single
+pre-existing rule. Ids ride in ?id=, read with URLSearchParams in
+SourceDetail.tsx and admin/notes/detail.astro, and the three links that
+generate them are updated. Nothing is left that depends on rewrite ordering.
+
+This reverses the reasoning in docs/STATIC-AUTH-OFFLOAD.md, which argued that a
+path segment identifies a resource while a query parameter describes a page.
+That is true and it was the wrong thing to optimise for: it weighted purity
+above deployability and cost a production outage. The doc now records both the
+decision and the error.
+
+sets/[id] is unaffected - it is public, enumerable, and genuinely rendered at
+build time, so it never needed a rewrite.
+
+Verified: build passes, 26 pages, dist/_redirects contains only the
+/submit-music 301, /notes and /notes/ask and /notes/admin all resolve as their
+own routes, npm audit 0, astro check unchanged at 3 pre-existing errors.
+
+Still unverified: sign-in has not been exercised. Test on a preview before
+pushing.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_0142LW7owtPpkdNGpj69MY47
+
 ## [3.0.1](https://github.com/mini-app-polis/website-astro-wcs/compare/v3.0.0...v3.0.1) (2026-09-05)
 
 
