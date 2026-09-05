@@ -1,3 +1,10 @@
+# [2.3.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.2.0...v2.3.0) (2026-09-05)
+
+
+### Features
+
+* **sets:** load set detail at runtime instead of prerendering each one ([d841bf8](https://github.com/mini-app-polis/website-astro-wcs/commit/d841bf879a1c6c6999a768faa62b32b56845247a))
+
 # [2.2.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.1.0...v2.2.0) (2026-09-05)
 
 
