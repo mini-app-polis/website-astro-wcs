@@ -105,7 +105,7 @@ const apiBase = getApiBase();
     <script type="module">
   import { requireSession, guardedFetch } from "../../lib/session";
       const BASE      = document.documentElement.dataset.apiUrl || "";
-      const SESSION_TOKEN = await requireSession(API_BASE);
+      const SESSION_TOKEN = await requireSession(BASE);
       const loadingEl = document.getElementById("notes-loading");
       const errorEl   = document.getElementById("notes-error");
       const emptyEl   = document.getElementById("notes-empty");
@@ -383,7 +383,7 @@ const apiBase = getApiBase();
     <script type="module">
   import { requireSession, guardedFetch } from "../../lib/session";
       const BASE = document.documentElement.dataset.apiUrl || "";
-      const SESSION_TOKEN = await requireSession(API_BASE);
+      const SESSION_TOKEN = await requireSession(BASE);
 
       const btn      = document.getElementById("refresh-embeddings-btn");
       const labelEl  = document.getElementById("refresh-embeddings-label");

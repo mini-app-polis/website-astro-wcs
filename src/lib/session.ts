@@ -104,13 +104,23 @@ export async function ensureProfile(
  * whether they are allowed. Pages that need authorization get it from the
  * status of the calls they make.
  */
-export async function requireSession(apiBase: string): Promise<string> {
+export async function requireSession(apiBase?: string): Promise<string> {
+  // Defaults to the base URL Base.astro puts on <html>, which is the one
+  // source every page already agrees on. Passing it explicitly was a footgun:
+  // pages name that variable differently, and naming the wrong one threw a
+  // ReferenceError at the top of the module, which killed the whole script and
+  // left the page showing "Loading…" forever.
+  const base =
+    apiBase ??
+    (typeof document !== "undefined"
+      ? (document.documentElement.dataset.apiUrl ?? "")
+      : "");
   const token = await getSessionToken();
   if (!token) {
     location.replace("/sign-in");
     await new Promise(() => {});
   }
-  await ensureProfile(apiBase, token as string);
+  await ensureProfile(base, token as string);
   return token as string;
 }
 

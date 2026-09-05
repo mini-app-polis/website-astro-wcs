@@ -87,7 +87,7 @@ const apiBase = getApiBase();
       <script type="module">
   import { requireSession, guardedFetch } from "../../lib/session";
         const BASE = document.documentElement.dataset.apiUrl || "";
-        const SESSION_TOKEN = await requireSession(API_BASE);
+        const SESSION_TOKEN = await requireSession(BASE);
 
         const form           = document.getElementById("ask-form");
         const input          = document.getElementById("ask-input");
