@@ -1,3 +1,10 @@
+## [2.3.1](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.3.0...v2.3.1) (2026-09-05)
+
+
+### Bug Fixes
+
+* **notes:** do not call the API when signed out ([01354c0](https://github.com/mini-app-polis/website-astro-wcs/commit/01354c0c55b991cd6f370b358948ebb8b6ffd372))
+
 # [2.3.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.2.0...v2.3.0) (2026-09-05)
 
 
