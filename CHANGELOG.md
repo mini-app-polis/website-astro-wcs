@@ -1,3 +1,10 @@
+## [3.0.1](https://github.com/mini-app-polis/website-astro-wcs/compare/v3.0.0...v3.0.1) (2026-09-05)
+
+
+### Bug Fixes
+
+* **sets:** page within the API's limit cap when enumerating set paths ([5692c65](https://github.com/mini-app-polis/website-astro-wcs/commit/5692c65d09649917a8f6919c3c165b727085318a))
+
 # [3.0.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.0.1...v3.0.0) (2026-09-05)
 
 
