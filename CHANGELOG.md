@@ -1,3 +1,87 @@
+# [3.0.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.0.1...v3.0.0) (2026-09-05)
+
+
+* feat(auth)!: make the site static and let the API own authorization ([498b6b3](https://github.com/mini-app-polis/website-astro-wcs/commit/498b6b3e5e29b42d86d96083c1ffd655e17127f1))
+
+
+### BREAKING CHANGES
+
+* this site no longer server-renders. Cloudflare Pages serves a
+static build; @astrojs/cloudflare and @clerk/backend are gone. astro 4.16.19 ->
+7.3.1, @clerk/astro 3.4.20 -> 4.1.0, @astrojs/preact 5.1.4 -> 6.0.5, Tailwind
+3 -> 4. npm audit 5 -> 0.
+
+Why this and not the Workers migration in docs/WORKERS-MIGRATION.md: the
+adapter chains hosting to the framework version by peer dependency, and v11 was
+the last release supporting Pages, which is what pinned this site to Astro 4
+and its advisories. Moving to Workers keeps that chain. Removing the adapter
+ends it - and the only reason the adapter existed was authorization enforced in
+page frontmatter, which was never the real gate.
+
+The API already decides. Every /v1/wcs/* route is scope-guarded; the pages here
+only ever hid a shell. Worse, they gated on profile.is_admin, which seeds a
+person's first grant and stops deciding anything after that - so the site was
+enforcing on a field the identity model had already moved past, and would have
+drifted further with every role change.
+
+So the site now makes no authorization decision. Pages render, call the API,
+and follow its answer: 401 to /sign-in, 403 to /. src/lib/session.ts holds only
+authentication - waiting for Clerk and fetching a live token, which Clerk owns
+legitimately - plus guardedFetch, which routes a refusal rather than predicting
+one.
+
+Clerk is untouched. It never required an adapter - output: "server" did.
+<SignIn>, <UserButton> and <Show> mount client-side either way. The one change
+is a Clerk 4 prop rename that was silently breaking the post-login redirect:
+afterSignInUrl -> fallbackRedirectUrl.
+
+Removed: src/middleware.ts, whose only job was a 307 handshake for stale SSR
+session cookies - a problem that exists only because auth ran on the server.
+src/lib/auth.ts, whose server-only helpers have no remaining callers. Nav's SSR
+admin pass, which its own comment admitted was unreliable and which the client
+reveal was already correcting.
+
+Routing. Four dynamic routes needed an answer, not one - only sets/[id] carried
+`export const prerender = false`, but under output: "server" every page was
+server-rendered, so none needed getStaticPaths before. They get different
+answers on purpose:
+
+  - sets/[id] is public and /v1/sets enumerates it, so it renders at build
+    time. A new set needs a rebuild; kwalla-dance's scheduled deploy hook is
+    the fleet precedent.
+  - the three private note routes must NOT be enumerated - that would publish
+    the id set inside a public artifact. Each becomes one static shell,
+    path-preserving via a 200 rewrite in public/_redirects, reading its id from
+    location.pathname. A path segment identifies a resource; a query parameter
+    would have described a page.
+
+Also fixes a silent failure the first build walked straight into: getSets
+swallows transport errors and returns its fallback, so an API blip during a
+build would have produced a green build that 404s every set page. A configured
+API returning nothing now fails the build; an unconfigured one warns.
+
+ci.yml: release now needs [build, security] and the comment explaining why it
+was ungated is gone - the audit is 0. The build step also passes
+PUBLIC_CLERK_PUBLISHABLE_KEY, which it never did; it is read through
+import.meta.env, so without it the build ships a site where Clerk never
+initialises.
+
+Verified: build passes, 25 pages, dist/index.html at the root with no
+_worker.js and no dist/server, _redirects shipped with the pre-existing
+/submit-music rule intact above the rewrites, npm audit 0. astro check is 3
+errors, down from 16 - all three a pre-existing union-type issue in
+dj-marvel.astro, untouched here.
+
+NOT verified, and this is the part that matters: no sign-in was exercised. A
+green build proves imports resolve and nothing about auth. Before pushing, test
+on a preview deployment - sign in, confirm /admin/* and /notes/admin refuse a
+signed-out visitor and a non-admin, confirm a set detail page renders, and
+confirm the _redirects rewrites resolve, which cannot be checked without
+deploying.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_0142LW7owtPpkdNGpj69MY47
+
 ## [2.0.1](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.0.0...v2.0.1) (2026-09-04)
 
 
