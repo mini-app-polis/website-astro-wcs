@@ -1,7 +1,7 @@
 ---
 import Page from "../../layouts/Page.astro";
 import TrackTable from "../../components/TrackTable.astro";
-import { getSetDetail, getSets, getApiBase } from "../../lib/api";
+import { getSetDetail, getApiBase } from "../../lib/api";
 
 // Public, enumerable, so it is rendered at build time. Sets are a public
 // resource and /v1/sets already lists them, which makes getStaticPaths the
@@ -27,15 +27,37 @@ export async function getStaticPaths() {
     return [];
   }
 
-  const sets = await getSets({ limit: 1000 }, apiBase);
+  // Fetched directly rather than through getSets, which swallows transport
+  // errors and returns an empty array. That is fine for a page that can degrade
+  // to "no sets"; it is not fine here, where an empty result silently means
+  // "publish a site whose every set detail page is a 404". This throws instead,
+  // and a failed build is the correct outcome.
+  //
+  // /v1/sets caps limit at 200 — Query(ge=1, le=200) — so asking for more is a
+  // 422, which is what broke the first deploy of this page.
+  const PAGE = 200;
+  const base = apiBase.replace(/\/$/, "");
+  const sets = [];
 
-  // getSets swallows transport errors and returns its fallback, so an API
-  // blip during a build would otherwise produce a green build that silently
-  // 404s every set. A configured API returning nothing is a failure, not an
-  // empty catalogue — refuse to publish it.
-  if (!sets?.length) {
+  for (let offset = 0; ; offset += PAGE) {
+    const url = `${base}/v1/sets?limit=${PAGE}&offset=${offset}`;
+    const res = await fetch(url);
+    if (!res.ok) {
+      throw new Error(
+        `[sets] ${url} returned ${res.status}. Refusing to build, because a ` +
+          "partial or empty list would publish a site missing set detail pages.",
+      );
+    }
+    const batch = (await res.json())?.data ?? [];
+    sets.push(...batch);
+    // A short page is the end of the list; an empty first page is a problem,
+    // caught below.
+    if (batch.length < PAGE) break;
+  }
+
+  if (!sets.length) {
     throw new Error(
-      `[sets] ${apiBase}/v1/sets returned no sets. Refusing to build, because ` +
+      `[sets] ${base}/v1/sets returned no sets. Refusing to build, because ` +
         "this would publish a site where every set detail page is missing.",
     );
   }
