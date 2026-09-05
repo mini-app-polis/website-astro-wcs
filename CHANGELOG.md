@@ -1,3 +1,10 @@
+# [2.2.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.1.0...v2.2.0) (2026-09-05)
+
+
+### Features
+
+* document the release process and drop breaking-change footers ([8fbe713](https://github.com/mini-app-polis/website-astro-wcs/commit/8fbe71386b2776e1439bcd9e50a64c7df9db2f00))
+
 # [2.1.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.0.1...v2.1.0) (2026-09-05)
 
 
