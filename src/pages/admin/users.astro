@@ -112,11 +112,18 @@ const apiBase = getApiBase();
       adminBtn.textContent = user.is_admin ? "Revoke admin" : "Make admin";
       adminBtn.addEventListener("click", async () => {
         adminBtn.disabled = true;
-        await guardedFetch(`${base}/v1/wcs/admin/users/${user.user_id}`, {
+        const res = await guardedFetch(`${base}/v1/wcs/admin/users/${user.user_id}`, {
           method: "PATCH",
           headers: H,
           body: JSON.stringify({ is_admin: !user.is_admin }),
         });
+        if (!res.ok) {
+          // Do not move the UI on a failed write. A 404 or 422 used to flip the
+          // pill anyway, so the row claimed a role change that never happened.
+          adminBtn.textContent = "Failed — retry";
+          adminBtn.disabled = false;
+          return;
+        }
         allUsers = allUsers.map((u) =>
           u.user_id === user.user_id ? { ...u, is_admin: !u.is_admin } : u,
         );
@@ -167,12 +174,39 @@ const apiBase = getApiBase();
 
     listEl.appendChild(panel);
 
-    const [grantsRes, notesRes] = await Promise.all([
-      fetch(`${base}/v1/wcs/admin/grants?user_id=${user.user_id}`, { headers: H }),
-      fetch(`${base}/v1/wcs/notes/all?limit=100`, { headers: H }),
-    ]);
-    const grants = (await grantsRes.json()).data ?? [];
-    const notes = (await notesRes.json()).data ?? [];
+    // guardedFetch, not fetch: these were the only two calls on the site still
+    // using raw fetch, so a 401 here degraded to "No notes found." instead of
+    // sending the admin to sign in. And the whole block is wrapped, because an
+    // unhandled rejection used to leave "Loading grants…" on screen forever —
+    // a gateway error page makes .json() throw.
+    let grants = [];
+    let notes = [];
+    try {
+      const grantsRes = await guardedFetch(
+        `${base}/v1/wcs/admin/grants?user_id=${user.user_id}`,
+        { headers: H },
+      );
+      if (!grantsRes.ok) throw new Error("grants");
+      grants = (await grantsRes.json()).data ?? [];
+
+      // /v1/wcs/notes/all caps limit at 100. A single call silently made every
+      // note past the hundredth ungrantable, with nothing on screen to say so.
+      const PAGE = 100;
+      for (let offset = 0; ; offset += PAGE) {
+        const res = await guardedFetch(
+          `${base}/v1/wcs/notes/all?limit=${PAGE}&offset=${offset}`,
+          { headers: H },
+        );
+        if (!res.ok) throw new Error("notes");
+        const page = (await res.json()).data;
+        if (!Array.isArray(page) || page.length === 0) break;
+        notes.push(...page);
+        if (page.length < PAGE) break;
+      }
+    } catch {
+      grantsList.textContent = "Could not load grants.";
+      return;
+    }
 
     grantsList.innerHTML = "";
 
@@ -201,7 +235,8 @@ const apiBase = getApiBase();
       toggleBtn.addEventListener("click", async () => {
         toggleBtn.disabled = true;
         if (hasGrant && grantObj) {
-          await guardedFetch(`${base}/v1/wcs/admin/grants/${grantObj.id}`, { method: "DELETE", headers: H });
+          const del = await guardedFetch(`${base}/v1/wcs/admin/grants/${grantObj.id}`, { method: "DELETE", headers: H });
+          if (!del.ok) { toggleBtn.textContent = "Failed"; toggleBtn.disabled = false; return; }
           grantedIds.delete(note.id);
           toggleBtn.textContent = "Grant";
           toggleBtn.className = "text-xs font-mono shrink-0 transition-colors text-slate-500 hover:text-accent";
@@ -211,7 +246,12 @@ const apiBase = getApiBase();
             headers: H,
             body: JSON.stringify({ user_id: user.user_id, note_id: note.id }),
           });
+          // POST returns 409 on a duplicate. Without this check .data is
+          // undefined, undefined lands in grants[], and the button claims a
+          // grant that was never created.
+          if (!res.ok) { toggleBtn.textContent = "Failed"; toggleBtn.disabled = false; return; }
           const newGrant = (await res.json()).data;
+          if (!newGrant) { toggleBtn.textContent = "Failed"; toggleBtn.disabled = false; return; }
           grantedIds.add(note.id);
           grants.push(newGrant);
           toggleBtn.textContent = "Revoke";

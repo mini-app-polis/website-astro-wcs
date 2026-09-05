@@ -325,7 +325,10 @@ const apiBase = getApiBase();
               }
               if (!res.ok) throw new Error("bad response");
               const json = await res.json();
-              const page = json.data ?? [];
+              // Array.isArray, not just a length check: a non-array `data` gives
+              // `undefined < PAGE` === false, and the while(true) never ends.
+              const page = json.data;
+              if (!Array.isArray(page)) break;
               allSources.push(...page);
               if (page.length < PAGE) break;
               offset += PAGE;

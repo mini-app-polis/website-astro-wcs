@@ -110,8 +110,10 @@ export async function requireSession(apiBase?: string): Promise<string> {
   // pages name that variable differently, and naming the wrong one threw a
   // ReferenceError at the top of the module, which killed the whole script and
   // left the page showing "Loading…" forever.
+  // `||`, not `??`. Callers pass `root?.dataset.apiBase ?? ""` and getApiBase()
+  // returns "" when unset, so `??` never fell through and this guard was inert.
   const base =
-    apiBase ??
+    apiBase ||
     (typeof document !== "undefined"
       ? (document.documentElement.dataset.apiUrl ?? "")
       : "");

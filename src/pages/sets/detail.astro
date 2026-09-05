@@ -45,6 +45,7 @@ const apiBase = getApiBase();
   const base = (root?.dataset.apiBase ?? "").replace(/\/$/, "");
   const id = new URLSearchParams(location.search).get("id") ?? "";
 
+  if (!root) throw new Error("[sets] missing [data-set-detail] wrapper");
   const loadingEl = root.querySelector("[data-set-loading]");
   const errorEl = root.querySelector("[data-set-error]");
   const bodyEl = root.querySelector("[data-set-body]");
