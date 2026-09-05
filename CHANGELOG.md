@@ -1,3 +1,10 @@
+## [2.3.2](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.3.1...v2.3.2) (2026-09-05)
+
+
+### Bug Fixes
+
+* **notes:** say "no lesson selected" instead of "not found" on a bare detail URL ([1a76c06](https://github.com/mini-app-polis/website-astro-wcs/commit/1a76c06d9f705085cead183f23d8ba43fce4db33))
+
 ## [2.3.1](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.3.0...v2.3.1) (2026-09-05)
 
 
