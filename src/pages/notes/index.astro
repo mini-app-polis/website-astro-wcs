@@ -90,6 +90,12 @@ const apiBase = getApiBase();
   import { getSessionToken, guardedFetch } from "../../lib/session";
         const BASE      = document.documentElement.dataset.apiUrl || "";
         const SESSION_TOKEN = (await getSessionToken()) ?? "";
+
+        // Signed out: stop here. <Show when="signed-out"> is already rendering
+        // the private-section prompt, and fetching without a token would earn a
+        // 401 and bounce the visitor to /sign-in instead of showing it. The
+        // server used to make this decision by not rendering the browser at all.
+        const signedOut = !SESSION_TOKEN;
         const loadingEl = document.getElementById("notes-loading");
         const errorEl   = document.getElementById("notes-error");
         const emptyEl   = document.getElementById("notes-empty");
@@ -297,6 +303,7 @@ const apiBase = getApiBase();
         }
 
         async function load() {
+          if (signedOut) { hide(loadingEl); return; }
           if (!BASE) { hide(loadingEl); show(errorEl); return; }
           try {
             const base = BASE.replace(/\/$/, "");

@@ -785,12 +785,20 @@ export default function SourceDetail({
 
     (async () => {
       const token = sessionToken || (await getSessionToken()) || "";
+      // Signed out: do not call. An unauthenticated request earns a 401, and
+      // handleDenial would bounce the visitor to /sign-in rather than letting
+      // the surrounding <Show when="signed-out"> render its prompt.
+      if (!token) return null;
       return fetch(`${apiBase.replace(/\/$/, "")}${path}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         signal: controller.signal,
       });
     })()
       .then(async (res) => {
+        if (res === null) {
+          setState({ kind: "error", message: "Sign in to view this." });
+          return null;
+        }
         // The API's refusal is the decision; route it rather than render it.
         if (res.status === 401 || res.status === 403) {
           handleDenial(res.status);
@@ -802,7 +810,7 @@ export default function SourceDetail({
         if (!view?.source) throw new Error("no data");
         return view;
       })
-      .then((view) => setState({ kind: "ready", view }))
+      .then((view) => { if (view) setState({ kind: "ready", view }); })
       .catch((err: Error) => {
         if (err.name === "AbortError") return;
         const fallback =
