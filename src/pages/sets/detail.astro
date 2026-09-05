@@ -108,7 +108,8 @@ const apiBase = getApiBase();
   }
 
   async function load() {
-    if (!base || !id) return fail("Set not found.");
+    if (!id) return fail("No set selected.");
+    if (!base) return fail("Could not load this set.");
     try {
       const res = await fetch(`${base}/v1/sets/${encodeURIComponent(id)}`);
       if (res.status === 404) return fail("Set not found.");

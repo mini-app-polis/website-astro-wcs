@@ -28,6 +28,12 @@ const apiBase = getApiBase();
         ← All lessons
       </a>
     </div>
+    <noscript>
+      <p class="text-sm text-slate-500">
+        This page loads its lesson in the browser. Pick one from
+        <a href="/notes" class="underline">all lessons</a>.
+      </p>
+    </noscript>
     <SourceDetail client:load apiBase={apiBase ?? ""} mode="public" />
   </Show>
 </Page>

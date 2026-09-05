@@ -768,7 +768,17 @@ export default function SourceDetail({
         ? (new URLSearchParams(location.search).get("id") ?? "")
         : "");
 
-    if (!apiBase || !id) {
+    // No id at all means nobody picked a lesson - most often a stale link, or a
+    // browser replaying the 308 that the old /notes/* rewrite briefly produced.
+    // Say that, and point back to the list. Deliberately NOT an automatic
+    // redirect: a browser holding that cached 308 would bounce between /notes
+    // and here forever.
+    if (!id) {
+      setState({ kind: "error", message: "No lesson selected." });
+      return;
+    }
+
+    if (!apiBase) {
       setState({
         kind: "error",
         message: mode === "admin" ? "Source not found." : "Lesson not found.",
