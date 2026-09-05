@@ -1,3 +1,10 @@
+## [2.3.5](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.3.4...v2.3.5) (2026-09-05)
+
+
+### Bug Fixes
+
+* **deps:** pin @astrojs/check to an exact version ([7d1e5c1](https://github.com/mini-app-polis/website-astro-wcs/commit/7d1e5c15bfcad71a979836b14c7e4e999284217d))
+
 ## [2.3.4](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.3.3...v2.3.4) (2026-09-05)
 
 
