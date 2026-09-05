@@ -1,147 +1,45 @@
-# [4.0.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v3.0.1...v4.0.0) (2026-09-05)
+# [2.1.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.0.1...v2.1.0) (2026-09-05)
 
 
-* fix(routing)!: carry note ids in a query parameter, delete the rewrites ([700c3a2](https://github.com/mini-app-polis/website-astro-wcs/commit/700c3a2d490a829083f22ef4ecce26b8294c8463))
+### Features
 
+* **auth:** make the site static and let the API own authorization ([498b6b3](https://github.com/mini-app-polis/website-astro-wcs/commit/498b6b3e5e29b42d86d96083c1ffd655e17127f1))
 
-### BREAKING CHANGES
+The site no longer server-renders. Cloudflare Pages serves a static build;
+`@astrojs/cloudflare` and `@clerk/backend` are gone. astro 4.16.19 -> 7.3.1,
+`@clerk/astro` 3.4.20 -> 4.1.0, `@astrojs/preact` 5.1.4 -> 6.0.5, Tailwind 3 ->
+4. `npm audit` 5 -> 0.
 
-* deep links to individual notes move from /notes/<id> to
-/notes/detail?id=<id>, and likewise for /notes/admin and /admin/notes. Existing
-bookmarks to those private pages will not resolve.
+The adapter chained hosting to the framework version by peer dependency, and
+v11 was the last release supporting Pages — which is what pinned this site to
+Astro 4 and its advisories. The only reason the adapter existed was
+authorization enforced in page frontmatter, which was never the real gate: every
+`/v1/wcs/*` route is scope-guarded, and the pages only hid a shell. They also
+gated on `profile.is_admin`, which seeds a person's first grant and stops
+deciding anything after that.
 
-The rewrites looped in production:
-
-    /notes/*  ->  /notes/detail
-
-/notes/detail matches /notes/*, so it rewrote to itself, indefinitely. Same
-shape for /notes/admin/*. Behind the loop sat a second fault that had not
-surfaced yet: /notes/ask and /notes/admin also match /notes/*, so the shell
-would have swallowed both.
-
-The comment I shipped with those rules claimed real files win over rewrite
-rules. That was an assumption, I flagged it as unverifiable, and I shipped it
-anyway. It is wrong.
-
-Repairing it in place keeps the same shape - an exception per real sibling
-route, and a new one every time a page is added under /notes. That is a rule
-that breaks silently, later, when nobody remembers it. _redirects is a flat
-first-match list, not a router.
-
-So the rewrites are gone entirely and public/_redirects is back to its single
-pre-existing rule. Ids ride in ?id=, read with URLSearchParams in
-SourceDetail.tsx and admin/notes/detail.astro, and the three links that
-generate them are updated. Nothing is left that depends on rewrite ordering.
-
-This reverses the reasoning in docs/STATIC-AUTH-OFFLOAD.md, which argued that a
-path segment identifies a resource while a query parameter describes a page.
-That is true and it was the wrong thing to optimise for: it weighted purity
-above deployability and cost a production outage. The doc now records both the
-decision and the error.
-
-sets/[id] is unaffected - it is public, enumerable, and genuinely rendered at
-build time, so it never needed a rewrite.
-
-Verified: build passes, 26 pages, dist/_redirects contains only the
-/submit-music 301, /notes and /notes/ask and /notes/admin all resolve as their
-own routes, npm audit 0, astro check unchanged at 3 pre-existing errors.
-
-Still unverified: sign-in has not been exercised. Test on a preview before
-pushing.
-
-Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
-Claude-Session: https://claude.ai/code/session_0142LW7owtPpkdNGpj69MY47
-
-## [3.0.1](https://github.com/mini-app-polis/website-astro-wcs/compare/v3.0.0...v3.0.1) (2026-09-05)
+So the site now makes no authorization decision. Pages render, call the API, and
+follow its answer — 401 to `/sign-in`, 403 to `/`. `src/middleware.ts` and
+`src/lib/auth.ts` are gone. Clerk is untouched; it never required an adapter.
 
 
 ### Bug Fixes
 
+* **routing:** carry note ids in a query parameter, delete the rewrites ([700c3a2](https://github.com/mini-app-polis/website-astro-wcs/commit/700c3a2))
 * **sets:** page within the API's limit cap when enumerating set paths ([5692c65](https://github.com/mini-app-polis/website-astro-wcs/commit/5692c65d09649917a8f6919c3c165b727085318a))
 
-# [3.0.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.0.1...v3.0.0) (2026-09-05)
 
+### Notes
 
-* feat(auth)!: make the site static and let the API own authorization ([498b6b3](https://github.com/mini-app-polis/website-astro-wcs/commit/498b6b3e5e29b42d86d96083c1ffd655e17127f1))
+Deep links to individual notes moved from `/notes/<id>` to
+`/notes/detail?id=<id>`, and likewise for `/notes/admin` and `/admin/notes`.
+Bookmarks to those private pages will not resolve. Recorded here rather than as
+a `BREAKING CHANGE` footer: nothing consumes this site, so the change is worth
+describing but not worth a major.
 
-
-### BREAKING CHANGES
-
-* this site no longer server-renders. Cloudflare Pages serves a
-static build; @astrojs/cloudflare and @clerk/backend are gone. astro 4.16.19 ->
-7.3.1, @clerk/astro 3.4.20 -> 4.1.0, @astrojs/preact 5.1.4 -> 6.0.5, Tailwind
-3 -> 4. npm audit 5 -> 0.
-
-Why this and not the Workers migration in docs/WORKERS-MIGRATION.md: the
-adapter chains hosting to the framework version by peer dependency, and v11 was
-the last release supporting Pages, which is what pinned this site to Astro 4
-and its advisories. Moving to Workers keeps that chain. Removing the adapter
-ends it - and the only reason the adapter existed was authorization enforced in
-page frontmatter, which was never the real gate.
-
-The API already decides. Every /v1/wcs/* route is scope-guarded; the pages here
-only ever hid a shell. Worse, they gated on profile.is_admin, which seeds a
-person's first grant and stops deciding anything after that - so the site was
-enforcing on a field the identity model had already moved past, and would have
-drifted further with every role change.
-
-So the site now makes no authorization decision. Pages render, call the API,
-and follow its answer: 401 to /sign-in, 403 to /. src/lib/session.ts holds only
-authentication - waiting for Clerk and fetching a live token, which Clerk owns
-legitimately - plus guardedFetch, which routes a refusal rather than predicting
-one.
-
-Clerk is untouched. It never required an adapter - output: "server" did.
-<SignIn>, <UserButton> and <Show> mount client-side either way. The one change
-is a Clerk 4 prop rename that was silently breaking the post-login redirect:
-afterSignInUrl -> fallbackRedirectUrl.
-
-Removed: src/middleware.ts, whose only job was a 307 handshake for stale SSR
-session cookies - a problem that exists only because auth ran on the server.
-src/lib/auth.ts, whose server-only helpers have no remaining callers. Nav's SSR
-admin pass, which its own comment admitted was unreliable and which the client
-reveal was already correcting.
-
-Routing. Four dynamic routes needed an answer, not one - only sets/[id] carried
-`export const prerender = false`, but under output: "server" every page was
-server-rendered, so none needed getStaticPaths before. They get different
-answers on purpose:
-
-  - sets/[id] is public and /v1/sets enumerates it, so it renders at build
-    time. A new set needs a rebuild; kwalla-dance's scheduled deploy hook is
-    the fleet precedent.
-  - the three private note routes must NOT be enumerated - that would publish
-    the id set inside a public artifact. Each becomes one static shell,
-    path-preserving via a 200 rewrite in public/_redirects, reading its id from
-    location.pathname. A path segment identifies a resource; a query parameter
-    would have described a page.
-
-Also fixes a silent failure the first build walked straight into: getSets
-swallows transport errors and returns its fallback, so an API blip during a
-build would have produced a green build that 404s every set page. A configured
-API returning nothing now fails the build; an unconfigured one warns.
-
-ci.yml: release now needs [build, security] and the comment explaining why it
-was ungated is gone - the audit is 0. The build step also passes
-PUBLIC_CLERK_PUBLISHABLE_KEY, which it never did; it is read through
-import.meta.env, so without it the build ships a site where Clerk never
-initialises.
-
-Verified: build passes, 25 pages, dist/index.html at the root with no
-_worker.js and no dist/server, _redirects shipped with the pre-existing
-/submit-music rule intact above the rewrites, npm audit 0. astro check is 3
-errors, down from 16 - all three a pre-existing union-type issue in
-dj-marvel.astro, untouched here.
-
-NOT verified, and this is the part that matters: no sign-in was exercised. A
-green build proves imports resolve and nothing about auth. Before pushing, test
-on a preview deployment - sign in, confirm /admin/* and /notes/admin refuse a
-signed-out visitor and a non-admin, confirm a set detail page renders, and
-confirm the _redirects rewrites resolve, which cannot be checked without
-deploying.
-
-Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
-Claude-Session: https://claude.ai/code/session_0142LW7owtPpkdNGpj69MY47
+Originally released as 3.0.0, 3.0.1 and 4.0.0. Those tags and releases were
+removed and the work collapsed into this single minor — the breaking-change
+footers were disproportionate for a deployed site with no dependents.
 
 ## [2.0.1](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.0.0...v2.0.1) (2026-09-04)
 
