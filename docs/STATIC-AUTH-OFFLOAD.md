@@ -164,37 +164,43 @@ Making that change is what lets `CLERK_SECRET_KEY` leave the site entirely.
 
 `GET /v1/wcs/me` already returns `is_admin` and needs no change.
 
-## Open decision: four dynamic routes
+## Routing: settled, after getting it wrong once
 
-**This corrects an error in the first draft**, which named `sets/[id]` as the
-only page needing a decision. That was wrong. It is the only route carrying
-`export const prerender = false`, but under `output: "server"` every page is
-server-rendered by default, so no dynamic route needed `getStaticPaths`. Going
-static, all four do:
+Four dynamic routes needed an answer, not the one this document first named.
+`sets/[id]` is the only route carrying `export const prerender = false`, but
+under `output: "server"` every page was server-rendered, so no dynamic route
+needed `getStaticPaths`. Going static, all four did.
 
-    src/pages/sets/[id].astro          public   set detail
-    src/pages/notes/[id].astro         private  note detail
-    src/pages/notes/admin/[id].astro   admin    note admin
-    src/pages/admin/notes/[id].astro   admin    source admin
+**Settled:**
 
-A static build cannot serve `/notes/<uuid>` without knowing the ids at build
-time, and the three private routes must not be enumerated at build time — that
-would publish the id set, and bake private paths into a public deployment.
+- `sets/[id]` renders at build time from `/v1/sets`. Public and enumerable, so
+  a static rendering of it is honest. New sets need a rebuild.
+- The three private note routes take their id from a **query parameter** —
+  `/notes/detail?id=<uuid>` — and no rewrite exists anywhere.
 
-The options, and they are not the same answer for both groups:
+**Why not path-preserving rewrites, which this document previously argued for.**
+They were implemented, deployed, and looped in production:
 
-1. **`getStaticPaths` for `sets/[id]` only.** Public, and `/v1/sets` already
-   enumerates it. Preserves URLs, fully static, needs a rebuild for new sets —
-   the scheduled deploy hook `kwalla-dance` uses is the fleet precedent.
-2. **`_redirects` 200 rewrites for the three private routes.** Preserves URLs;
-   one static shell per route reads the id from `location.pathname`. Standard
-   SPA-on-Pages practice, but the rewrite ordering against real assets cannot
-   be verified without deploying.
-3. **Query parameters** — `/notes/detail?id=<uuid>`. Simplest and fully
-   static, no rewrite behaviour to trust. Changes URLs, so existing bookmarks
-   break. These are private pages, so the blast radius is small but not zero.
+    /notes/*  ->  /notes/detail
 
-This is the decision blocking implementation.
+`/notes/detail` matches `/notes/*`, so it rewrote to itself indefinitely. The
+same shape broke `/notes/admin/*`. Behind the loop was a second fault: `/notes/ask`
+and `/notes/admin` also match `/notes/*`, so both would have been swallowed by
+the shell. The comment shipped alongside those rules asserted that real files
+win over rewrite rules. That was an assumption, it was labelled unverifiable,
+and it was wrong.
+
+Every repair keeps the same shape — enumerate an exception for each real
+sibling route, and add another every time a page appears under `/notes`. That
+is a rule which breaks silently, months later, when nobody remembers it exists.
+`_redirects` is a flat first-match list, not a router, and the fragility is the
+signal rather than the loop.
+
+So the argument this document made — that a path segment identifies a resource
+and a query parameter merely describes a page — was correct about REST and
+wrong about what to optimise for. Purity was weighted above deployability, and
+the result was a production outage. A query parameter has no platform behaviour
+to trust, and that is worth more here than URL shape on three private pages.
 
 ## Risks
 

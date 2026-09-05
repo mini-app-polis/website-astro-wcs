@@ -4,9 +4,8 @@ import SourceDetail from "../../components/SourceDetail";
 import { Show } from "@clerk/astro/components";
 import { getApiBase } from "../../lib/api";
 
-// Static shell for /notes/<id>. Rewritten here by public/_redirects, which
-// keeps the path in the address bar; SourceDetail reads the id from it.
-// Nothing about which notes exist is in this build.
+// Static page reached as /notes/detail?id=<uuid>. SourceDetail reads the id
+// from the query string. Nothing about which notes exist is in this build.
 const apiBase = getApiBase();
 ---
 

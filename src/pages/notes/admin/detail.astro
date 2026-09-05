@@ -3,7 +3,7 @@ import Page from "../../../layouts/Page.astro";
 import SourceDetail from "../../../components/SourceDetail";
 import { getApiBase } from "../../../lib/api";
 
-// Static shell for /notes/admin/<id>, rewritten here by public/_redirects.
+// Static page reached as /notes/admin/detail?id=<uuid>.
 // No gate: the API refuses a non-admin and SourceDetail routes that refusal.
 const apiBase = getApiBase();
 ---

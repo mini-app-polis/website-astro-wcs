@@ -2,10 +2,11 @@
 import Page from "../../../layouts/Page.astro";
 import { getApiBase } from "../../../lib/api";
 
-// Static shell for /admin/notes/<id>, rewritten here by public/_redirects so
-// the path is preserved. The id is read from location.pathname client-side;
-// nothing about which notes exist reaches this build. No gate here — the API
-// refuses a non-admin and the script routes that refusal.
+// Static page reached as /admin/notes/detail?id=<uuid>. The id is a query
+// parameter rather than a path segment because a path-shaped id would need a
+// _redirects rewrite to reach a static page, and that rewrite looped in
+// production. Nothing about which notes exist reaches this build. No gate here
+// — the API refuses a non-admin and the script routes that refusal.
 const apiBase = getApiBase();
 ---
 
@@ -157,7 +158,7 @@ const apiBase = getApiBase();
   const root = document.querySelector("[data-admin-note-edit]");
   const API_BASE = root?.dataset.apiBase ?? "";
   const SESSION_TOKEN = await requireSession(API_BASE);
-  const NOTE_ID = decodeURIComponent(location.pathname.replace(/\/+$/, "").split("/").pop() ?? "");
+  const NOTE_ID = new URLSearchParams(location.search).get("id") ?? "";
   const base = API_BASE.replace(/\/$/, "");
   const H = SESSION_TOKEN
     ? { Authorization: `Bearer ${SESSION_TOKEN}`, "Content-Type": "application/json" }

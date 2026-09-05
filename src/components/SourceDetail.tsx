@@ -758,13 +758,14 @@ export default function SourceDetail({
 
   useEffect(() => {
     // The page is static, so neither the id nor the token can come from the
-    // server. The id is the last path segment — which is why these routes keep
-    // their URLs instead of moving to a query parameter — and the token comes
-    // live from Clerk, so it is never the stale one a cookie would hold.
+    // server. The id rides in ?id=, not in the path: a path-shaped id needs a
+    // rewrite to reach a static shell, and that rewrite is what looped in
+    // production. The token comes live from Clerk, so it is never the stale one
+    // a cookie would hold.
     const id =
       sourceId ||
       (typeof location !== "undefined"
-        ? decodeURIComponent(location.pathname.replace(/\/+$/, "").split("/").pop() ?? "")
+        ? (new URLSearchParams(location.search).get("id") ?? "")
         : "");
 
     if (!apiBase || !id) {
