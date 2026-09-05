@@ -164,43 +164,54 @@ Making that change is what lets `CLERK_SECRET_KEY` leave the site entirely.
 
 `GET /v1/wcs/me` already returns `is_admin` and needs no change.
 
-## Routing: settled, after getting it wrong once
+## Routing: settled, after getting it wrong twice
 
 Four dynamic routes needed an answer, not the one this document first named.
-`sets/[id]` is the only route carrying `export const prerender = false`, but
+`sets/[id]` was the only route carrying `export const prerender = false`, but
 under `output: "server"` every page was server-rendered, so no dynamic route
 needed `getStaticPaths`. Going static, all four did.
 
-**Settled:**
+**Settled: all four are containers.** Each is a static shell that takes its id
+from a query parameter and fetches its record at request time. No route is
+prerendered per-record, and no rewrite exists anywhere.
 
-- `sets/[id]` renders at build time from `/v1/sets`. Public and enumerable, so
-  a static rendering of it is honest. New sets need a rebuild.
-- The three private note routes take their id from a **query parameter** —
-  `/notes/detail?id=<uuid>` — and no rewrite exists anywhere.
+### Why not path-preserving rewrites
 
-**Why not path-preserving rewrites, which this document previously argued for.**
 They were implemented, deployed, and looped in production:
 
     /notes/*  ->  /notes/detail
 
-`/notes/detail` matches `/notes/*`, so it rewrote to itself indefinitely. The
-same shape broke `/notes/admin/*`. Behind the loop was a second fault: `/notes/ask`
-and `/notes/admin` also match `/notes/*`, so both would have been swallowed by
-the shell. The comment shipped alongside those rules asserted that real files
-win over rewrite rules. That was an assumption, it was labelled unverifiable,
-and it was wrong.
+`/notes/detail` matches `/notes/*`, so it rewrote to itself indefinitely. Behind
+the loop sat a second fault: `/notes/ask` and `/notes/admin` also match
+`/notes/*` and would have been swallowed. The comment shipped with those rules
+asserted that real files win over rewrite rules — an assumption, labelled
+unverifiable, and wrong.
 
-Every repair keeps the same shape — enumerate an exception for each real
-sibling route, and add another every time a page appears under `/notes`. That
-is a rule which breaks silently, months later, when nobody remembers it exists.
-`_redirects` is a flat first-match list, not a router, and the fragility is the
-signal rather than the loop.
+Every repair keeps the same shape: an exception per real sibling route, and a
+new one each time a page appears under `/notes`. `_redirects` is a flat
+first-match list, not a router, and the fragility is the signal.
 
-So the argument this document made — that a path segment identifies a resource
-and a query parameter merely describes a page — was correct about REST and
-wrong about what to optimise for. Purity was weighted above deployability, and
-the result was a production outage. A query parameter has no platform behaviour
-to trust, and that is worth more here than URL shape on three private pages.
+The argument this document made — that a path segment identifies a resource
+while a query parameter describes a page — is correct about REST and was the
+wrong thing to optimise for. Purity above deployability cost an outage.
+
+### Why `sets/[id]` stopped being prerendered too
+
+It was briefly the exception: public, enumerable via `/v1/sets`, and rendered at
+build time. Three costs came with that, and the first one bit immediately.
+
+- **The build depended on the API.** A bad query — `limit=1000` against a cap of
+  200 — returned a 422, which surfaced as an empty list. Left unguarded that
+  publishes a site where every set 404s; guarded, it blocks deploys of the whole
+  site, including changes with nothing to do with sets.
+- **New sets needed a rebuild**, so the catalogue was only as fresh as the last
+  deploy or a scheduled hook.
+- **Page count grew with the catalogue.**
+
+The set list (`SetsList.astro`) already fetched at runtime, so prerendering the
+detail page was the odd one out rather than the norm. It is now a container like
+the rest, and the build depends on nothing but this repo — verified by building
+with the API unreachable, which used to fail and now succeeds.
 
 ## Risks
 

@@ -1,0 +1,133 @@
+---
+import Page from "../../layouts/Page.astro";
+import TrackTable from "../../components/TrackTable.astro";
+import { getApiBase } from "../../lib/api";
+
+// A container, not a prerendered page.
+//
+// This used to be sets/[id].astro with getStaticPaths, emitting one HTML file
+// per set from a build-time call to /v1/sets. Three costs came with that: the
+// build could not run without the API — an outage or a bad query blocked
+// deploys of the whole site, including changes unrelated to sets — a new set
+// did not appear until someone rebuilt, and the page count grew with the
+// catalogue.
+//
+// Now the shell is static and the set arrives at request time, which is what
+// the data actually is. Nothing about the catalogue is baked in, so the build
+// depends on nothing but this repo. Same shape as the note routes, and the
+// sets index (SetsList.astro) already worked this way.
+const apiBase = getApiBase();
+---
+
+<Page title="Set">
+  <div class="space-y-4" data-set-detail data-api-base={apiBase}>
+    <a
+      href="/sets"
+      class="inline-flex items-center gap-2 text-sm font-medium text-slate-400 transition-colors hover:text-accent"
+    >
+      <span class="font-mono">←</span>
+      Full History
+    </a>
+
+    <p class="font-mono text-sm text-slate-400" data-set-date></p>
+
+    <div data-set-loading class="text-sm text-slate-500">Loading…</div>
+    <div data-set-error class="hidden text-sm text-slate-500"></div>
+
+    <div data-set-body class="hidden">
+      <TrackTable tracks={[]} />
+    </div>
+  </div>
+</Page>
+
+<script type="module">
+  const root = document.querySelector("[data-set-detail]");
+  const base = (root?.dataset.apiBase ?? "").replace(/\/$/, "");
+  const id = new URLSearchParams(location.search).get("id") ?? "";
+
+  const loadingEl = root.querySelector("[data-set-loading]");
+  const errorEl = root.querySelector("[data-set-error]");
+  const bodyEl = root.querySelector("[data-set-body]");
+  const dateEl = root.querySelector("[data-set-date]");
+
+  const dateFmt = new Intl.DateTimeFormat("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+
+  const fmtLength = (secs) =>
+    !secs ? "—" : `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, "0")}`;
+  const fmtBpm = (bpm) => (bpm == null ? "—" : String(Math.round(bpm)));
+
+  function fail(message) {
+    loadingEl.classList.add("hidden");
+    errorEl.textContent = message;
+    errorEl.classList.remove("hidden");
+  }
+
+  function renderTracks(tracks) {
+    const tbody = bodyEl.querySelector("[data-track-body]");
+    const count = bodyEl.querySelector("[data-track-count]");
+    if (count) count.textContent = String(tracks.length);
+    tbody.innerHTML = "";
+
+    if (tracks.length === 0) {
+      const tr = document.createElement("tr");
+      const td = document.createElement("td");
+      td.colSpan = 6;
+      td.className = "py-8 text-center text-sm text-slate-400";
+      td.textContent = "No tracks found for this set.";
+      tr.append(td);
+      tbody.append(tr);
+      return;
+    }
+
+    tracks.forEach((t, idx) => {
+      const tr = document.createElement("tr");
+      if (idx % 2 !== 0) tr.className = "bg-surface";
+      const cells = [
+        ["px-5 py-3 font-mono text-slate-500", String(idx + 1)],
+        ["px-5 py-3 font-medium text-slate-100", t.title],
+        ["px-5 py-3 text-slate-300", t.artist],
+        ["px-5 py-3 font-mono text-slate-400", fmtBpm(t.bpm)],
+        ["px-5 py-3 text-slate-400", t.genre ?? "—"],
+        ["px-5 py-3 font-mono text-slate-400", fmtLength(t.length_secs)],
+      ];
+      for (const [className, text] of cells) {
+        const td = document.createElement("td");
+        td.className = className;
+        // textContent, not innerHTML — titles and artists are arbitrary strings
+        // from the catalogue and must never be parsed as markup.
+        td.textContent = text ?? "";
+        tr.append(td);
+      }
+      tbody.append(tr);
+    });
+  }
+
+  async function load() {
+    if (!base || !id) return fail("Set not found.");
+    try {
+      const res = await fetch(`${base}/v1/sets/${encodeURIComponent(id)}`);
+      if (res.status === 404) return fail("Set not found.");
+      if (!res.ok) return fail("Could not load this set.");
+      const set = (await res.json())?.data;
+      if (!set) return fail("Set not found.");
+
+      document.title = `${set.venue} — Kaiano Levine`;
+      const heading = document.querySelector("h1");
+      if (heading) heading.textContent = set.venue;
+      if (set.set_date) dateEl.textContent = dateFmt.format(new Date(set.set_date));
+
+      renderTracks(set.tracks ?? []);
+      loadingEl.classList.add("hidden");
+      bodyEl.classList.remove("hidden");
+    } catch {
+      fail("Could not load this set.");
+    }
+  }
+
+  load();
+</script>

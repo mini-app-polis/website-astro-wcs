@@ -24,7 +24,7 @@ function formatBpm(bpm: number | null) {
   <div class="border-b border-white/[0.07] px-5 py-4">
     <h2 class="font-serif text-lg font-black italic tracking-tight" style="font-variation-settings: 'opsz' 72;">Track List</h2>
     <p class="mt-1 text-xs text-slate-400">
-      {tracks.length} tracks · null fields shown as <span class="font-mono">—</span>
+      <span data-track-count>{tracks.length}</span> tracks · null fields shown as <span class="font-mono">—</span>
     </p>
   </div>
 
@@ -39,7 +39,7 @@ function formatBpm(bpm: number | null) {
         <th class="px-5 py-3 font-mono">Length</th>
       </tr>
     </thead>
-    <tbody>
+    <tbody data-track-body>
       {tracks.length === 0 && (
         <tr>
           <td colspan="6" class="py-8 text-center text-sm text-slate-400">
