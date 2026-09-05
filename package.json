@@ -15,7 +15,7 @@
     "preact": "^10.29.2"
   },
   "devDependencies": {
-    "@astrojs/check": "^0.9.10",
+    "@astrojs/check": "0.9.10",
     "@tailwindcss/vite": "^4.1.18",
     "tailwindcss": "^4.1.18",
     "typescript": "^6.0.3"
