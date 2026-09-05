@@ -1,3 +1,10 @@
+## [2.3.3](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.3.2...v2.3.3) (2026-09-05)
+
+
+### Bug Fixes
+
+* **notes:** pass a variable that exists to requireSession ([bf57b95](https://github.com/mini-app-polis/website-astro-wcs/commit/bf57b955664d15caf8ed16eef3a3790289e63dee))
+
 ## [2.3.2](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.3.1...v2.3.2) (2026-09-05)
 
 
