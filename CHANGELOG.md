@@ -1,3 +1,10 @@
+## [2.3.4](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.3.3...v2.3.4) (2026-09-05)
+
+
+### Bug Fixes
+
+* **admin:** stop the grants panel hanging and lying about writes ([31b31f6](https://github.com/mini-app-polis/website-astro-wcs/commit/31b31f6c289b74df2c271cf7ed2facef72df4d71))
+
 ## [2.3.3](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.3.2...v2.3.3) (2026-09-05)
 
 
