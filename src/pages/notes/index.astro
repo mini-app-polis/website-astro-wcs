@@ -1,29 +1,17 @@
 ---
 import Page from "../../layouts/Page.astro";
-import {
-  getAuthenticatedUserId,
-  getClerkUserData,
-  getSessionToken,
-  upsertWcsProfile,
-} from "../../lib/auth";
+import { Show } from "@clerk/astro/components";
 import { getApiBase } from "../../lib/api";
 
-const runtime = Astro.locals.runtime;
-const env = runtime?.env as Record<string, string> | undefined;
-const apiBase = getApiBase(env?.KAIANO_API_BASE_URL);
-
-const userId = await getAuthenticatedUserId(Astro.request, env);
-const sessionToken = getSessionToken(Astro.request);
-const isAuthenticated = !!userId;
-
-if (userId && sessionToken && apiBase) {
-  const { email, displayName } = await getClerkUserData(userId, env);
-  await upsertWcsProfile(sessionToken, email, displayName, apiBase);
-}
+// Static. Signed-in state is resolved in the browser by Clerk, which owns
+// authentication; both states are rendered and one is revealed. Nothing here
+// asks whether the caller is *allowed* anything — the API answers that on the
+// calls this page makes. See docs/STATIC-AUTH-OFFLOAD.md.
+const apiBase = getApiBase();
 ---
 
 <Page title="Notes" subtitle="WCS lesson notes">
-  {!isAuthenticated ? (
+  <Show when="signed-out">
     <div class="flex flex-col items-center justify-center min-h-[40vh] gap-6 text-center">
       <p class="text-slate-400 font-light">This section is private.</p>
       <a
@@ -33,11 +21,12 @@ if (userId && sessionToken && apiBase) {
         Sign in →
       </a>
     </div>
-  ) : (
+  </Show>
+
+  <Show when="signed-in">
     <div
       class="contents"
       data-notes-browser
-      data-session-token={sessionToken ?? ""}
     >
       <div id="notes-loading" class="text-sm text-slate-500">Loading…</div>
       <div id="notes-error" class="text-sm text-slate-500 hidden">Could not load notes.</div>
@@ -98,9 +87,9 @@ if (userId && sessionToken && apiBase) {
       <div id="notes-grid" class="hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
 
       <script type="module">
+  import { getSessionToken, guardedFetch } from "../../lib/session";
         const BASE      = document.documentElement.dataset.apiUrl || "";
-        const SESSION_TOKEN =
-          document.querySelector("[data-notes-browser]")?.dataset.sessionToken ?? "";
+        const SESSION_TOKEN = (await getSessionToken()) ?? "";
         const loadingEl = document.getElementById("notes-loading");
         const errorEl   = document.getElementById("notes-error");
         const emptyEl   = document.getElementById("notes-empty");
@@ -315,7 +304,7 @@ if (userId && sessionToken && apiBase) {
             let offset = 0;
             while (true) {
               const params = new URLSearchParams({ limit: String(PAGE), offset: String(offset) });
-              const res = await fetch(`${base}/v1/wcs/wiki/sources?${params}`, {
+              const res = await guardedFetch(`${base}/v1/wcs/wiki/sources?${params}`, {
                 headers: SESSION_TOKEN
                   ? { Authorization: `Bearer ${SESSION_TOKEN}` }
                   : {},
@@ -374,5 +363,5 @@ if (userId && sessionToken && apiBase) {
         load();
       </script>
     </div>
-  )}
+  </Show>
 </Page>

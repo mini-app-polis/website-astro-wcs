@@ -1,34 +1,12 @@
 ---
 import Page from "../../../layouts/Page.astro";
-import {
-  getAuthenticatedUserId,
-  getClerkUserData,
-  getSessionToken,
-  upsertWcsProfile,
-} from "../../../lib/auth";
 import { getApiBase } from "../../../lib/api";
 
-const runtime = Astro.locals.runtime;
-const env = runtime?.env as Record<string, string> | undefined;
-const apiBase = getApiBase(env?.KAIANO_API_BASE_URL);
-
-const userId = await getAuthenticatedUserId(Astro.request, env);
-const sessionToken = getSessionToken(Astro.request);
-
-if (!userId || !sessionToken) {
-  return Astro.redirect("/sign-in");
-}
-
-const clerkUserData = await getClerkUserData(userId, env);
-const profile = apiBase
-  ? await upsertWcsProfile(sessionToken, clerkUserData.email, clerkUserData.displayName, apiBase)
-  : null;
-
-if (!profile?.is_admin) {
-  return Astro.redirect("/");
-}
-
-const { id } = Astro.params;
+// Static shell for /admin/notes/<id>, rewritten here by public/_redirects so
+// the path is preserved. The id is read from location.pathname client-side;
+// nothing about which notes exist reaches this build. No gate here — the API
+// refuses a non-admin and the script routes that refusal.
+const apiBase = getApiBase();
 ---
 
 <Page title="Edit Note" subtitle="Update metadata, people, and visibility">
@@ -36,8 +14,6 @@ const { id } = Astro.params;
     class="space-y-6"
     data-admin-note-edit
     data-api-base={apiBase}
-    data-session-token={sessionToken}
-    data-note-id={id}
   >
     <div>
       <a href="/admin/notes" class="text-xs text-slate-500 hover:text-slate-300 transition-colors">
@@ -177,10 +153,11 @@ const { id } = Astro.params;
 </Page>
 
 <script type="module">
+  import { requireSession, guardedFetch } from "../../../lib/session";
   const root = document.querySelector("[data-admin-note-edit]");
   const API_BASE = root?.dataset.apiBase ?? "";
-  const SESSION_TOKEN = root?.dataset.sessionToken ?? "";
-  const NOTE_ID = root?.dataset.noteId ?? "";
+  const SESSION_TOKEN = await requireSession(API_BASE);
+  const NOTE_ID = decodeURIComponent(location.pathname.replace(/\/+$/, "").split("/").pop() ?? "");
   const base = API_BASE.replace(/\/$/, "");
   const H = SESSION_TOKEN
     ? { Authorization: `Bearer ${SESSION_TOKEN}`, "Content-Type": "application/json" }
@@ -276,7 +253,7 @@ const { id } = Astro.params;
       return;
     }
     try {
-      const res = await fetch(`${base}/v1/wcs/wiki/admin/sources/${NOTE_ID}`, { headers: H });
+      const res = await guardedFetch(`${base}/v1/wcs/wiki/admin/sources/${NOTE_ID}`, { headers: H });
       if (!res.ok) {
         showError(`Could not load lesson (HTTP ${res.status}).`);
         loadingEl?.classList.add("hidden");
@@ -329,7 +306,7 @@ const { id } = Astro.params;
     };
 
     try {
-      const res = await fetch(`${base}/v1/wcs/admin/sources/${NOTE_ID}`, {
+      const res = await guardedFetch(`${base}/v1/wcs/admin/sources/${NOTE_ID}`, {
         method: "PATCH",
         headers: H,
         body: JSON.stringify(body),

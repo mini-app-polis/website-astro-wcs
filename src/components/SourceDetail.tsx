@@ -1,5 +1,6 @@
 /** @jsxImportSource preact */
 import { useEffect, useState } from "preact/hooks";
+import { getSessionToken, handleDenial } from "../lib/session";
 
 // ---------- Types (mirror the API response) ----------
 
@@ -102,8 +103,10 @@ type View = {
 };
 
 type Props = {
-  sourceId: string;
-  sessionToken: string;
+  /** Omitted on static pages: taken from the last path segment instead. */
+  sourceId?: string;
+  /** Omitted on static pages: fetched live from Clerk instead. */
+  sessionToken?: string;
   apiBase: string;
   mode: "public" | "admin";
 };
@@ -754,7 +757,17 @@ export default function SourceDetail({
   >({ kind: "loading" });
 
   useEffect(() => {
-    if (!apiBase || !sourceId) {
+    // The page is static, so neither the id nor the token can come from the
+    // server. The id is the last path segment — which is why these routes keep
+    // their URLs instead of moving to a query parameter — and the token comes
+    // live from Clerk, so it is never the stale one a cookie would hold.
+    const id =
+      sourceId ||
+      (typeof location !== "undefined"
+        ? decodeURIComponent(location.pathname.replace(/\/+$/, "").split("/").pop() ?? "")
+        : "");
+
+    if (!apiBase || !id) {
       setState({
         kind: "error",
         message: mode === "admin" ? "Source not found." : "Lesson not found.",
@@ -764,22 +777,23 @@ export default function SourceDetail({
 
     const path =
       mode === "admin"
-        ? `/v1/wcs/wiki/admin/sources/${sourceId}`
-        : `/v1/wcs/wiki/sources/${sourceId}`;
+        ? `/v1/wcs/wiki/admin/sources/${id}`
+        : `/v1/wcs/wiki/sources/${id}`;
 
     const controller = new AbortController();
 
-    fetch(`${apiBase.replace(/\/$/, "")}${path}`, {
-      headers: sessionToken ? { Authorization: `Bearer ${sessionToken}` } : {},
-      signal: controller.signal,
-    })
+    (async () => {
+      const token = sessionToken || (await getSessionToken()) || "";
+      return fetch(`${apiBase.replace(/\/$/, "")}${path}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        signal: controller.signal,
+      });
+    })()
       .then(async (res) => {
-        if (res.status === 403) {
-          throw new Error(
-            mode === "admin"
-              ? "Admin access required."
-              : "You don't have access to this lesson.",
-          );
+        // The API's refusal is the decision; route it rather than render it.
+        if (res.status === 401 || res.status === 403) {
+          handleDenial(res.status);
+          await new Promise<never>(() => {});
         }
         if (!res.ok) throw new Error("not found");
         const json = await res.json();

@@ -1,42 +1,17 @@
 ---
 import Page from "../../layouts/Page.astro";
-import {
-  getAuthenticatedUserId,
-  getClerkUserData,
-  getSessionToken,
-  upsertWcsProfile,
-} from "../../lib/auth";
 import { getApiBase } from "../../lib/api";
 
-const runtime = Astro.locals.runtime;
-const env = runtime?.env as Record<string, string> | undefined;
-const apiBase = getApiBase(env?.KAIANO_API_BASE_URL);
-
-const userId = await getAuthenticatedUserId(Astro.request, env);
-const sessionToken = getSessionToken(Astro.request);
-
-// Admin-only for now. Loosen to all signed-in users once the agent is
-// ready for general access (drop the is_admin check; keep the sign-in
-// guard).
-if (!userId || !sessionToken) {
-  return Astro.redirect("/sign-in");
-}
-
-const { email, displayName } = await getClerkUserData(userId, env);
-const profile = apiBase
-  ? await upsertWcsProfile(sessionToken, email, displayName, apiBase)
-  : null;
-
-if (!profile?.is_admin) {
-  return Astro.redirect("/notes");
-}
+// Static. No gate here, by design: authorization is the API's decision,
+// made once at the enforcement point and audited there. This page renders,
+// calls, and follows the answer. See docs/STATIC-AUTH-OFFLOAD.md.
+const apiBase = getApiBase();
 ---
 
 <Page title="Ask" subtitle="Ask the agent about your WCS lesson notes">
   <div
     class="contents"
     data-ask-app
-    data-session-token={sessionToken ?? ""}
   >
       <form id="ask-form" class="space-y-3">
         <label for="ask-input" class="block text-xs font-mono text-slate-500">
@@ -110,9 +85,9 @@ if (!profile?.is_admin) {
       </article>
 
       <script type="module">
+  import { requireSession, guardedFetch } from "../../lib/session";
         const BASE = document.documentElement.dataset.apiUrl || "";
-        const SESSION_TOKEN =
-          document.querySelector("[data-ask-app]")?.dataset.sessionToken ?? "";
+        const SESSION_TOKEN = await requireSession(API_BASE);
 
         const form           = document.getElementById("ask-form");
         const input          = document.getElementById("ask-input");
@@ -390,7 +365,7 @@ if (!profile?.is_admin) {
           startLoadingFeedback();
           setSubmitting(true);
           try {
-            const res = await fetch(`${BASE.replace(/\/$/, "")}/v1/wcs/ask`, {
+            const res = await guardedFetch(`${BASE.replace(/\/$/, "")}/v1/wcs/ask`, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",

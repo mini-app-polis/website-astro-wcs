@@ -1,0 +1,18 @@
+---
+import Page from "../../../layouts/Page.astro";
+import SourceDetail from "../../../components/SourceDetail";
+import { getApiBase } from "../../../lib/api";
+
+// Static shell for /notes/admin/<id>, rewritten here by public/_redirects.
+// No gate: the API refuses a non-admin and SourceDetail routes that refusal.
+const apiBase = getApiBase();
+---
+
+<Page title="Lesson (Admin)" subtitle="Full source view">
+  <div class="mb-4">
+    <a href="/notes/admin" class="text-xs text-slate-500 hover:text-slate-300 transition-colors">
+      ← All notes (admin)
+    </a>
+  </div>
+  <SourceDetail client:load apiBase={apiBase ?? ""} mode="admin" />
+</Page>

@@ -1,22 +1,55 @@
 ---
 import Page from "../../layouts/Page.astro";
 import TrackTable from "../../components/TrackTable.astro";
-import { getSetDetail } from "../../lib/api";
+import { getSetDetail, getSets, getApiBase } from "../../lib/api";
 
-export const prerender = false;
+// Public, enumerable, so it is rendered at build time. Sets are a public
+// resource and /v1/sets already lists them, which makes getStaticPaths the
+// honest expression of this page: a static rendering of things that exist.
+//
+// A set added after a build does not appear until the next one. That is the
+// same shape as kwalla-dance's calendar, and the same answer applies — a
+// scheduled Cloudflare deploy hook.
+//
+// The private note routes deliberately do NOT do this. Enumerating them at
+// build time would publish the id set and bake private paths into a public
+// artifact; they are served as shells instead and fetch with a credential.
+export async function getStaticPaths() {
+  const apiBase = getApiBase();
+
+  if (!apiBase) {
+    // Offline or local build with no API configured. Emit nothing rather than
+    // failing, but say so — a deploy that reaches this branch ships a site
+    // where every /sets/<id> is a 404.
+    console.warn(
+      "[sets] KAIANO_API_BASE_URL is not set — building with no set detail pages.",
+    );
+    return [];
+  }
+
+  const sets = await getSets({ limit: 1000 }, apiBase);
+
+  // getSets swallows transport errors and returns its fallback, so an API
+  // blip during a build would otherwise produce a green build that silently
+  // 404s every set. A configured API returning nothing is a failure, not an
+  // empty catalogue — refuse to publish it.
+  if (!sets?.length) {
+    throw new Error(
+      `[sets] ${apiBase}/v1/sets returned no sets. Refusing to build, because ` +
+        "this would publish a site where every set detail page is missing.",
+    );
+  }
+
+  return sets.map((s) => ({ params: { id: String(s.id) } }));
+}
 
 const { id } = Astro.params;
-const apiUrl =
-  Astro.locals.runtime?.env?.KAIANO_API_BASE_URL ?? import.meta.env.KAIANO_API_BASE_URL ?? "";
+const apiBase = getApiBase();
+const set = apiBase ? await getSetDetail(String(id), apiBase) : null;
 
-if (apiUrl === "") {
-  return new Response("KAIANO_API_BASE_URL is not configured.", { status: 500 });
-}
-const set = await getSetDetail(String(id), apiUrl);
-
-if (!set) {
-  return Astro.redirect("/sets");
-}
+// getStaticPaths only emits ids the list returned, so this is a guard against
+// a set disappearing mid-build rather than an expected branch.
+if (!set) return Astro.redirect("/sets");
 
 const dateFmt = new Intl.DateTimeFormat("en-US", {
   month: "long",

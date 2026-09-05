@@ -29,6 +29,15 @@ updates:
     commit-message:
       prefix: "fix(deps)"
       prefix-development: "chore(deps)"
+    # TypeScript majors are held back deliberately. @astrojs/check 0.9.10 —
+    # its newest release, with no prerelease that goes further — peers
+    # typescript "^5.0.0 || ^6.0.0". A bump to TypeScript 7 therefore fails
+    # `npm install` outright with ERESOLVE, before any build starts, on every
+    # repo in the fleet that type-checks. 6.0.3 is the newest TypeScript the
+    # Astro toolchain supports. Remove this once @astrojs/check accepts 7.
+    ignore:
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:

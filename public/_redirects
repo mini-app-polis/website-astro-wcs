@@ -1,1 +1,21 @@
+# Pre-existing external redirect. Kept above the rewrites below: Pages takes
+# the first match, and this is an exact path that must not fall through.
 /submit-music https://deejaytools.com/ 301
+
+# Path-preserving shells for the private note routes.
+#
+# These pages address a resource by path — /notes/<uuid> — and that is worth
+# keeping: a path segment identifies a resource, a query parameter describes a
+# page. A static build cannot enumerate them, and must not: the ids are private,
+# and putting them in getStaticPaths would publish the id set inside a public
+# artifact. So one shell is built per route and rewritten to here, and the shell
+# reads the id from location.pathname and fetches it with a credential.
+#
+# 200 is a rewrite, not a redirect: the URL in the address bar is unchanged.
+#
+# Ordering is deepest-first, because Pages takes the first match. Real files
+# still win over these rules, which is what keeps /notes/admin, /notes/ask and
+# /notes itself resolving to their own pages rather than the shell.
+/notes/admin/*   /notes/admin/detail   200
+/admin/notes/*   /admin/notes/detail   200
+/notes/*         /notes/detail         200

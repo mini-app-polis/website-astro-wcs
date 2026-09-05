@@ -1,40 +1,20 @@
 ---
 import { Show, UserButton } from "@clerk/astro/components";
-import {
-  getAuthenticatedUserId,
-  getClerkUserData,
-  getSessionToken,
-  upsertWcsProfile,
-} from "../lib/auth";
-import { getApiBase } from "../lib/api";
 
 const { pathname } = Astro.url;
-const runtime = Astro.locals.runtime;
-const env = runtime?.env as Record<string, string> | undefined;
-const apiBase = getApiBase(env?.KAIANO_API_BASE_URL);
-const userId = await getAuthenticatedUserId(Astro.request, env);
 
-let isAdmin = false;
-try {
-  const sessionToken = getSessionToken(Astro.request);
-  if (userId && sessionToken && apiBase) {
-    // Upsert (not just read) so the WCS profile row is guaranteed to exist on
-    // the very first request after sign-in. Previously Nav called the
-    // read-only getWcsProfile, which returned 404/null until some other page
-    // (e.g. /notes) had a chance to create the row — making the Admin link
-    // only appear after a reload.
-    const { email, displayName } = await getClerkUserData(userId, env);
-    const profile = await upsertWcsProfile(
-      sessionToken,
-      email,
-      displayName,
-      apiBase,
-    );
-    isAdmin = profile?.is_admin ?? false;
-  }
-} catch {
-  // Nav must never crash the page — isAdmin stays false
-}
+// Admin items are always rendered, always hidden, and revealed client-side
+// once the API has confirmed the caller. There is no server pass to do it here
+// any more, and there was never a reliable one: Clerk session JWTs last about
+// 60 seconds, so the SSR check routinely saw a stale cookie, rendered
+// signed-out, and left the client script to correct it. That correction was
+// always the authoritative path; this removes the guess in front of it.
+//
+// This is the one place the site still reads an authorization answer rather
+// than acting on a denial, and it is presentation only — hiding a link the API
+// would refuse anyway. See docs/STATIC-AUTH-OFFLOAD.md for the open question
+// about replacing it with a capability the API reports.
+const isAdmin = false;
 
 type SubItem = { href: string; label: string };
 type NavItem = {

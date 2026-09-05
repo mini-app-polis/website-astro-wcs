@@ -1,32 +1,11 @@
 ---
 import Page from "../../layouts/Page.astro";
-import {
-  getAuthenticatedUserId,
-  getClerkUserData,
-  getSessionToken,
-  upsertWcsProfile,
-} from "../../lib/auth";
 import { getApiBase } from "../../lib/api";
 
-const runtime = Astro.locals.runtime;
-const env = runtime?.env as Record<string, string> | undefined;
-const apiBase = getApiBase(env?.KAIANO_API_BASE_URL);
-
-const userId = await getAuthenticatedUserId(Astro.request, env);
-const sessionToken = getSessionToken(Astro.request);
-
-if (!userId || !sessionToken) {
-  return Astro.redirect("/sign-in");
-}
-
-const clerkUserData = await getClerkUserData(userId, env);
-const profile = apiBase
-  ? await upsertWcsProfile(sessionToken, clerkUserData.email, clerkUserData.displayName, apiBase)
-  : null;
-
-if (!profile?.is_admin) {
-  return Astro.redirect("/");
-}
+// Static. No gate here, by design: authorization is the API's decision,
+// made once at the enforcement point and audited there. This page renders,
+// calls, and follows the answer. See docs/STATIC-AUTH-OFFLOAD.md.
+const apiBase = getApiBase();
 ---
 
 <Page title="Manage Users" subtitle="WCS access management">
@@ -34,7 +13,6 @@ if (!profile?.is_admin) {
     class="space-y-4"
     data-admin-users
     data-api-base={apiBase}
-    data-session-token={sessionToken}
   >
     <p class="text-xs font-mono text-slate-500">Signed-in users and their WCS access level.</p>
     <div id="users-loading" class="text-sm text-slate-500">Loading…</div>
@@ -44,9 +22,10 @@ if (!profile?.is_admin) {
 </Page>
 
 <script type="module">
+  import { requireSession, guardedFetch } from "../../lib/session";
   const root = document.querySelector("[data-admin-users]");
   const API_BASE = root?.dataset.apiBase ?? "";
-  const SESSION_TOKEN = root?.dataset.sessionToken ?? "";
+  const SESSION_TOKEN = await requireSession(API_BASE);
   const H = SESSION_TOKEN
     ? { Authorization: `Bearer ${SESSION_TOKEN}`, "Content-Type": "application/json" }
     : { "Content-Type": "application/json" };
@@ -89,7 +68,7 @@ if (!profile?.is_admin) {
     const errEl = document.getElementById("users-error");
     const listEl = document.getElementById("users-list");
     try {
-      const res = await fetch(`${base}/v1/wcs/admin/users`, { headers: H });
+      const res = await guardedFetch(`${base}/v1/wcs/admin/users`, { headers: H });
       if (!res.ok) throw new Error("bad response");
       const json = await res.json();
       allUsers = json.data ?? [];
@@ -133,7 +112,7 @@ if (!profile?.is_admin) {
       adminBtn.textContent = user.is_admin ? "Revoke admin" : "Make admin";
       adminBtn.addEventListener("click", async () => {
         adminBtn.disabled = true;
-        await fetch(`${base}/v1/wcs/admin/users/${user.user_id}`, {
+        await guardedFetch(`${base}/v1/wcs/admin/users/${user.user_id}`, {
           method: "PATCH",
           headers: H,
           body: JSON.stringify({ is_admin: !user.is_admin }),
@@ -222,12 +201,12 @@ if (!profile?.is_admin) {
       toggleBtn.addEventListener("click", async () => {
         toggleBtn.disabled = true;
         if (hasGrant && grantObj) {
-          await fetch(`${base}/v1/wcs/admin/grants/${grantObj.id}`, { method: "DELETE", headers: H });
+          await guardedFetch(`${base}/v1/wcs/admin/grants/${grantObj.id}`, { method: "DELETE", headers: H });
           grantedIds.delete(note.id);
           toggleBtn.textContent = "Grant";
           toggleBtn.className = "text-xs font-mono shrink-0 transition-colors text-slate-500 hover:text-accent";
         } else {
-          const res = await fetch(`${base}/v1/wcs/admin/grants`, {
+          const res = await guardedFetch(`${base}/v1/wcs/admin/grants`, {
             method: "POST",
             headers: H,
             body: JSON.stringify({ user_id: user.user_id, note_id: note.id }),
