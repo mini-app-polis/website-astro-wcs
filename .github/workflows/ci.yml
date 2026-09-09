@@ -11,7 +11,7 @@ jobs:
   # full history, `npm audit` against the resolved dependency set, and
   # semgrep. sbom: false because SEC-005 does not apply to a static-site.
   security:
-    uses: mini-app-polis/.github/.github/workflows/security.yml@v1
+    uses: mini-app-polis/.github/.github/workflows/security.yml@v2
     with:
       language: typescript
       package-manager: npm
