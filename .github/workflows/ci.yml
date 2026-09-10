@@ -2,9 +2,13 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, dev]
   pull_request:
-    branches: [main]
+    branches: [main, dev]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   # Delegates to the fleet's shared security workflow: gitleaks over
@@ -17,7 +21,7 @@ jobs:
       package-manager: npm
       sbom: false
 
-  build:
+  test:
     runs-on: ubuntu-latest
 
     steps:
@@ -44,7 +48,7 @@ jobs:
           PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ vars.PUBLIC_CLERK_PUBLISHABLE_KEY }}
 
   release:
-    needs: [build, security]
+    needs: [test, security]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     permissions:
