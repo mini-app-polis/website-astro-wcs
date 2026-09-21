@@ -1,3 +1,11 @@
+## [2.3.6](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.3.5...v2.3.6) (2026-09-21)
+
+
+### Bug Fixes
+
+* **deps:** bump the js-minor-and-patch group with 2 updates ([07ee670](https://github.com/mini-app-polis/website-astro-wcs/commit/07ee6708bfd2e210e1ee3b03078217ad05515240))
+* **deps:** bump the js-minor-and-patch group with 2 updates ([be5ecb2](https://github.com/mini-app-polis/website-astro-wcs/commit/be5ecb236100257b7c796a5be743a22f6b464ac4))
+
 ## [2.3.5](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.3.4...v2.3.5) (2026-09-05)
 
 
