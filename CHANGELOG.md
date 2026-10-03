@@ -1,3 +1,10 @@
+## [2.3.9](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.3.8...v2.3.9) (2026-10-03)
+
+
+### Bug Fixes
+
+* **build:** move tailwind to dependencies so production installs can build ([9342d2c](https://github.com/mini-app-polis/website-astro-wcs/commit/9342d2c6c8c1b365af1a052d1bc8b9d1a05c44cd))
+
 ## [2.3.8](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.3.7...v2.3.8) (2026-10-03)
 
 
