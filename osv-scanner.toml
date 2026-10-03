@@ -1,0 +1,18 @@
+# Time-boxed ignores for advisories that cannot be fixed from this repo.
+#
+# http-cache-semantics: every version through 4.2.0, the newest published,
+# can hand one user's cached Set-Cookie to another through a shared cache
+# (GHSA-ch52-4w7c-c8xp, 2026-09-18). It arrives only through `astro`, which
+# uses it to cache remote images during `astro build`. This site is static
+# output served by Cloudflare Pages: the package runs only at build time, in
+# CI and in the Pages build, never in a shared cache in front of users.
+#
+# To clear: once http-cache-semantics publishes a fix (and astro's ^4.2.0
+# range takes it), run `npm update http-cache-semantics` and delete the
+# entry. `ignoreUntil` makes the scan fail again on that date if nobody has,
+# so this cannot go stale silently.
+
+[[IgnoredVulns]]
+id = "GHSA-ch52-4w7c-c8xp"
+ignoreUntil = 2026-11-02
+reason = "http-cache-semantics <=4.2.0, no fixed release; build-time only via astro remote-image caching, never serves users from a shared cache"
