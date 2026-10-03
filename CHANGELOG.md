@@ -1,3 +1,11 @@
+## [2.3.8](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.3.7...v2.3.8) (2026-10-03)
+
+
+### Bug Fixes
+
+* **deps:** patch devalue and fast-uri; time-box the http-cache-semantics advisory ([05d9804](https://github.com/mini-app-polis/website-astro-wcs/commit/05d9804cdae4bb43de172a07aa7a12a88d5ac0d9))
+* **release:** let Cloudflare Pages build the release commit ([ce92578](https://github.com/mini-app-polis/website-astro-wcs/commit/ce925780ce14e33a1240931d696ac2b369002619))
+
 ## [2.3.7](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.3.6...v2.3.7) (2026-09-28)
 
 
