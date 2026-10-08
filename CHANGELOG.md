@@ -1,3 +1,10 @@
+## [2.3.11](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.3.10...v2.3.11) (2026-10-08)
+
+
+### Bug Fixes
+
+* **deps:** bump @clerk/astro ([a2e65c7](https://github.com/mini-app-polis/website-astro-wcs/commit/a2e65c72deedcbc1a6a341e9948a58b18dbdc119))
+
 ## [2.3.10](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.3.9...v2.3.10) (2026-10-08)
 
 
