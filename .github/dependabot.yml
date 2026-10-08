@@ -78,8 +78,15 @@ updates:
     # `npm install` outright with ERESOLVE, before any build starts, on every
     # repo in the fleet that type-checks. 6.0.3 is the newest TypeScript the
     # Astro toolchain supports. Remove this once @astrojs/check accepts 7.
+    #
+    # Preact majors are held back for the same reason. @astrojs/preact 6.0.6
+    # — its newest release, and its `next` and `beta` tags too — peers
+    # preact "^10.6.5". Preact 11 fails `npm ci` with ERESOLVE. Remove this
+    # once @astrojs/preact accepts 11.
     ignore:
       - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "preact"
         update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "github-actions"
