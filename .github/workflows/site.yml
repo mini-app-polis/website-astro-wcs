@@ -1,0 +1,124 @@
+name: site
+
+# Smoke-tests the site once Cloudflare Pages has deployed a push to dev or
+# main (CD-032) — the dev build against the dev API and Clerk's development
+# instance, production against the production API and Clerk's production
+# instance. Pages builds on its own, outside Actions, and reports through
+# the "Cloudflare Pages" check on the commit; this waits for that check and
+# tests the deploy's own preview URL (<hash>.kaiano-wcs-website.pages.dev) —
+# exactly this commit's build, so a cache can't pass a stale one. It makes
+# sure the build:
+#   - serves the home page and deep links;
+#   - is built to call this environment's API (<html data-api-url>), and the
+#     API answers /health;
+#   - carries the right Clerk key for its environment: pk_test_ on dev,
+#     pk_live_ in production — never the other.
+# All of it is read-only, so it is safe against production.
+# KAIANO_API_BASE_URL and PUBLIC_CLERK_PUBLISHABLE_KEY are baked in at build
+# time from the Pages settings, so a wrong value shows up here and nowhere
+# else — CI builds with the repository's variables, not Pages'.
+#
+# It runs on pushes. Not on the promotion pull request to main: its head is
+# dev's latest commit, already tested by the push run, whose result the pull
+# request shows. semantic-release's own commit to main is marked
+# [skip actions], so a release is checked once, at the merge.
+# Modelled on deejaytools-com's site.yml.
+
+on:
+  push:
+    branches: [dev, main]
+
+permissions:
+  contents: read
+  checks: read
+
+concurrency:
+  group: site-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  API: ${{ github.ref == 'refs/heads/main' && 'https://api.kaianolevine.com' || 'https://dev-api.kaianolevine.com' }}
+  CLERK_KEY: ${{ github.ref == 'refs/heads/main' && 'pk_live_' || 'pk_test_' }}
+  WRONG_CLERK_KEY: ${{ github.ref == 'refs/heads/main' && 'pk_test_' || 'pk_live_' }}
+  SHA: ${{ github.sha }}
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Wait for Cloudflare Pages to deploy this commit
+        id: deploy
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          check() {
+            gh api "repos/$GITHUB_REPOSITORY/commits/$SHA/check-runs?check_name=Cloudflare%20Pages" --jq "$1"
+          }
+          for _ in $(seq 1 60); do
+            read -r status conclusion <<<"$(check '.check_runs[0] // {} | "\(.status // "missing") \(.conclusion // "")"')"
+            if [ "$status" = completed ]; then
+              if [ "$conclusion" = success ]; then
+                # The check's summary lists the deploy's own preview URL
+                # (<8-hex-hash>.<project>.pages.dev) before the branch alias.
+                url=$(check '.check_runs[0].output.summary' | grep -oE 'https://[0-9a-f]{8}\.[a-z0-9-]+\.pages\.dev' | head -n 1 || true)
+                if [ -z "$url" ]; then echo "::error::The Cloudflare Pages check did not report a preview URL."; exit 1; fi
+                echo "Deployed at $url."
+                echo "site=$url" >> "$GITHUB_OUTPUT"
+                exit 0
+              fi
+              echo "::error::The Cloudflare Pages deploy of $SHA concluded '$conclusion'."
+              exit 1
+            fi
+            sleep 15
+          done
+          echo "::error::No finished Cloudflare Pages deploy for $SHA after 15 minutes."
+          exit 1
+
+      - name: Smoke-test the site
+        env:
+          SITE: ${{ steps.deploy.outputs.site }}
+        run: |
+          set -euo pipefail
+          fail() { echo "::error::$1"; exit 1; }
+          get() { curl -fsSL --retry 3 "$SITE$1"; }
+
+          # Every script a page loads, followed a few imports deep: Clerk's
+          # key sits in a chunk the page's own script imports, not in the
+          # page or the script itself.
+          bundle() {
+            local seen=" " queue next js dir p
+            queue=$(get "$1" | grep -oE '/_astro/[A-Za-z0-9._/-]+\.js' | sort -u || true)
+            for _ in 1 2 3; do
+              next=""
+              for p in $queue; do
+                case "$seen" in *" $p "*) continue ;; esac
+                seen="$seen$p "
+                js=$(get "$p") || continue
+                printf '%s\n' "$js"
+                dir=${p%/*}
+                next+=" $(grep -oE '"\./[A-Za-z0-9._-]+\.js"' <<<"$js" | tr -d '"' | sed "s#^\./#$dir/#" || true)"
+                next+=" $(grep -oE '/_astro/[A-Za-z0-9._/-]+\.js' <<<"$js" || true)"
+              done
+              queue=$(tr ' ' '\n' <<<"$next" | sort -u)
+            done
+          }
+
+          html=$(get /) || fail "$SITE/ did not load."
+          api=$(grep -oE 'data-api-url="[^"]*"' <<<"$html" | head -n 1 | sed -E 's/^data-api-url="(.*)"$/\1/' || true)
+          [ -n "$api" ] || fail "$SITE/ is built with no API URL (data-api-url) — KAIANO_API_BASE_URL is unset in Pages."
+          [ "${api%/}" = "$API" ] || fail "$SITE/ is built to call $api; this environment needs $API."
+
+          for path in /sets/ /live/ /about/; do
+            get "$path" >/dev/null || fail "A deep link ($SITE$path) did not load."
+          done
+
+          # Match real keys (prefix plus the encoded instance), not the bare
+          # prefixes Clerk's own code carries for parsing keys.
+          keys=$(bundle /sign-in/ | grep -oE 'pk_(test|live)_[A-Za-z0-9]{20,}' | sort -u || true)
+          [ -n "$keys" ] || fail "No Clerk publishable key found in the sign-in page's scripts."
+          if grep -q "^$WRONG_CLERK_KEY" <<<"$keys"; then fail "The site is built with a $WRONG_CLERK_KEY Clerk key; this environment needs $CLERK_KEY."; fi
+          grep -q "^$CLERK_KEY" <<<"$keys" || fail "The site is not built with a $CLERK_KEY Clerk key."
+
+          curl -fsS -o /dev/null --retry 3 "$API/health" || fail "$API/health did not answer."
+          echo "Site OK at $SITE (calls $API)"

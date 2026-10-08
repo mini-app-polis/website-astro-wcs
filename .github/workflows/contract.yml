@@ -1,0 +1,54 @@
+name: Contract
+
+# The live contract suite (tests/contract): every call this site makes to
+# api-kaianolevine-com, checked against the development API for the fields
+# the site reads and the access rules it relies on (TEST-016, ADR-012).
+#
+# Read-only — see tests/contract/harness.mjs — so it needs no key, refuses
+# any production host, and does not share the contract-dev-kaiano-api
+# concurrency group with the suites that write (CD-033). No dependencies:
+# it runs on Node's built-in test runner, so there is no install step.
+#
+# Configuration (optional): repository variable CONTRACT_API_URL. Defaults
+# to https://dev-api.kaianolevine.com.
+#
+# When it runs — whenever either side of the contract changes:
+#   - a push to dev here: the site's calls may have changed;
+#   - `dev-api-deployed`: api-kaianolevine-com's deployed workflow sends this
+#     once Railway reports a successful dev deploy, so the suite checks the
+#     API that is actually live rather than the one it replaced;
+#   - by hand.
+# Not on the promotion pull request to main: its head is dev's latest
+# commit, already checked by the push run, whose result the pull request
+# shows (CD-035).
+# A repository_dispatch always runs this file from main, so that run checks
+# out dev explicitly: it is dev's suite that should meet dev's API.
+
+on:
+  push:
+    branches: [dev]
+  repository_dispatch:
+    types: [dev-api-deployed]
+  workflow_dispatch:
+
+concurrency:
+  group: contract-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      CONTRACT_API_URL: ${{ vars.CONTRACT_API_URL || 'https://dev-api.kaianolevine.com' }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event_name == 'repository_dispatch' && 'dev' || '' }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+      - run: npm run test:contract
