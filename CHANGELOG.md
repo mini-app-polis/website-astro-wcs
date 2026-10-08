@@ -1,3 +1,13 @@
+## [2.3.10](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.3.9...v2.3.10) (2026-10-08)
+
+
+### Bug Fixes
+
+* **deps:** bump @clerk/astro ([c2d1da6](https://github.com/mini-app-polis/website-astro-wcs/commit/c2d1da656174790eac9557b0883f1e6c7b9b8cb3))
+* **deps:** bump preact ([48ff62e](https://github.com/mini-app-polis/website-astro-wcs/commit/48ff62ef8ecbc84d60eaf701504c722d05d44088))
+* **deps:** bump sharp, smol-toml, source-map-js for security advisories ([42386df](https://github.com/mini-app-polis/website-astro-wcs/commit/42386dfb7a0eb2221a754108ed2dc443259e54c9))
+* **deps:** bump sharp, smol-toml, source-map-js for security advisories ([3360702](https://github.com/mini-app-polis/website-astro-wcs/commit/336070221dbe80c6a37b8d26748eefc5206b2537))
+
 ## [2.3.9](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.3.8...v2.3.9) (2026-10-03)
 
 
