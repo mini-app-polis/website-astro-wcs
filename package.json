@@ -6,7 +6,8 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "check": "astro check"
+    "check": "astro check",
+    "test:contract": "node --test \"tests/contract/*.test.mjs\""
   },
   "dependencies": {
     "@astrojs/preact": "6.0.5",
