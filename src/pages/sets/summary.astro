@@ -4,9 +4,8 @@ import { getApiBase } from "../../lib/api";
 
 // One year's summary — its numbers and its full song list — fetched at
 // request time like sets/detail: everything is computed by the API from that
-// year's sets, so the current year's page
-// moves as sets land without a rebuild. Years with an original published
-// summary (2016–2022) also carry its hand-written highlights and playlist.
+// year's sets, so the current year's page moves as sets land without a
+// rebuild.
 const apiBase = getApiBase();
 
 const tiles = [
@@ -62,24 +61,6 @@ const columns = [
           ))}
         </div>
         <p data-summary-footnote class="mt-5 hidden text-center text-xs text-slate-500"></p>
-      </section>
-
-      <section data-curated class="hidden rounded-2xl border border-accent/30 bg-surface p-6">
-        <div class="flex flex-wrap items-baseline justify-between gap-3">
-          <div>
-            <h2 class="font-serif text-xl font-black italic tracking-tight" style="font-variation-settings: 'opsz' 72;">From the Original Summary</h2>
-            <p class="mt-1 text-sm text-slate-400">As published at the end of the year</p>
-          </div>
-          <a
-            data-curated-spotify
-            target="_blank"
-            rel="noopener noreferrer"
-            class="hidden rounded-full border border-white/[0.07] bg-surface2 px-4 py-1.5 text-sm font-medium text-slate-200 transition-colors hover:border-accent/60 hover:text-accent"
-          >
-            Summary playlist on Spotify ↗
-          </a>
-        </div>
-        <dl class="mt-5 divide-y divide-white/[0.06]" data-curated-highlights></dl>
       </section>
 
       <section class="overflow-hidden rounded-2xl border border-white/[0.07] bg-surface" data-songs>
@@ -152,11 +133,9 @@ const columns = [
       : `${m}:${String(s).padStart(2, "0")}`;
   };
 
-  // Curated hours win: they exist only for years whose lengths are missing
-  // or unparsed. Otherwise a total from partial lengths is a floor, marked
-  // "+" — unless under half the plays have one, where a floor misleads.
+  // A total from partial lengths is a floor, marked "+" — unless under half
+  // the plays have one, where a floor misleads.
   function hours(s) {
-    if (s.curated?.hours_played) return s.curated.hours_played;
     if (s.hours_played_secs == null || s.length_coverage < 0.5) return "—";
     const h = Math.round(s.hours_played_secs / 3600);
     return s.length_coverage < 1 ? `${nf.format(h)}+` : nf.format(h);
@@ -293,30 +272,6 @@ const columns = [
     }
   }
 
-  function renderCurated(curated) {
-    const section = root.querySelector("[data-curated]");
-    if (!curated) return;
-    const spotify = section.querySelector("[data-curated-spotify]");
-    if (curated.spotify_playlist_url?.startsWith("https://open.spotify.com/")) {
-      spotify.href = curated.spotify_playlist_url;
-      spotify.classList.remove("hidden");
-    }
-    const dl = section.querySelector("[data-curated-highlights]");
-    for (const h of curated.highlights ?? []) {
-      const row = document.createElement("div");
-      row.className = "grid grid-cols-1 gap-1 py-3 sm:grid-cols-[16rem_1fr] sm:gap-4";
-      const dt = document.createElement("dt");
-      dt.className = "text-sm text-slate-400";
-      dt.textContent = h.label;
-      const dd = document.createElement("dd");
-      dd.className = "text-sm font-medium text-slate-100";
-      dd.textContent = h.value;
-      row.append(dt, dd);
-      dl.append(row);
-    }
-    section.classList.remove("hidden");
-  }
-
   function render(s) {
     document.title = `${s.year} Summary — Kaiano Levine`;
     const heading = document.querySelector("h1");
@@ -348,7 +303,6 @@ const columns = [
       footnote.classList.remove("hidden");
     }
 
-    renderCurated(s.curated);
   }
 
   async function load() {
