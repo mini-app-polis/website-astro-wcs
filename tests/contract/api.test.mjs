@@ -109,6 +109,65 @@ test("GET /v1/sets/{id} — an unknown set is a 404, which the page shows as 'Se
   expectError(await call(path), path, 404);
 });
 
+// pages/sets/summary.astro reads the headline numbers and the curated layer; SetsList.astro's card reads year, status,
+// set_count, songs_played, unique_songs and last_set_date.
+const YEAR_SUMMARY = {
+  year: "number",
+  status: "string",
+  set_count: "number",
+  songs_played: "number",
+  unique_songs: "number",
+  first_set_date: "string",
+  last_set_date: "string",
+  songs_played_once: "number",
+  new_songs: "number",
+  hours_played_secs: "number|null",
+  length_coverage: "number",
+  avg_set_length_secs: "number|null",
+  avg_song_length_secs: "number|null",
+  curated: "object|null",
+};
+
+test("GET /v1/stats/summaries/{year} — year summary page and Full History card", async (t) => {
+  const list = expectData(await call("/v1/stats/summaries"), "/v1/stats/summaries");
+  if (!Array.isArray(list) || list.length === 0) {
+    t.skip("no sets on dev to summarize");
+    return;
+  }
+  const path = `/v1/stats/summaries/${list[0].year}`;
+  const s = expectData(await call(path), path);
+  expectShape(s, YEAR_SUMMARY, path);
+  assert.ok(["final", "in_progress"].includes(s.status), `${path} status ${s.status}`);
+  if (s.curated) {
+    expectShape(s.curated, { hours_played: "string|null", spotify_playlist_url: "string|null", highlights: "array" }, `${path}.curated`);
+  }
+});
+
+test("GET /v1/stats/summaries/{year}/songs — year summary song table", async (t) => {
+  const list = expectData(await call("/v1/stats/summaries"), "/v1/stats/summaries");
+  if (!Array.isArray(list) || list.length === 0) {
+    t.skip("no sets on dev to summarize");
+    return;
+  }
+  const path = `/v1/stats/summaries/${list[0].year}/songs`;
+  expectRows(t, expectData(await call(path), path), {
+    title: "string",
+    remix: "string|null",
+    artist: "string",
+    genre: "string|null",
+    bpm: "number|null",
+    release_year: "number|null",
+    length_secs: "number|null",
+    play_count: "number",
+    total_play_secs: "number|null",
+  }, path);
+});
+
+test("GET /v1/stats/summaries/{year} — a year without sets is a 404, which the card and page treat as no summary", async () => {
+  const path = "/v1/stats/summaries/1900";
+  expectError(await call(path), path, 404);
+});
+
 test("GET /v1/spotify/playlists — Spotify page", async (t) => {
   const path = "/v1/spotify/playlists";
   expectRows(t, expectData(await call(path), path), {

@@ -30,6 +30,20 @@ const {
     <YearFilter years={years} selectedYear={initialYear} />
   </div>
 
+  <a
+    id="setsSummary"
+    class="group hidden rounded-2xl border border-accent/30 bg-surface px-5 py-4 transition-colors hover:border-accent/60 hover:bg-surface2"
+  >
+    <div class="flex flex-wrap items-baseline justify-between gap-3">
+      <div class="flex items-baseline gap-3">
+        <span data-summary-title class="font-serif text-lg font-black italic tracking-tight text-slate-100"></span>
+        <span data-summary-status class="rounded-full border border-white/10 px-2 py-0.5 font-mono text-[11px] uppercase tracking-widest text-slate-400"></span>
+      </div>
+      <span class="font-mono text-sm text-accent transition-transform group-hover:translate-x-0.5">View summary →</span>
+    </div>
+    <p data-summary-line class="mt-1 text-sm text-slate-400"></p>
+  </a>
+
   <div
     id="setsList"
     class="space-y-3 rounded-2xl border border-white/[0.07] bg-surface p-4"
@@ -72,6 +86,7 @@ const {
     const pageSize = Number(root.getAttribute("data-page-size") ?? 50);
     const initialYear = root.getAttribute("data-initial-year");
     const listEl = root.querySelector("#setsList");
+    const summaryEl = root.querySelector("#setsSummary");
     const statusText = root.querySelector("#setsStatusText");
     const loadMoreBtn = root.querySelector("#setsLoadMore");
     if (!listEl || !statusText || !loadMoreBtn) throw new Error("SetsList: required elements missing");
@@ -82,7 +97,11 @@ const {
       year: "numeric",
     });
 
-    let selectedYear = Number(initialYear);
+    // ?year= lets the summary page link back to the year it came from.
+    const yearParam = Number(new URLSearchParams(location.search).get("year"));
+    let selectedYear = Number.isInteger(yearParam) && yearParam > 0
+      ? yearParam
+      : Number(initialYear);
     let offset = 0;
     let loading = false;
     let done = false;
@@ -144,6 +163,46 @@ const {
       }
     }
 
+    const nf = new Intl.NumberFormat("en-US");
+    const shortDate = new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric",
+      timeZone: "UTC",
+    });
+
+    // The year's summary card, above its sets. Fetched separately so a
+    // missing or failed summary never blocks the set list.
+    async function loadSummary(year) {
+      summaryEl.classList.replace("block", "hidden");
+      if (Number.isNaN(year)) return;
+      const BASE = document.documentElement.dataset.apiUrl || "";
+      if (!BASE) return;
+      try {
+        const res = await fetch(
+          `${String(BASE).replace(/\/$/, "")}/v1/stats/summaries/${year}`,
+          { cache: "no-store" },
+        );
+        if (!res.ok) return;
+        const s = (await res.json())?.data;
+        if (!s || year !== selectedYear) return;
+        summaryEl.href = `/sets/summary?year=${s.year}`;
+        summaryEl.querySelector("[data-summary-title]").textContent =
+          `${s.year} Summary`;
+        summaryEl.querySelector("[data-summary-status]").textContent =
+          s.status === "in_progress"
+            ? `So far · through ${shortDate.format(new Date(s.last_set_date))}`
+            : "Final";
+        summaryEl.querySelector("[data-summary-line]").textContent = [
+          `${nf.format(s.set_count)} sets`,
+          `${nf.format(s.songs_played)} songs played`,
+          `${nf.format(s.unique_songs)} unique`,
+        ].join(" · ");
+        summaryEl.classList.replace("hidden", "block");
+      } catch {
+        // Leave the card hidden; the sets below still load.
+      }
+    }
+
     async function load(reset = false) {
       if (loading || done) return;
       loading = true;
@@ -191,6 +250,8 @@ const {
       }
     }
 
+    setYear(Number.isNaN(selectedYear) ? "all" : selectedYear);
+    loadSummary(selectedYear);
     load(true);
 
     root.addEventListener("click", (e) => {
@@ -201,6 +262,7 @@ const {
       const newYear = raw === "all" ? "all" : Number(raw);
       selectedYear = newYear === "all" ? NaN : newYear;
       setYear(newYear);
+      loadSummary(selectedYear);
       done = false;
       load(true);
     });
