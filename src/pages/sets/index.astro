@@ -8,5 +8,15 @@ const years = Array.from({ length: maxYear - minYear + 1 }, (_, i) => maxYear - 
 ---
 
 <Page title="Full History" subtitle={`${minYear}–${maxYear}`}>
+  <a
+    href="/sets/collection"
+    class="group mb-8 flex flex-wrap items-baseline justify-between gap-3 rounded-2xl border border-white/[0.07] bg-surface px-5 py-4 transition-colors hover:border-accent/60 hover:bg-surface2"
+  >
+    <span>
+      <span class="font-serif text-lg font-black italic tracking-tight text-slate-100">Complete Collection</span>
+      <span class="ml-2 text-sm text-slate-400">Every song since {minYear}, marked by the years it was played</span>
+    </span>
+    <span class="font-mono text-sm text-accent transition-transform group-hover:translate-x-0.5">Open →</span>
+  </a>
   <SetsList years={years} initialYear={maxYear} />
 </Page>

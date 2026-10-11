@@ -159,6 +159,25 @@ test("GET /v1/stats/summaries/{year}/songs — year summary song table", async (
   }, path);
 });
 
+test("GET /v1/stats/collection — complete collection page", async (t) => {
+  const path = "/v1/stats/collection";
+  const rows = expectRows(t, expectData(await call(path), path), {
+    title: "string",
+    remix: "string|null",
+    artist: "string",
+    genre: "string|null",
+    bpm: "number|null",
+    length_secs: "number|null",
+    play_count: "number",
+    years: "array",
+    year_count: "number",
+  }, path);
+  for (const [i, row] of rows.entries()) {
+    assert.ok(row.years.every((y) => Number.isInteger(y)), `${path}[${i}].years holds a non-year`);
+    assert.equal(row.year_count, row.years.length, `${path}[${i}] year_count disagrees with years`);
+  }
+});
+
 test("GET /v1/stats/summaries/{year} — a year without sets is a 404, which the card and page treat as no summary", async () => {
   const path = "/v1/stats/summaries/1900";
   expectError(await call(path), path, 404);
