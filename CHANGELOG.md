@@ -1,3 +1,10 @@
+# [2.4.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.3.11...v2.4.0) (2026-10-11)
+
+
+### Features
+
+* **sets:** year summary card and page ([154241d](https://github.com/mini-app-polis/website-astro-wcs/commit/154241dbc62d70c4575ad5b3ec5c0521d8564754))
+
 ## [2.3.11](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.3.10...v2.3.11) (2026-10-08)
 
 
