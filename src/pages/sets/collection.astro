@@ -1,0 +1,281 @@
+---
+import Page from "../../layouts/Page.astro";
+import { getApiBase } from "../../lib/api";
+
+// The complete collection: every song on record, versions merged, marked
+// with the years it was played. Fetched at request time like the summaries,
+// so it grows as sets are ingested — a new song adds a row, a song played in
+// a new year gains that year's mark — without a rebuild.
+const apiBase = getApiBase();
+---
+
+<Page title="Complete Collection">
+  <div class="space-y-6" data-collection data-api-base={apiBase}>
+    <a
+      href="/sets"
+      class="inline-flex items-center gap-2 text-sm font-medium text-slate-400 transition-colors hover:text-accent"
+    >
+      <span class="font-mono">←</span>
+      Full History
+    </a>
+
+    <p class="font-mono text-sm text-slate-400" data-collection-status>Loading…</p>
+
+    <section class="overflow-hidden rounded-2xl border border-white/[0.07] bg-surface">
+      <div class="flex flex-wrap items-end justify-between gap-4 p-6 pb-4">
+        <div>
+          <h2 class="font-serif text-xl font-black italic tracking-tight" style="font-variation-settings: 'opsz' 72;">Every Song, Every Year</h2>
+          <p class="mt-1 text-sm text-slate-400">
+            <span data-collection-count>—</span> · versions merged · most played first
+          </p>
+        </div>
+        <div class="flex w-full flex-wrap gap-2 sm:w-auto">
+          <select
+            data-collection-year
+            aria-label="Played in year"
+            class="rounded-full border border-white/[0.07] bg-surface2 px-4 py-2 text-sm text-slate-100 focus:border-accent/60 focus:outline-none"
+          >
+            <option value="">Any year</option>
+          </select>
+          <input
+            type="search"
+            data-collection-filter
+            placeholder="Filter by title, artist or genre"
+            aria-label="Filter songs"
+            class="min-w-0 flex-1 rounded-full border border-white/[0.07] bg-surface2 px-4 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-accent/60 focus:outline-none sm:w-72 sm:flex-none"
+          />
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+          <thead class="border-y border-white/[0.07] text-xs uppercase tracking-widest text-slate-400">
+            <tr data-collection-head></tr>
+          </thead>
+          <tbody data-collection-body></tbody>
+        </table>
+      </div>
+      <div class="flex items-center justify-between gap-4 p-6 pt-4">
+        <p class="text-sm text-slate-400" data-collection-shown></p>
+        <button
+          type="button"
+          data-collection-more
+          class="hidden rounded-full border border-white/[0.07] bg-surface px-5 py-2 text-sm font-medium text-slate-200 transition-colors hover:border-white/15 hover:text-slate-100"
+        >
+          Show more
+        </button>
+      </div>
+    </section>
+  </div>
+</Page>
+
+<script type="module">
+  const root = document.querySelector("[data-collection]");
+  if (!root) throw new Error("[collection] missing [data-collection] wrapper");
+  const base = (root.dataset.apiBase ?? "").replace(/\/$/, "");
+
+  const statusEl = root.querySelector("[data-collection-status]");
+  const countEl = root.querySelector("[data-collection-count]");
+  const headEl = root.querySelector("[data-collection-head]");
+  const bodyEl = root.querySelector("[data-collection-body]");
+  const shownEl = root.querySelector("[data-collection-shown]");
+  const moreBtn = root.querySelector("[data-collection-more]");
+  const yearSelect = root.querySelector("[data-collection-year]");
+  const filterInput = root.querySelector("[data-collection-filter]");
+
+  const nf = new Intl.NumberFormat("en-US");
+  const PAGE = 200;
+  const TEXT_KEYS = ["title", "artist", "genre"];
+
+  const clock = (secs) => {
+    if (secs == null) return "—";
+    const h = Math.floor(secs / 3600);
+    const m = Math.floor((secs % 3600) / 60);
+    const s = secs % 60;
+    return h
+      ? `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`
+      : `${m}:${String(s).padStart(2, "0")}`;
+  };
+
+  // Fixed columns; one narrow mark column per year follows, added once the
+  // data says which years exist. Genre, BPM and length stay in the data (the
+  // filter matches genre) but not the table: the page is ~1000px at most and
+  // the year marks need the room. On phones the artist rides under the title.
+  const COLUMNS = [
+    { label: "#", head: "pl-6 pr-3", cls: "whitespace-nowrap py-3 pl-6 pr-3 font-mono text-slate-500", sort: null, cell: (r, i) => String(i + 1) },
+    { label: "Title", head: "px-3", cls: "px-3 py-3 font-medium text-slate-100", sort: "title", cell: (r) => (r.remix ? `${r.title} (${r.remix})` : r.title), sub: (r) => r.artist },
+    { label: "Artist", head: "hidden px-3 sm:table-cell", cls: "hidden px-3 py-3 text-slate-300 sm:table-cell", sort: "artist", cell: (r) => r.artist },
+    { label: "Plays", head: "pl-3 pr-6 text-right sm:pr-3", cls: "whitespace-nowrap py-3 pl-3 pr-6 text-right font-mono text-accent sm:pr-3", sort: "play_count", cell: (r) => nf.format(r.play_count) },
+    { label: "Years", head: "hidden px-3 text-right sm:table-cell", cls: "hidden whitespace-nowrap px-3 py-3 text-right font-mono text-slate-300 sm:table-cell", sort: "year_count", cell: (r) => String(r.year_count) },
+  ];
+  const MARK_CLS = "hidden px-1 py-3 text-center md:table-cell";
+
+  let songs = [];
+  let years = [];
+  let sortKey = "play_count";
+  let sortDesc = true;
+  let filterText = "";
+  let yearFilter = null;
+  let limit = PAGE;
+
+  function compare(a, b) {
+    const x = a[sortKey];
+    const y = b[sortKey];
+    // Blanks sink to the bottom whichever way the column is sorted.
+    if (x == null && y == null) return 0;
+    if (x == null) return 1;
+    if (y == null) return -1;
+    const c = typeof x === "string" ? x.localeCompare(y, undefined, { sensitivity: "base" }) : x - y;
+    return sortDesc ? -c : c;
+  }
+
+  function renderHead() {
+    headEl.innerHTML = "";
+    COLUMNS.forEach((col) => {
+      const th = document.createElement("th");
+      th.scope = "col";
+      th.className = `whitespace-nowrap py-3 font-medium ${col.head}`;
+      if (col.sort) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.dataset.sort = col.sort;
+        btn.className = "uppercase tracking-widest transition-colors hover:text-accent data-[active=true]:text-accent";
+        btn.textContent = col.label;
+        th.append(btn);
+      } else {
+        th.textContent = col.label;
+      }
+      headEl.append(th);
+    });
+    years.forEach((y, i) => {
+      const th = document.createElement("th");
+      th.scope = "col";
+      th.className = `hidden px-1 py-3 text-center font-mono font-medium normal-case tracking-normal md:table-cell ${i === years.length - 1 ? "pr-6" : ""}`;
+      th.title = String(y);
+      th.textContent = `'${String(y).slice(2)}`;
+      headEl.append(th);
+    });
+  }
+
+  function render() {
+    const q = filterText.trim().toLowerCase();
+    let rows = songs;
+    if (yearFilter != null) rows = rows.filter((r) => r.years.includes(yearFilter));
+    if (q) {
+      rows = rows.filter((r) =>
+        [r.title, r.remix, r.artist, r.genre].some((v) => v && v.toLowerCase().includes(q)));
+    }
+    rows = rows.slice().sort((a, b) =>
+      compare(a, b) || b.play_count - a.play_count || a.title.localeCompare(b.title));
+
+    headEl.querySelectorAll("[data-sort]").forEach((btn) => {
+      const active = btn.dataset.sort === sortKey;
+      btn.dataset.active = String(active);
+      btn.closest("th")?.setAttribute("aria-sort", active ? (sortDesc ? "descending" : "ascending") : "none");
+    });
+
+    // textContent throughout — titles and artists are arbitrary strings from
+    // the catalogue and must never be parsed as markup.
+    bodyEl.innerHTML = "";
+    const totalCols = COLUMNS.length + years.length;
+    if (!rows.length) {
+      const tr = document.createElement("tr");
+      const td = document.createElement("td");
+      td.colSpan = totalCols;
+      td.className = "px-6 py-8 text-center text-slate-500";
+      td.textContent = songs.length ? "No songs match." : "No songs on record yet.";
+      tr.append(td);
+      bodyEl.append(tr);
+    }
+    const frag = document.createDocumentFragment();
+    rows.slice(0, limit).forEach((r, i) => {
+      const tr = document.createElement("tr");
+      tr.className = i % 2 ? "bg-white/[0.02]" : "";
+      COLUMNS.forEach((col) => {
+        const td = document.createElement("td");
+        td.className = col.cls;
+        td.textContent = col.cell(r, i);
+        if (col.sub) {
+          const sub = document.createElement("div");
+          sub.className = "text-xs font-normal text-slate-400 sm:hidden";
+          sub.textContent = col.sub(r);
+          td.append(sub);
+        }
+        tr.append(td);
+      });
+      const played = new Set(r.years);
+      years.forEach((y, j) => {
+        const td = document.createElement("td");
+        td.className = MARK_CLS + (j === years.length - 1 ? " pr-6" : "");
+        const dot = document.createElement("span");
+        dot.className = played.has(y)
+          ? "inline-block h-2.5 w-2.5 rounded-sm bg-accent"
+          : "inline-block h-2.5 w-2.5 rounded-sm bg-white/[0.06]";
+        dot.title = `${y}: ${played.has(y) ? "played" : "not played"}`;
+        td.append(dot);
+        tr.append(td);
+      });
+      frag.append(tr);
+    });
+    bodyEl.append(frag);
+
+    const shown = Math.min(limit, rows.length);
+    shownEl.textContent = rows.length ? `Showing ${nf.format(shown)} of ${nf.format(rows.length)}` : "";
+    moreBtn.classList.toggle("hidden", shown >= rows.length);
+  }
+
+  headEl.addEventListener("click", (e) => {
+    const btn = e.target?.closest?.("[data-sort]");
+    if (!btn) return;
+    const key = btn.dataset.sort;
+    // Text columns start A→Z; numeric columns start highest first.
+    sortDesc = key === sortKey ? !sortDesc : !TEXT_KEYS.includes(key);
+    sortKey = key;
+    limit = PAGE;
+    render();
+  });
+  filterInput.addEventListener("input", (e) => {
+    filterText = e.target.value;
+    limit = PAGE;
+    render();
+  });
+  yearSelect.addEventListener("change", (e) => {
+    yearFilter = e.target.value ? Number(e.target.value) : null;
+    limit = PAGE;
+    render();
+  });
+  moreBtn.addEventListener("click", () => {
+    limit += PAGE;
+    render();
+  });
+
+  async function load() {
+    if (!base) {
+      statusEl.textContent = "Could not load the collection.";
+      return;
+    }
+    try {
+      const res = await fetch(`${base}/v1/stats/collection`, { cache: "no-store" });
+      if (!res.ok) throw new Error(String(res.status));
+      songs = (await res.json())?.data ?? [];
+      years = [...new Set(songs.flatMap((s) => s.years))].sort((a, b) => a - b);
+
+      for (const y of [...years].reverse()) {
+        const opt = document.createElement("option");
+        opt.value = String(y);
+        opt.textContent = `Played in ${y}`;
+        yearSelect.append(opt);
+      }
+      const plays = songs.reduce((n, s) => n + s.play_count, 0);
+      countEl.textContent = `${nf.format(songs.length)} songs`;
+      statusEl.textContent = years.length
+        ? `${nf.format(plays)} plays · ${years[0]}–${years[years.length - 1]}`
+        : "";
+      renderHead();
+      render();
+    } catch {
+      statusEl.textContent = "Could not load the collection.";
+    }
+  }
+
+  load();
+</script>

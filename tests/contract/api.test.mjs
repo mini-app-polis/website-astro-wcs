@@ -109,7 +109,7 @@ test("GET /v1/sets/{id} — an unknown set is a 404, which the page shows as 'Se
   expectError(await call(path), path, 404);
 });
 
-// pages/sets/summary.astro reads the headline numbers and the curated layer; SetsList.astro's card reads year, status,
+// pages/sets/summary.astro reads the headline numbers; SetsList.astro's card reads year, status,
 // set_count, songs_played, unique_songs and last_set_date.
 const YEAR_SUMMARY = {
   year: "number",
@@ -125,7 +125,6 @@ const YEAR_SUMMARY = {
   length_coverage: "number",
   avg_set_length_secs: "number|null",
   avg_song_length_secs: "number|null",
-  curated: "object|null",
 };
 
 test("GET /v1/stats/summaries/{year} — year summary page and Full History card", async (t) => {
@@ -138,9 +137,6 @@ test("GET /v1/stats/summaries/{year} — year summary page and Full History card
   const s = expectData(await call(path), path);
   expectShape(s, YEAR_SUMMARY, path);
   assert.ok(["final", "in_progress"].includes(s.status), `${path} status ${s.status}`);
-  if (s.curated) {
-    expectShape(s.curated, { hours_played: "string|null", spotify_playlist_url: "string|null", highlights: "array" }, `${path}.curated`);
-  }
 });
 
 test("GET /v1/stats/summaries/{year}/songs — year summary song table", async (t) => {
@@ -161,6 +157,25 @@ test("GET /v1/stats/summaries/{year}/songs — year summary song table", async (
     play_count: "number",
     total_play_secs: "number|null",
   }, path);
+});
+
+test("GET /v1/stats/collection — complete collection page", async (t) => {
+  const path = "/v1/stats/collection";
+  const rows = expectRows(t, expectData(await call(path), path), {
+    title: "string",
+    remix: "string|null",
+    artist: "string",
+    genre: "string|null",
+    bpm: "number|null",
+    length_secs: "number|null",
+    play_count: "number",
+    years: "array",
+    year_count: "number",
+  }, path);
+  for (const [i, row] of rows.entries()) {
+    assert.ok(row.years.every((y) => Number.isInteger(y)), `${path}[${i}].years holds a non-year`);
+    assert.equal(row.year_count, row.years.length, `${path}[${i}] year_count disagrees with years`);
+  }
 });
 
 test("GET /v1/stats/summaries/{year} — a year without sets is a 404, which the card and page treat as no summary", async () => {
