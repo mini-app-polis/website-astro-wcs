@@ -1,3 +1,16 @@
+# [2.5.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.4.0...v2.5.0) (2026-10-11)
+
+
+### Bug Fixes
+
+* **dj-marvel:** type the link list ([d26a102](https://github.com/mini-app-polis/website-astro-wcs/commit/d26a10202acc96e7d70c402c74453b774996d66b))
+* **sets:** drop the curated summary section ([5b8dbde](https://github.com/mini-app-polis/website-astro-wcs/commit/5b8dbde591f7bb98af50e8087ad7aa95998afca7))
+
+
+### Features
+
+* **sets:** complete collection page ([919249b](https://github.com/mini-app-polis/website-astro-wcs/commit/919249b0fdd80deafe7b83614b023e87fc438bd0))
+
 # [2.4.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.3.11...v2.4.0) (2026-10-11)
 
 
