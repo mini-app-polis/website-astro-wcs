@@ -1,7 +1,14 @@
 ---
 import Page from "../layouts/Page.astro";
 
-const links = [
+interface Link {
+  title: string;
+  description: string;
+  href: string;
+  external?: boolean;
+}
+
+const links: Link[] = [
   {
     title: "Full History",
     description: "Browse all sets by year. Open any set for its full track list.",
@@ -23,7 +30,7 @@ const links = [
     href: "https://deejaytools.com/",
     external: true,
   },
-] as const;
+];
 ---
 
 <Page title="DJ Marvel" subtitle="Set history, live plays, and music tools" ogImage="/og/dj-marvel.png">
