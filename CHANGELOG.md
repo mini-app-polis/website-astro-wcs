@@ -1,3 +1,10 @@
+## [2.5.5](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.5.4...v2.5.5) (2026-10-16)
+
+
+### Bug Fixes
+
+* **ci:** follow a newer branch deploy when Pages skips this commit's build ([9d1b3ca](https://github.com/mini-app-polis/website-astro-wcs/commit/9d1b3ca803074bd4981607d429cb57db73ce85e4))
+
 ## [2.5.4](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.5.3...v2.5.4) (2026-10-16)
 
 
