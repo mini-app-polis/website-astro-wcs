@@ -5,7 +5,7 @@ name: site
 # instance, production against the production API and Clerk's production
 # instance. Pages builds on its own, outside Actions, and reports through
 # the "Cloudflare Pages" check on the commit; this waits for that check and
-# tests the deploy's own preview URL (<hash>.kaiano-wcs-website.pages.dev) —
+# tests the deploy's own preview URL (<hash>.website-astro-wcs.pages.dev) —
 # exactly this commit's build, so a cache can't pass a stale one. It makes
 # sure the build:
 #   - serves the home page and deep links;
