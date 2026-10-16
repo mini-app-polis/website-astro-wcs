@@ -1,3 +1,10 @@
+## [2.5.2](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.5.1...v2.5.2) (2026-10-16)
+
+
+### Bug Fixes
+
+* **sets:** add years since the last build to the Full History list ([3c98301](https://github.com/mini-app-polis/website-astro-wcs/commit/3c98301bf094a0be1130ac210f40cadb7b63d7e3))
+
 ## [2.5.1](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.5.0...v2.5.1) (2026-10-12)
 
 
