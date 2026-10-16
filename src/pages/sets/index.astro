@@ -19,4 +19,15 @@ const years = Array.from({ length: maxYear - minYear + 1 }, (_, i) => maxYear - 
     <span class="font-mono text-sm text-accent transition-transform group-hover:translate-x-0.5">Open →</span>
   </a>
   <SetsList years={years} initialYear={maxYear} />
+  <script is:inline define:vars={{ minYear, maxYear }}>
+    // The range is fixed at build; carry it to the current year.
+    const now = new Date().getFullYear();
+    if (now > maxYear) {
+      for (const p of document.querySelectorAll("main p")) {
+        if (p.textContent.trim() === `${minYear}–${maxYear}`) {
+          p.textContent = `${minYear}–${now}`;
+        }
+      }
+    }
+  </script>
 </Page>
