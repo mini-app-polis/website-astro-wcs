@@ -97,11 +97,30 @@ const {
       year: "numeric",
     });
 
+    // The year buttons are rendered when the site is built. A year that has
+    // started since then gets its button here, and becomes the default, so
+    // the list never waits on a rebuild.
+    const thisYear = new Date().getFullYear();
+    const allBtn = root.querySelector('button[data-year="all"]');
+    const yearBtns = [...root.querySelectorAll("button[data-year]")].filter(
+      (b) => b !== allBtn,
+    );
+    const builtTo = Math.max(...yearBtns.map((b) => Number(b.dataset.year)));
+    const template = yearBtns[0];
+    if (allBtn && template) {
+      for (let y = builtTo + 1; y <= thisYear; y++) {
+        const btn = template.cloneNode(true);
+        btn.dataset.year = String(y);
+        btn.textContent = String(y);
+        allBtn.after(btn);
+      }
+    }
+
     // ?year= lets the summary page link back to the year it came from.
     const yearParam = Number(new URLSearchParams(location.search).get("year"));
     let selectedYear = Number.isInteger(yearParam) && yearParam > 0
       ? yearParam
-      : Number(initialYear);
+      : Math.max(Number(initialYear), thisYear);
     let offset = 0;
     let loading = false;
     let done = false;
