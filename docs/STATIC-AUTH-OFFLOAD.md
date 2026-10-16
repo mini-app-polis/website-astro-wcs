@@ -1,12 +1,16 @@
 # wcs: offloading auth to the API instead of moving to Workers
 
-Scope for a decision. Nothing here is implemented.
+Scope for a decision. **Status: implemented** — this is the path taken. The
+adapter, `src/middleware.ts` and `src/lib/auth.ts` are gone, `output` is
+`"static"`, and the site stays on Cloudflare Pages. The text below is the
+original scoping and is kept as written.
 
 ## The question
 
 The Astro 7 upgrade forces a hosting change, because `@astrojs/cloudflare` v11
 was the last adapter release supporting Pages and every later version targets
-Workers. `docs/WORKERS-MIGRATION.md` describes that move and it is ready to go.
+Workers. Moving the site to Workers was the other option considered; that plan
+was never carried out and has since been removed.
 
 This document scopes the alternative: delete the adapter, make the site fully
 static on Pages like the other three sites, and let `api.kaianolevine.com` own
