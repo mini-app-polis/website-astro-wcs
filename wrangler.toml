@@ -1,5 +1,0 @@
-# Cloudflare Pages, static. No adapter, so no Workers config, no bindings and
-# no secrets — the build is HTML and assets, and Pages serves them.
-name = "kaiano-wcs-website"
-compatibility_date = "2024-09-23"
-pages_build_output_dir = "dist"
