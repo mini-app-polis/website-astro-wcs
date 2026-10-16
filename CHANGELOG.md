@@ -1,3 +1,11 @@
+## [2.5.3](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.5.2...v2.5.3) (2026-10-16)
+
+
+### Bug Fixes
+
+* **ci:** expect the production Clerk key on dev until wcs has a dev instance ([84cb8d1](https://github.com/mini-app-polis/website-astro-wcs/commit/84cb8d1ebca7c29ad36e3713a0e2636f7241a861))
+* **deploy:** drop wrangler.toml so Pages uses the Terraform-managed build variables ([7359f61](https://github.com/mini-app-polis/website-astro-wcs/commit/7359f613dfc7f57eec4da31e289bba1fa062bceb))
+
 ## [2.5.2](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.5.1...v2.5.2) (2026-10-16)
 
 
