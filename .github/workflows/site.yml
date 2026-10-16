@@ -1,18 +1,18 @@
 name: site
 
 # Smoke-tests the site once Cloudflare Pages has deployed a push to dev or
-# main (CD-032) — the dev build against the dev API and Clerk's development
-# instance, production against the production API and Clerk's production
-# instance. Pages builds on its own, outside Actions, and reports through
-# the "Cloudflare Pages" check on the commit; this waits for that check and
+# main (CD-032) — the dev build against the dev API, production against the
+# production API. Both use Clerk's production instance: wcs has no
+# development instance. Pages builds on its own, outside Actions, and
+# reports through the "Cloudflare Pages" check on the commit; this waits for
+# that check and
 # tests the deploy's own preview URL (<hash>.website-astro-wcs.pages.dev) —
 # exactly this commit's build, so a cache can't pass a stale one. It makes
 # sure the build:
 #   - serves the home page and deep links;
 #   - is built to call this environment's API (<html data-api-url>), and the
 #     API answers /health;
-#   - carries the right Clerk key for its environment: pk_test_ on dev,
-#     pk_live_ in production — never the other.
+#   - carries the production Clerk key (pk_live_) — never a pk_test_ one.
 # All of it is read-only, so it is safe against production.
 # KAIANO_API_BASE_URL and PUBLIC_CLERK_PUBLISHABLE_KEY are baked in at build
 # time from the Pages settings, so a wrong value shows up here and nowhere
@@ -38,8 +38,8 @@ concurrency:
 
 env:
   API: ${{ github.ref == 'refs/heads/main' && 'https://api.kaianolevine.com' || 'https://dev-api.kaianolevine.com' }}
-  CLERK_KEY: ${{ github.ref == 'refs/heads/main' && 'pk_live_' || 'pk_test_' }}
-  WRONG_CLERK_KEY: ${{ github.ref == 'refs/heads/main' && 'pk_test_' || 'pk_live_' }}
+  CLERK_KEY: pk_live_
+  WRONG_CLERK_KEY: pk_test_
   SHA: ${{ github.sha }}
 
 jobs:
