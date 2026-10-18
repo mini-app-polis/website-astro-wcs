@@ -14,6 +14,12 @@ import { getSessionToken, handleDenial } from "../lib/session";
 // updated_at; after, it re-reads the index and counts the pages whose time has
 // moved on. That compares the API's times with the API's times, so the
 // browser's clock does not matter.
+//
+// A second click within five minutes queues nothing: SQS drops an identical
+// message inside its dedup window. The API says so (``deduplicated``, with the
+// first send's ``queued_at``), and the panel then watches that job instead —
+// a page written since it was queued already counts. Before this it waited
+// for a rebuild that had already happened (2026-10-18).
 
 /** ``page``: the operations for the page in ``?slug=``; otherwise the wiki's. */
 type Props = { apiBase: string; scope: "wiki" | "page" };
@@ -184,7 +190,8 @@ export default function WikiOperations({ apiBase, scope }: Props) {
         setState({ kind: "error", message: `Not queued: ${first.problem}.` });
         return;
       }
-      const before = first.pages;
+      // A copy: a joined job marks pages done in it, against the index as read.
+      const before = new Map(first.pages);
       const res = await fetch(`${base}/v1/wcs/wiki/admin/jobs`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
@@ -203,26 +210,43 @@ export default function WikiOperations({ apiBase, scope }: Props) {
         setState({ kind: "error", message: `Not queued: ${detail}` });
         return;
       }
-      const summary = json?.data?.summary || "Queued.";
+      const data = json?.data ?? {};
+      // The job this click belongs to: its own, or the one it joined.
+      const joinedAt: Date | null =
+        data.deduplicated && data.queued_at ? new Date(data.queued_at) : null;
+      const summary = joinedAt
+        ? `Already queued at ${clock(joinedAt)}; this click joins that job.`
+        : data.summary || "Queued.";
+      if (joinedAt) {
+        // Pages that job has written already count as done.
+        for (const [s, at] of before) {
+          if (Date.parse(at) >= joinedAt.getTime()) before.set(s, "");
+        }
+      }
       // A folded slug rebuilds the page it folded into, which this page's
       // index row does not name; there is nothing here to watch.
       if (slug && !before.has(slug)) {
         setState({ kind: "finished", total: 0 });
         return;
       }
-      const since = clock(new Date());
+      const since = clock(joinedAt ?? new Date());
       const total = slug ? 1 : before.size;
+      const done0 = progress(before, first.pages).done;
+      if (total > 0 && done0 >= total) {
+        setState({ kind: "finished", total });
+        return;
+      }
       setState({
         kind: "watching",
         summary,
-        done: 0,
+        done: done0,
         total,
         since,
         checked: null,
         problem: null,
         stalled: false,
       });
-      watch(before, summary, since, Date.now(), total);
+      watch(before, summary, since, joinedAt ? joinedAt.getTime() : Date.now(), total);
     } catch {
       setState({ kind: "error", message: "Not queued: the API could not be reached." });
     }
