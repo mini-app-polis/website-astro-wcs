@@ -1,6 +1,7 @@
 ---
 import Page from "../../layouts/Page.astro";
 import WikiIndex from "../../components/WikiIndex";
+import WikiOperations from "../../components/WikiOperations";
 import { getApiBase } from "../../lib/api";
 
 // Every wiki page, private evidence included, from the admin routes. No gate
@@ -10,5 +11,8 @@ const apiBase = getApiBase();
 ---
 
 <Page title="Wiki (Admin)" subtitle="Every page, private evidence included">
+  <div class="mb-8">
+    <WikiOperations client:load apiBase={apiBase ?? ""} scope="wiki" />
+  </div>
   <WikiIndex client:load apiBase={apiBase ?? ""} mode="admin" />
 </Page>

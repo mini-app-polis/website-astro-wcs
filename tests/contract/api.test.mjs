@@ -211,6 +211,18 @@ for (const path of [
   });
 }
 
+// The /admin/wiki Operations panel (MINI-103) starts curator work. Anonymous,
+// it must be refused before anything is queued.
+test("POST /v1/wcs/wiki/admin/jobs without a token refuses with 401", async () => {
+  const path = "/v1/wcs/wiki/admin/jobs";
+  const res = await call(path, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ action: "rebuild_pages", slugs: ["contract-suite-fixture"] }),
+  });
+  expectError(res, path, 401);
+});
+
 // The contact and survey forms POST JSON with these field names. Without a
 // Turnstile token the API must refuse before verifying or sending anything.
 // The origin check runs first, so a 403 is also a refusal; a 400 must name
