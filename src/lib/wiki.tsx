@@ -77,6 +77,10 @@ export type WikiPage = {
   referenced_by: WikiLink[];
   sources: WikiCitation[];
   evidence_sources: string[];
+  /** Every slug folded into this page (MINI-100). */
+  folded?: string[];
+  /** Set when the page was asked for under a slug folded into it: that slug. */
+  requested_slug?: string | null;
 };
 
 /** GET /v1/wcs/wiki/pages (and the admin form): one row of the index. */
