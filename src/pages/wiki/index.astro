@@ -1,0 +1,29 @@
+---
+import Page from "../../layouts/Page.astro";
+import WikiIndex from "../../components/WikiIndex";
+import { Show } from "@clerk/astro/components";
+import { getApiBase } from "../../lib/api";
+
+// Static. The pages are wiki-curator-cog's documents, read at request time
+// from the API, which filters them to the sources the caller can see
+// (MINI-96/97). Nothing about which pages exist is in this build.
+const apiBase = getApiBase();
+---
+
+<Page title="Wiki" subtitle="West Coast Swing, by concept">
+  <Show when="signed-out">
+    <div class="flex flex-col items-center justify-center min-h-[40vh] gap-6 text-center">
+      <p class="text-slate-400 font-light">This section is private.</p>
+      <a
+        href="/sign-in"
+        class="inline-flex items-center gap-2 rounded-full bg-accent px-6 py-2.5 font-mono text-xs font-medium uppercase tracking-widest text-canvas transition-opacity hover:opacity-90"
+      >
+        Sign in →
+      </a>
+    </div>
+  </Show>
+
+  <Show when="signed-in">
+    <WikiIndex client:load apiBase={apiBase ?? ""} mode="public" />
+  </Show>
+</Page>

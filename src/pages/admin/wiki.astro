@@ -1,0 +1,14 @@
+---
+import Page from "../../layouts/Page.astro";
+import WikiIndex from "../../components/WikiIndex";
+import { getApiBase } from "../../lib/api";
+
+// Every wiki page, private evidence included, from the admin routes. No gate
+// here: the API refuses a caller without wcs.corpus.read and WikiIndex routes
+// that refusal. ?as=public lists only the pages a reader with no grants sees.
+const apiBase = getApiBase();
+---
+
+<Page title="Wiki (Admin)" subtitle="Every page, private evidence included">
+  <WikiIndex client:load apiBase={apiBase ?? ""} mode="admin" />
+</Page>

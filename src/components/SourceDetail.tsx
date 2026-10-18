@@ -298,7 +298,9 @@ function buildSummary(view: View): string {
 
 function entityHref(slug: string, _kind: string): string {
   if (!slug) return "#";
-  return `/wiki/${slug}`;
+  // The wiki page that slug became (MINI-97). A slug folded into a broader
+  // page has no page of its own; the wiki page says so.
+  return `/wiki/page?slug=${encodeURIComponent(slug)}`;
 }
 
 function instructorHref(slug: string | null): string {
