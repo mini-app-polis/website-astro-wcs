@@ -1,3 +1,10 @@
+## [2.9.2](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.9.1...v2.9.2) (2026-10-18)
+
+
+### Bug Fixes
+
+* a second click within five minutes follows the job it joined instead of waiting forever (MINI-103) ([46a5161](https://github.com/mini-app-polis/website-astro-wcs/commit/46a516190af3ac71d39dfa6136d6e60678fc7c9e))
+
 ## [2.9.1](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.9.0...v2.9.1) (2026-10-18)
 
 
