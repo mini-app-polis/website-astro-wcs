@@ -1,3 +1,10 @@
+# [2.8.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.7.0...v2.8.0) (2026-10-18)
+
+
+### Features
+
+* an Operations panel on the admin wiki pages (MINI-103) ([080643f](https://github.com/mini-app-polis/website-astro-wcs/commit/080643f0f1e29c85441b3a09d774b46aacabfeda))
+
 # [2.7.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.6.1...v2.7.0) (2026-10-18)
 
 
