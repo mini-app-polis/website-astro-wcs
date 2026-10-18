@@ -30,10 +30,10 @@ const EVERY_PAGE: Operation = {
   label: "Rebuild every page",
   what:
     "Rebuilds every page from the curator's stored links, folds and prose — for after the " +
-    "page logic changes, or to fill in a new field. Runs on the queue in batches of 25 " +
-    "pages and takes a few minutes; progress shows here. You can leave this page — the " +
-    "rebuild carries on without it.",
-  confirm: "Rebuild every page? This is free (no model calls) and takes a few minutes.",
+    "page logic changes, or to fill in a new field. Runs as one job on the queue and takes " +
+    "about five minutes; progress shows here. You can leave this page — the rebuild " +
+    "carries on without it.",
+  confirm: "Rebuild every page? This is free (no model calls) and takes about five minutes.",
 };
 
 function onePage(slug: string): Operation {
@@ -51,6 +51,8 @@ function onePage(slug: string): Operation {
 const POLL_MS = 10_000;
 /** When it stops watching. The rebuild itself carries on regardless. */
 const WATCH_LIMIT_MS = 30 * 60_000;
+/** No new page for this long while some are still to go: say the job may have failed. */
+const STALL_MS = 5 * 60_000;
 
 const BTN_CLASS =
   "rounded-full border border-white/15 bg-white/[0.03] px-4 py-1.5 text-sm text-slate-200 transition-colors hover:border-accent hover:text-accent disabled:opacity-50 disabled:hover:border-white/15 disabled:hover:text-slate-200";
@@ -60,13 +62,27 @@ type Row = { slug: string; updated_at: string };
 type State =
   | { kind: "idle" }
   | { kind: "sending" }
-  | { kind: "watching"; summary: string; done: number; total: number; since: string }
+  | {
+      kind: "watching";
+      summary: string;
+      done: number;
+      total: number;
+      since: string;
+      /** When the index was last read, and what went wrong if it could not be. */
+      checked: string | null;
+      problem: string | null;
+      stalled: boolean;
+    }
   | { kind: "finished"; total: number }
   | { kind: "stopped"; done: number; total: number }
   | { kind: "error"; message: string };
 
-function clock(d: Date): string {
-  return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+function clock(d: Date, seconds = false): string {
+  return d.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    ...(seconds ? { second: "2-digit" } : {}),
+  });
 }
 
 export default function WikiOperations({ apiBase, scope }: Props) {
@@ -89,17 +105,19 @@ export default function WikiOperations({ apiBase, scope }: Props) {
 
   const base = apiBase.replace(/\/$/, "");
 
-  /** The admin index as slug → updated_at, or null when it could not be read. */
-  const readIndex = async (token: string): Promise<Map<string, string> | null> => {
+  /** The admin index as slug → updated_at, or why it could not be read. */
+  const readIndex = async (
+    token: string,
+  ): Promise<{ pages: Map<string, string> } | { problem: string }> => {
     try {
       const res = await fetch(`${base}/v1/wcs/wiki/admin/pages`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) return null;
+      if (!res.ok) return { problem: `the API answered HTTP ${res.status}` };
       const rows = ((await res.json())?.data ?? []) as Row[];
-      return new Map(rows.map((r) => [r.slug, r.updated_at]));
+      return { pages: new Map(rows.map((r) => [r.slug, r.updated_at])) };
     } catch {
-      return null;
+      return { problem: "the API could not be reached" };
     }
   };
 
@@ -110,22 +128,42 @@ export default function WikiOperations({ apiBase, scope }: Props) {
     return { done, total: slug ? 1 : watched.length };
   };
 
-  const watch = (before: Map<string, string>, summary: string, since: string, startedMs: number) => {
+  const watch = (
+    before: Map<string, string>,
+    summary: string,
+    since: string,
+    startedMs: number,
+    total0: number,
+  ) => {
+    // The last good count, and when it last went up, carried between ticks.
+    let last = { done: 0, total: total0 };
+    let movedMs = startedMs;
     const tick = async () => {
       const token = (await getSessionToken()) || "";
-      const now = token ? await readIndex(token) : null;
-      if (now) {
-        const { done, total } = progress(before, now);
-        if (total > 0 && done >= total) {
-          setState({ kind: "finished", total });
+      const read = token ? await readIndex(token) : { problem: "you are signed out" };
+      const checked = clock(new Date(), true);
+      if ("pages" in read) {
+        const now = progress(before, read.pages);
+        if (now.done > last.done) movedMs = Date.now();
+        last = now;
+        if (now.total > 0 && now.done >= now.total) {
+          setState({ kind: "finished", total: now.total });
           return;
         }
-        if (Date.now() - startedMs > WATCH_LIMIT_MS) {
-          setState({ kind: "stopped", done, total });
-          return;
-        }
-        setState({ kind: "watching", summary, done, total, since });
       }
+      if (Date.now() - startedMs > WATCH_LIMIT_MS) {
+        setState({ kind: "stopped", ...last });
+        return;
+      }
+      setState({
+        kind: "watching",
+        summary,
+        since,
+        ...last,
+        checked,
+        problem: "problem" in read ? read.problem : null,
+        stalled: Date.now() - movedMs > STALL_MS,
+      });
       timer.current = window.setTimeout(tick, POLL_MS);
     };
     timer.current = window.setTimeout(tick, POLL_MS);
@@ -141,7 +179,12 @@ export default function WikiOperations({ apiBase, scope }: Props) {
         return;
       }
       // Before queueing, so a page the worker writes straight away still counts.
-      const before = (await readIndex(token)) ?? new Map<string, string>();
+      const first = await readIndex(token);
+      if ("problem" in first) {
+        setState({ kind: "error", message: `Not queued: ${first.problem}.` });
+        return;
+      }
+      const before = first.pages;
       const res = await fetch(`${base}/v1/wcs/wiki/admin/jobs`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
@@ -169,8 +212,17 @@ export default function WikiOperations({ apiBase, scope }: Props) {
       }
       const since = clock(new Date());
       const total = slug ? 1 : before.size;
-      setState({ kind: "watching", summary, done: 0, total, since });
-      watch(before, summary, since, Date.now());
+      setState({
+        kind: "watching",
+        summary,
+        done: 0,
+        total,
+        since,
+        checked: null,
+        problem: null,
+        stalled: false,
+      });
+      watch(before, summary, since, Date.now(), total);
     } catch {
       setState({ kind: "error", message: "Not queued: the API could not be reached." });
     }
@@ -196,10 +248,31 @@ export default function WikiOperations({ apiBase, scope }: Props) {
         {state.kind === "watching" ? (
           <span class="text-sm text-slate-300">
             {state.summary}{" "}
-            <span class="font-mono text-slate-100">
-              {state.done} of {state.total}
-            </span>{" "}
-            {noun(state.total)} rebuilt since {state.since}.
+            {state.done === 0 ? (
+              <>Waiting for the queue — nothing rebuilt yet.</>
+            ) : (
+              <>
+                <span class="font-mono text-slate-100">
+                  {state.done} of {state.total}
+                </span>{" "}
+                {noun(state.total)} rebuilt since {state.since}.
+              </>
+            )}
+            {state.checked ? (
+              <span class="ml-2 font-mono text-xs text-slate-500">checked {state.checked}</span>
+            ) : null}
+            {state.problem ? (
+              <span class="block text-amber-300">
+                Couldn’t read progress: {state.problem}. Trying again.
+              </span>
+            ) : null}
+            {state.stalled ? (
+              <span class="block text-amber-300">
+                No page rebuilt in the last 5 minutes. The job may have failed: a failed job is
+                retried later on its own, and one that keeps failing goes to the dead-letter
+                queue with a run report.
+              </span>
+            ) : null}
           </span>
         ) : state.kind === "finished" && state.total === 0 ? (
           <span class="text-sm text-emerald-400">Queued; reload in a minute to see it.</span>
@@ -211,7 +284,7 @@ export default function WikiOperations({ apiBase, scope }: Props) {
         ) : state.kind === "stopped" ? (
           <span class="text-sm text-amber-300">
             Stopped watching after 30 minutes with {state.done} of {state.total}{" "}
-            {noun(state.total)} rebuilt. The rebuild may still be running; a batch that keeps
+            {noun(state.total)} rebuilt. The rebuild may still be running; a job that keeps
             failing is reported as a run report.
           </span>
         ) : state.kind === "error" ? (
