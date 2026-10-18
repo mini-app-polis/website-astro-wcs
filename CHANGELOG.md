@@ -1,3 +1,10 @@
+# [2.7.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.6.1...v2.7.0) (2026-10-18)
+
+
+### Features
+
+* a folded topic's link says which page it is part of (MINI-100) ([982ac89](https://github.com/mini-app-polis/website-astro-wcs/commit/982ac89b45842bdb57c49fd00410a781803e939a))
+
 ## [2.6.1](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.6.0...v2.6.1) (2026-10-18)
 
 
