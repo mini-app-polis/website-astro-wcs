@@ -1,3 +1,10 @@
+# [2.9.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.8.0...v2.9.0) (2026-10-18)
+
+
+### Features
+
+* the Operations panel shows rebuild progress until done (MINI-103) ([c36444d](https://github.com/mini-app-polis/website-astro-wcs/commit/c36444d530117322fc6a5424a64d45f8acdce712))
+
 # [2.8.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.7.0...v2.8.0) (2026-10-18)
 
 
