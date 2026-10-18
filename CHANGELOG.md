@@ -1,3 +1,10 @@
+# [2.6.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.5.5...v2.6.0) (2026-10-18)
+
+
+### Features
+
+* wiki pages — /wiki, /wiki/page and their admin views, read from the API's page documents (MINI-97) ([c8c1d79](https://github.com/mini-app-polis/website-astro-wcs/commit/c8c1d7918d46ee49fba3620743c244f193fa6ccd))
+
 ## [2.5.5](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.5.4...v2.5.5) (2026-10-16)
 
 
