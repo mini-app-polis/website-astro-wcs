@@ -133,10 +133,26 @@ function ReferencedBy({ links, mode }: { links: WikiLink[]; mode: WikiMode }) {
   );
 }
 
+// A link to a topic folded into a broader page (MINI-93) is served that page
+// (MINI-100). Say which topic was asked for, so the reader knows why they
+// landed somewhere with a different name.
+function FoldedNotice({ page }: { page: Page }) {
+  const requested = page.requested_slug;
+  if (!requested) return null;
+  const detail = page.details.find((d) => d.slug === requested);
+  const name = detail?.name ?? requested.replace(/-/g, " ");
+  return (
+    <p class="text-sm text-slate-400">
+      “{name}” is part of this page{detail ? " — see Details" : ""}.
+    </p>
+  );
+}
+
 function Body({ page, mode }: { page: Page; mode: WikiMode }) {
   const statements = page.by_teacher.reduce((n, t) => n + t.statements.length, 0);
   return (
     <div class="space-y-10">
+      <FoldedNotice page={page} />
       <div class="flex flex-wrap items-center gap-2">
         <Badge label={KIND_LABELS[page.kind] || page.kind} />
         {page.aliases.length ? (
@@ -269,15 +285,15 @@ function Body({ page, mode }: { page: Page; mode: WikiMode }) {
   );
 }
 
-// Most lesson topics are folded into a broader page (MINI-93), so a lesson's
-// link to one often has no page of its own. Searching for its words finds the
-// page it is part of.
+// A topic folded into a broader page is served that page by the API
+// (MINI-100), so this is a slug with no page anywhere, or one the reader
+// cannot see. Searching for its words may still find something close.
 function NotFound({ slug, mode }: { slug: string; mode: WikiMode }) {
   const words = slug.replace(/-/g, " ");
   const index = mode === "admin" ? "/admin/wiki" : "/wiki";
   return (
     <div class="space-y-2 text-sm text-slate-400">
-      <p>“{words}” has no page of its own. It may be part of a broader page.</p>
+      <p>“{words}” has no page in the wiki.</p>
       <p>
         <a href={`${index}?q=${encodeURIComponent(words)}`} class={LINK_CLASS}>
           Search the wiki for “{words}”
