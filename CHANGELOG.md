@@ -1,3 +1,10 @@
+## [2.9.1](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.9.0...v2.9.1) (2026-10-18)
+
+
+### Bug Fixes
+
+* the Operations panel says what it is waiting on, and why it can't read progress (MINI-103) ([429a34c](https://github.com/mini-app-polis/website-astro-wcs/commit/429a34c632a569000bb6ad1b6f35819fc8fea27c))
+
 # [2.9.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.8.0...v2.9.0) (2026-10-18)
 
 
