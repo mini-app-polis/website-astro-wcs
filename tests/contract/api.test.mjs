@@ -195,7 +195,17 @@ test("GET /v1/spotify/playlists — Spotify page", async (t) => {
 // Access rules. The site's signed-in pages (notes, admin) depend on these
 // refusing an anonymous caller with 401 in the error envelope — the Nav and
 // session code read a 401 as "signed out". A 500 or a 200 here is a break.
-for (const path of ["/v1/wcs/me", "/v1/wcs/wiki/sources", "/v1/wcs/wiki/admin/sources", "/v1/wcs/admin/users"]) {
+// The wiki pages (MINI-97) read the same way.
+for (const path of [
+  "/v1/wcs/me",
+  "/v1/wcs/wiki/sources",
+  "/v1/wcs/wiki/admin/sources",
+  "/v1/wcs/admin/users",
+  "/v1/wcs/wiki/pages",
+  "/v1/wcs/wiki/pages/contract-suite-fixture",
+  "/v1/wcs/wiki/admin/pages",
+  "/v1/wcs/wiki/admin/pages/contract-suite-fixture",
+]) {
   test(`GET ${path} without a token refuses with 401`, async () => {
     expectError(await call(path), path, 401);
   });

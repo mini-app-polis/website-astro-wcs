@@ -48,6 +48,8 @@ All three are read at build time and baked into the static output. `KAIANO_API_B
 | `/notes/detail?id=<id>` | Individual note detail |
 | `/notes/ask` | Ask questions of the notes |
 | `/notes/admin`, `/notes/admin/detail` | Admin view of notes |
+| `/wiki`, `/wiki/page?slug=<slug>` | The WCS wiki: page documents from wiki-curator-cog, filtered by the API to the sources the reader can see |
+| `/admin/wiki`, `/admin/wiki/page?slug=<slug>` | Every wiki page, private citations marked; `?as=public` shows what a reader with no grants sees |
 | `/admin/users`, `/admin/notes`, `/admin/notes/detail` | Admin pages (`/admin` redirects to `/admin/users`) |
 | `/sign-in` | Clerk sign-in |
 | `/booking` | Booking index + `/booking/lessons` + `/booking/press-kit` |

@@ -1,0 +1,38 @@
+---
+import Page from "../../layouts/Page.astro";
+import WikiPage from "../../components/WikiPage";
+import { Show } from "@clerk/astro/components";
+import { getApiBase } from "../../lib/api";
+
+// Static page reached as /wiki/page?slug=<slug>. WikiPage reads the slug from
+// the query string, as /notes/detail reads its id.
+const apiBase = getApiBase();
+---
+
+<Page title="Wiki">
+  <Show when="signed-out">
+    <div class="flex flex-col items-center justify-center min-h-[40vh] gap-6 text-center">
+      <p class="text-slate-400 font-light">This section is private.</p>
+      <a
+        href="/sign-in"
+        class="inline-flex items-center gap-2 rounded-full bg-accent px-6 py-2.5 font-mono text-xs font-medium uppercase tracking-widest text-canvas transition-opacity hover:opacity-90"
+      >
+        Sign in →
+      </a>
+    </div>
+  </Show>
+
+  <Show when="signed-in">
+    <div class="mb-4">
+      <a href="/wiki" class="text-xs text-slate-500 hover:text-slate-300 transition-colors">
+        ← Wiki
+      </a>
+    </div>
+    <noscript>
+      <p class="text-sm text-slate-500">
+        This page loads in the browser. Start from <a href="/wiki" class="underline">the wiki</a>.
+      </p>
+    </noscript>
+    <WikiPage client:load apiBase={apiBase ?? ""} mode="public" />
+  </Show>
+</Page>

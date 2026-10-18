@@ -1,0 +1,19 @@
+---
+import Page from "../../../layouts/Page.astro";
+import WikiPage from "../../../components/WikiPage";
+import { getApiBase } from "../../../lib/api";
+
+// Static page reached as /admin/wiki/page?slug=<slug>, with ?as=public to see
+// the page as a reader with no grants would. No gate: the API refuses a
+// non-admin and WikiPage routes that refusal.
+const apiBase = getApiBase();
+---
+
+<Page title="Wiki (Admin)">
+  <div class="mb-4">
+    <a href="/admin/wiki" class="text-xs text-slate-500 hover:text-slate-300 transition-colors">
+      ← Wiki (admin)
+    </a>
+  </div>
+  <WikiPage client:load apiBase={apiBase ?? ""} mode="admin" />
+</Page>
