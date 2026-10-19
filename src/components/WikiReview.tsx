@@ -362,7 +362,8 @@ function Thin({ apiBase }: Props) {
   if (entities.length === 0) {
     return (
       <p class="text-sm text-slate-500">
-        No thin entities stored yet. The list is written each time consolidation runs.
+        No thin entities stored yet. Rebuild every page (Operations, above) fills the list, for
+        free; new lessons keep it current after that.
       </p>
     );
   }
