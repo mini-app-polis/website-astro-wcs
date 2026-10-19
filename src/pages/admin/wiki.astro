@@ -1,7 +1,6 @@
 ---
 import Page from "../../layouts/Page.astro";
 import WikiIndex from "../../components/WikiIndex";
-import WikiOperations from "../../components/WikiOperations";
 import WikiReview from "../../components/WikiReview";
 import { getApiBase } from "../../lib/api";
 
@@ -14,9 +13,6 @@ const apiBase = getApiBase();
 ---
 
 <Page title="Wiki (Admin)" subtitle="Every page, private evidence included">
-  <div class="mb-8">
-    <WikiOperations client:load apiBase={apiBase ?? ""} scope="wiki" />
-  </div>
   <div class="mb-8">
     <WikiReview client:load apiBase={apiBase ?? ""} />
   </div>
