@@ -1,3 +1,10 @@
+# [2.11.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.10.0...v2.11.0) (2026-10-19)
+
+
+### Features
+
+* **wiki:** drop the "Rebuild every page" button now pages rebuild themselves (MINI-110) ([08a85a4](https://github.com/mini-app-polis/website-astro-wcs/commit/08a85a4c27036beb741e290314ed62f0e76c091a))
+
 # [2.10.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.9.2...v2.10.0) (2026-10-19)
 
 
