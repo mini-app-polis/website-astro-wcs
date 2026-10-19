@@ -36,7 +36,8 @@ const EVERY_PAGE: Operation = {
   label: "Rebuild every page",
   what:
     "Rebuilds every page from the curator's stored links, folds and prose — for after the " +
-    "page logic changes, or to fill in a new field. Runs as one job on the queue and takes " +
+    "page logic changes, or to fill in a new field — and refreshes the Review panel's thin " +
+    "list. Runs as one job on the queue and takes " +
     "about five minutes; progress shows here. You can leave this page — the rebuild " +
     "carries on without it.",
   confirm: "Rebuild every page? This is free (no model calls) and takes about five minutes.",
