@@ -1,3 +1,10 @@
+# [2.10.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.9.2...v2.10.0) (2026-10-19)
+
+
+### Features
+
+* Lessons section with Corrections, wiki review panel, add a note from a wiki page (MINI-102, MINI-101, MINI-98) ([f3c287e](https://github.com/mini-app-polis/website-astro-wcs/commit/f3c287edb996d0295b13ac371a2090f01be1168b))
+
 ## [2.9.2](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.9.1...v2.9.2) (2026-10-18)
 
 
