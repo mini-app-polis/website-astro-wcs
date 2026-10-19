@@ -19,7 +19,7 @@ const apiBase = getApiBase();
   </div>
   <WikiPage client:load apiBase={apiBase ?? ""} mode="admin" />
   <div class="mt-12">
-    <WikiOperations client:load apiBase={apiBase ?? ""} scope="page" />
+    <WikiOperations client:load apiBase={apiBase ?? ""} />
   </div>
   <div class="mt-6">
     <WikiNoteForm client:load apiBase={apiBase ?? ""} />

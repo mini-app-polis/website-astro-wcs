@@ -2,12 +2,16 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import { getSessionToken, handleDenial } from "../lib/session";
 
-// Curator work started from the admin pages rather than a terminal (MINI-103).
-// Each button sends one request to the API, which puts the job on the
-// curator's queue; the worker runs it like any other wiki job. Every
-// operation offered here is free — it rebuilds page documents from what the
-// curator has already stored and calls no model. The paid passes are not
-// offered here.
+// Curator work started from an admin wiki page rather than a terminal
+// (MINI-103): "Rebuild this page" sends one request to the API, which puts the
+// job on the curator's queue; the worker runs it like any other wiki job. It
+// is free — it rebuilds the page document from what the curator has already
+// stored and calls no model. The paid passes are not offered here.
+//
+// There is no "Rebuild every page" any more (MINI-109). Pages rebuild
+// themselves: every curator job rebuilds the pages it changed, a local run
+// does the same, and each curator deploy asks the API for one rebuild of every
+// page. The API operation stays, for that deploy job and as an escape hatch.
 //
 // Progress. The queue reports nothing back, but every page written gets a new
 // updated_at in the admin index. Before queueing, the panel notes each page's
@@ -21,31 +25,11 @@ import { getSessionToken, handleDenial } from "../lib/session";
 // a page written since it was queued already counts. Before this it waited
 // for a rebuild that had already happened (2026-10-18).
 
-/** ``page``: the operations for the page in ``?slug=``; otherwise the wiki's. */
-type Props = { apiBase: string; scope: "wiki" | "page" };
+/** The operations for the page in ``?slug=``; nothing without one. */
+type Props = { apiBase: string };
 
-type Operation = {
-  action: "rebuild_every_page" | "rebuild_pages";
-  label: string;
-  what: string;
-  confirm: string;
-};
-
-const EVERY_PAGE: Operation = {
-  action: "rebuild_every_page",
-  label: "Rebuild every page",
-  what:
-    "Rebuilds every page from the curator's stored links, folds and prose — for after the " +
-    "page logic changes, or to fill in a new field — and refreshes the Review panel's thin " +
-    "list. Runs as one job on the queue and takes " +
-    "about five minutes; progress shows here. You can leave this page — the rebuild " +
-    "carries on without it.",
-  confirm: "Rebuild every page? This is free (no model calls) and takes about five minutes.",
-};
-
-function onePage(slug: string): Operation {
+function onePage(slug: string) {
   return {
-    action: "rebuild_pages",
     label: "Rebuild this page",
     what:
       "Rebuilds this page from the curator's stored links, folds and prose. Takes under a " +
@@ -92,12 +76,12 @@ function clock(d: Date, seconds = false): string {
   });
 }
 
-export default function WikiOperations({ apiBase, scope }: Props) {
+export default function WikiOperations({ apiBase }: Props) {
   const slug =
-    scope === "page" && typeof location !== "undefined"
+    typeof location !== "undefined"
       ? (new URLSearchParams(location.search).get("slug") ?? "")
       : "";
-  const op = slug ? onePage(slug) : EVERY_PAGE;
+  const op = onePage(slug);
   const [state, setState] = useState<State>({ kind: "idle" });
   const timer = useRef<number | null>(null);
 
@@ -108,7 +92,7 @@ export default function WikiOperations({ apiBase, scope }: Props) {
     [],
   );
 
-  if (scope === "page" && !slug) return null;
+  if (!slug) return null;
 
   const base = apiBase.replace(/\/$/, "");
 
@@ -128,11 +112,10 @@ export default function WikiOperations({ apiBase, scope }: Props) {
     }
   };
 
-  /** Pages written since ``before`` (a changed or new time); for one page, only it. */
+  /** Whether this page was written since ``before`` (a changed or new time). */
   const progress = (before: Map<string, string>, now: Map<string, string>) => {
-    const watched = slug ? [...now.keys()].filter((s) => s === slug) : [...now.keys()];
-    const done = watched.filter((s) => now.get(s) !== before.get(s)).length;
-    return { done, total: slug ? 1 : watched.length };
+    const done = now.has(slug) && now.get(slug) !== before.get(slug) ? 1 : 0;
+    return { done, total: 1 };
   };
 
   const watch = (
@@ -196,9 +179,7 @@ export default function WikiOperations({ apiBase, scope }: Props) {
       const res = await fetch(`${base}/v1/wcs/wiki/admin/jobs`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify(
-          op.action === "rebuild_pages" ? { action: op.action, slugs: [slug] } : { action: op.action },
-        ),
+        body: JSON.stringify({ action: "rebuild_pages", slugs: [slug] }),
       });
       if (res.status === 401 || res.status === 403) {
         handleDenial(res.status);
@@ -226,12 +207,12 @@ export default function WikiOperations({ apiBase, scope }: Props) {
       }
       // A folded slug rebuilds the page it folded into, which this page's
       // index row does not name; there is nothing here to watch.
-      if (slug && !before.has(slug)) {
+      if (!before.has(slug)) {
         setState({ kind: "finished", total: 0 });
         return;
       }
       const since = clock(joinedAt ?? new Date());
-      const total = slug ? 1 : before.size;
+      const total = 1;
       const done0 = progress(before, first.pages).done;
       if (total > 0 && done0 >= total) {
         setState({ kind: "finished", total });
@@ -303,8 +284,7 @@ export default function WikiOperations({ apiBase, scope }: Props) {
           <span class="text-sm text-emerald-400">Queued; reload in a minute to see it.</span>
         ) : state.kind === "finished" ? (
           <span class="text-sm text-emerald-400">
-            Done — {state.total} {noun(state.total)} rebuilt.
-            {slug ? " Reload to see it." : ""}
+            Done — {state.total} {noun(state.total)} rebuilt. Reload to see it.
           </span>
         ) : state.kind === "stopped" ? (
           <span class="text-sm text-amber-300">
