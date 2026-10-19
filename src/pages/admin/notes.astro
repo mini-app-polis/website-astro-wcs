@@ -8,13 +8,13 @@ import { getApiBase } from "../../lib/api";
 const apiBase = getApiBase();
 ---
 
-<Page title="Manage Notes" subtitle="Default note visibility">
+<Page title="Manage Lessons" subtitle="Default lesson visibility">
   <div
     class="space-y-4"
     data-admin-notes
     data-api-base={apiBase}
   >
-    <p class="text-xs font-mono text-slate-500">Toggle which notes are visible to all signed-in users.</p>
+    <p class="text-xs font-mono text-slate-500">Toggle which lessons and corrections are visible to all signed-in users.</p>
     <div id="notes-loading" class="text-sm text-slate-500">Loading…</div>
     <div id="notes-error" class="text-sm text-slate-500 hidden">Could not load notes.</div>
     <div id="notes-list" class="hidden space-y-2"></div>
@@ -36,6 +36,7 @@ const apiBase = getApiBase();
   const SESSION_LABELS = {
     private_lesson: "Private lesson",
     group_class: "Group class",
+    correction: "Correction",
     other: "Other",
   };
 
