@@ -1,5 +1,6 @@
 ---
 import Page from "../../../layouts/Page.astro";
+import WikiNoteForm from "../../../components/WikiNoteForm";
 import WikiOperations from "../../../components/WikiOperations";
 import WikiPage from "../../../components/WikiPage";
 import { getApiBase } from "../../../lib/api";
@@ -19,5 +20,8 @@ const apiBase = getApiBase();
   <WikiPage client:load apiBase={apiBase ?? ""} mode="admin" />
   <div class="mt-12">
     <WikiOperations client:load apiBase={apiBase ?? ""} scope="page" />
+  </div>
+  <div class="mt-6">
+    <WikiNoteForm client:load apiBase={apiBase ?? ""} />
   </div>
 </Page>

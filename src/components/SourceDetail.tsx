@@ -116,6 +116,7 @@ type Props = {
 const SESSION_LABELS: Record<string, string> = {
   private_lesson: "Private lesson",
   group_class: "Group class",
+  correction: "Correction",
   workshop: "Workshop",
   other: "Other",
 };
@@ -279,7 +280,10 @@ function buildSummary(view: View): string {
   const instructors = sourceInstructors(s);
   const withVal = sourceWith(s);
   const bits: string[] = [];
-  if (s.session_type === "private_lesson") {
+  if (s.session_type === "correction") {
+    // An authored note: no students or organization (MINI-102).
+    bits.push(`Correction${instructors ? ` by ${instructors}` : ""}`);
+  } else if (s.session_type === "private_lesson") {
     bits.push(
       `${SESSION_LABELS[s.session_type] || s.session_type}${
         instructors ? ` with ${instructors}` : ""

@@ -10,7 +10,7 @@ import { getApiBase } from "../../lib/api";
 const apiBase = getApiBase();
 ---
 
-<Page title="Notes" subtitle="WCS lesson notes">
+<Page title="Lessons" subtitle="WCS lessons and corrections">
   <Show when="signed-out">
     <div class="flex flex-col items-center justify-center min-h-[40vh] gap-6 text-center">
       <p class="text-slate-400 font-light">This section is private.</p>
@@ -29,7 +29,7 @@ const apiBase = getApiBase();
       data-notes-browser
     >
       <div id="notes-loading" class="text-sm text-slate-500">Loading…</div>
-      <div id="notes-error" class="text-sm text-slate-500 hidden">Could not load notes.</div>
+      <div id="notes-error" class="text-sm text-slate-500 hidden">Could not load lessons.</div>
 
       <!-- Filters -->
       <div id="notes-filters" class="hidden space-y-4 mb-8">
@@ -57,6 +57,10 @@ const apiBase = getApiBase();
             <button type="button" data-type="group_class" data-selected="false" aria-pressed="false"
               class="rounded-full border border-white/10 bg-white/[0.02] px-3 py-1 text-xs font-mono transition-colors hover:border-white/20 hover:text-slate-100 data-[selected=true]:border-accent data-[selected=true]:bg-accent/15 data-[selected=true]:text-accent">
               Group class
+            </button>
+            <button type="button" data-type="correction" data-selected="false" aria-pressed="false"
+              class="rounded-full border border-white/10 bg-white/[0.02] px-3 py-1 text-xs font-mono transition-colors hover:border-white/20 hover:text-slate-100 data-[selected=true]:border-accent data-[selected=true]:bg-accent/15 data-[selected=true]:text-accent">
+              Correction
             </button>
           </div>
         </div>
@@ -108,6 +112,7 @@ const apiBase = getApiBase();
         const SESSION_LABELS = {
           private_lesson: "Private lesson",
           group_class:    "Group class",
+          correction:     "Correction",
           workshop:       "Workshop",
           other:          "Other",
         };
@@ -115,6 +120,7 @@ const apiBase = getApiBase();
         const TYPE_BADGE = {
           private_lesson: "bg-violet-500/10 text-violet-300 border-violet-500/25",
           group_class:    "bg-sky-500/10 text-sky-300 border-sky-500/25",
+          correction:     "bg-emerald-500/10 text-emerald-300 border-emerald-500/25",
           workshop:       "bg-amber-500/10 text-amber-300 border-amber-500/25",
           other:          "bg-slate-500/10 text-slate-400 border-slate-500/25",
         };
@@ -246,6 +252,14 @@ const apiBase = getApiBase();
           topRow.appendChild(badge);
           a.appendChild(topRow);
 
+          if (source.session_type === "correction") {
+            const titleEl = document.createElement("p");
+            titleEl.className = "text-sm font-medium text-slate-100 leading-snug";
+            titleEl.textContent = source.title?.trim() || "Untitled correction";
+            a.appendChild(titleEl);
+            return a;
+          }
+
           if (withVal) {
             const primaryEl = document.createElement("p");
             primaryEl.className = "text-sm font-medium text-slate-100 leading-snug";
@@ -286,8 +300,11 @@ const apiBase = getApiBase();
         function render() {
           const filtered = filterSources(allSources);
 
+          const nCorr = allSources.filter(s => s.session_type === "correction").length;
+          const nLess = allSources.length - nCorr;
           countEl.textContent = filtered.length === allSources.length
-            ? `${allSources.length} lesson${allSources.length !== 1 ? "s" : ""}`
+            ? `${nLess} lesson${nLess !== 1 ? "s" : ""}` +
+              (nCorr ? ` · ${nCorr} correction${nCorr !== 1 ? "s" : ""}` : "")
             : `${filtered.length} of ${allSources.length}`;
           show(countEl);
 
