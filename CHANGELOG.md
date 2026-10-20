@@ -1,3 +1,11 @@
+# [2.12.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.11.0...v2.12.0) (2026-10-20)
+
+
+### Features
+
+* **ask:** the answer, then wiki pages, then lessons as its sources (MINI-113) ([31072dc](https://github.com/mini-app-polis/website-astro-wcs/commit/31072dcd8f27533eb76acfc3ca46fee130b6a16e))
+* **notes:** drop the embeddings refresh button now refreshes are automatic (MINI-114) ([6daab8f](https://github.com/mini-app-polis/website-astro-wcs/commit/6daab8ff23fe02a9d6bce2e4c360cb3379691515))
+
 # [2.11.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.10.0...v2.11.0) (2026-10-19)
 
 
