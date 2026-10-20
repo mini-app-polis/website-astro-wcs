@@ -1,3 +1,10 @@
+## [2.12.1](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.12.0...v2.12.1) (2026-10-20)
+
+
+### Bug Fixes
+
+* **ask:** render the answer's markdown ([39fcfe4](https://github.com/mini-app-polis/website-astro-wcs/commit/39fcfe49ec1cd306094f7b8efa2a56a3f38887ef))
+
 # [2.12.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.11.0...v2.12.0) (2026-10-20)
 
 
