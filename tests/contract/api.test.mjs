@@ -195,7 +195,7 @@ test("GET /v1/spotify/playlists — Spotify page", async (t) => {
 // Access rules. The site's signed-in pages (notes, admin) depend on these
 // refusing an anonymous caller with 401 in the error envelope — the Nav and
 // session code read a 401 as "signed out". A 500 or a 200 here is a break.
-// The wiki pages (MINI-97) read the same way.
+// The wiki pages read the same way.
 for (const path of [
   "/v1/wcs/me",
   "/v1/wcs/wiki/sources",
@@ -211,7 +211,7 @@ for (const path of [
   });
 }
 
-// The /admin/wiki Operations panel (MINI-103) starts curator work. Anonymous,
+// The /admin/wiki Operations panel starts curator work. Anonymous,
 // it must be refused before anything is queued.
 test("POST /v1/wcs/wiki/admin/jobs without a token refuses with 401", async () => {
   const path = "/v1/wcs/wiki/admin/jobs";

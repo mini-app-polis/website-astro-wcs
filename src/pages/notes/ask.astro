@@ -170,7 +170,7 @@ const apiBase = getApiBase();
           other:          "bg-slate-500/10 text-slate-400 border-slate-500/25",
         };
 
-        // Wiki page citations (MINI-113): badged by the page's kind.
+        // Wiki page citations: badged by the page's kind.
         const PAGE_BADGE_CLS =
           "bg-accent/10 text-accent border-accent/25";
 
@@ -345,7 +345,7 @@ const apiBase = getApiBase();
           renderAnswer(data.answer || "");
 
           // The answer first, then its sources: wiki pages as the first place
-          // to read more, then the lessons behind them (MINI-113).
+          // to read more, then the lessons behind them.
           citationsEl.innerHTML = "";
           pageCitationsEl.innerHTML = "";
           const citations = Array.isArray(data.citations) ? data.citations : [];

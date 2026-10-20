@@ -11,7 +11,7 @@ import {
   type WikiPageSummary,
 } from "../lib/wiki";
 
-// The wiki's index (MINI-97): every page the caller can see, searchable,
+// The wiki's index: every page the caller can see, searchable,
 // filterable by kind, sorted by name or by when it last changed. One request
 // returns the whole index; filtering happens here.
 

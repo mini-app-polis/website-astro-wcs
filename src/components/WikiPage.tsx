@@ -16,7 +16,7 @@ import {
   type WikiSkill,
 } from "../lib/wiki";
 
-// One wiki page, read at request time from its stored document (MINI-97).
+// One wiki page, read at request time from its stored document.
 // The page is static; the slug rides in ?slug= and the token comes live from
 // Clerk, as on /notes/detail. The API filters the document to the sources the
 // caller can see, so nothing here decides what is private.
@@ -133,9 +133,9 @@ function ReferencedBy({ links, mode }: { links: WikiLink[]; mode: WikiMode }) {
   );
 }
 
-// A link to a topic folded into a broader page (MINI-93) is served that page
-// (MINI-100). Say which topic was asked for, so the reader knows why they
-// landed somewhere with a different name.
+// A link to a topic folded into a broader page is served that page. Say
+// which topic was asked for, so the reader knows why they landed somewhere
+// with a different name.
 function FoldedNotice({ page }: { page: Page }) {
   const requested = page.requested_slug;
   if (!requested) return null;
@@ -285,8 +285,8 @@ function Body({ page, mode }: { page: Page; mode: WikiMode }) {
   );
 }
 
-// A topic folded into a broader page is served that page by the API
-// (MINI-100), so this is a slug with no page anywhere, or one the reader
+// A topic folded into a broader page is served that page by the API,
+// so this is a slug with no page anywhere, or one the reader
 // cannot see. Searching for its words may still find something close.
 function NotFound({ slug, mode }: { slug: string; mode: WikiMode }) {
   const words = slug.replace(/-/g, " ");

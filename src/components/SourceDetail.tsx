@@ -281,7 +281,7 @@ function buildSummary(view: View): string {
   const withVal = sourceWith(s);
   const bits: string[] = [];
   if (s.session_type === "correction") {
-    // An authored note: no students or organization (MINI-102).
+    // An authored note: no students or organization.
     bits.push(`Correction${instructors ? ` by ${instructors}` : ""}`);
   } else if (s.session_type === "private_lesson") {
     bits.push(
@@ -302,8 +302,8 @@ function buildSummary(view: View): string {
 
 function entityHref(slug: string, _kind: string): string {
   if (!slug) return "#";
-  // The wiki page that slug became (MINI-97). A slug folded into a broader
-  // page is served that page (MINI-100).
+  // The wiki page that slug became. A slug folded into a broader page is
+  // served that page.
   return `/wiki/page?slug=${encodeURIComponent(slug)}`;
 }
 

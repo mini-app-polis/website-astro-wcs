@@ -12,7 +12,7 @@ import {
   type WikiPageSummary,
 } from "../lib/wiki";
 
-// The admin's review of the wiki (MINI-101), in three tabs:
+// The admin's review of the wiki, in three tabs:
 //
 // Folds — every consolidation decision, grouped by the page each entity ended
 // up on. The private facets-review.md, read from the curator's stored state.
