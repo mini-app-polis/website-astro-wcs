@@ -72,10 +72,18 @@ const apiBase = getApiBase();
         ></div>
 
         <div id="ask-sources-section" class="hidden border-t border-white/8 pt-6">
-          <h3 class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-4">
-            Sources
-          </h3>
-          <ol id="ask-citations" class="space-y-3 list-none p-0"></ol>
+          <div id="ask-pages-group" class="hidden mb-6">
+            <h3 class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-4">
+              Read more in the wiki
+            </h3>
+            <ol id="ask-page-citations" class="space-y-3 list-none p-0"></ol>
+          </div>
+          <div id="ask-lessons-group" class="hidden">
+            <h3 class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-4">
+              From the lessons
+            </h3>
+            <ol id="ask-citations" class="space-y-3 list-none p-0"></ol>
+          </div>
         </div>
 
         <p
@@ -102,6 +110,9 @@ const apiBase = getApiBase();
         const answerEl       = document.getElementById("ask-answer");
         const sourcesEl      = document.getElementById("ask-sources-section");
         const citationsEl    = document.getElementById("ask-citations");
+        const pageCitationsEl = document.getElementById("ask-page-citations");
+        const pagesGroupEl   = document.getElementById("ask-pages-group");
+        const lessonsGroupEl = document.getElementById("ask-lessons-group");
         const traceEl        = document.getElementById("ask-trace");
 
         // Phased loading feedback — message advances based on elapsed
@@ -158,6 +169,10 @@ const apiBase = getApiBase();
           correction:     "bg-emerald-500/10 text-emerald-300 border-emerald-500/25",
           other:          "bg-slate-500/10 text-slate-400 border-slate-500/25",
         };
+
+        // Wiki page citations (MINI-113): badged by the page's kind.
+        const PAGE_BADGE_CLS =
+          "bg-accent/10 text-accent border-accent/25";
 
         // Fallback badge styling for chunk citations that have no linked note
         // (no session_type to derive from) — labelled "Transcript" instead.
@@ -236,6 +251,24 @@ const apiBase = getApiBase();
               ? " transition-colors hover:border-accent/25 hover:bg-surface"
               : "");
 
+          if (c.type === "page") {
+            // A wiki page: its name, with its kind as the badge.
+            const pageRow = document.createElement("div");
+            pageRow.className = "flex items-center justify-between gap-2";
+            const nameEl = document.createElement("p");
+            nameEl.className = "text-sm font-medium text-slate-100 leading-snug";
+            nameEl.textContent = (c.title || c.id || "").trim();
+            const kindEl = document.createElement("span");
+            kindEl.className =
+              `inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-mono ${PAGE_BADGE_CLS}`;
+            kindEl.textContent = c.kind ? `Wiki · ${c.kind}` : "Wiki";
+            pageRow.appendChild(nameEl);
+            pageRow.appendChild(kindEl);
+            body.appendChild(pageRow);
+            li.appendChild(body);
+            return li;
+          }
+
           // Top row: date (left) + session-type badge (right). Chunk citations
           // without a linked note have no session_type → render as "Transcript".
           const topRow = document.createElement("div");
@@ -311,14 +344,18 @@ const apiBase = getApiBase();
 
           renderAnswer(data.answer || "");
 
+          // The answer first, then its sources: wiki pages as the first place
+          // to read more, then the lessons behind them (MINI-113).
           citationsEl.innerHTML = "";
+          pageCitationsEl.innerHTML = "";
           const citations = Array.isArray(data.citations) ? data.citations : [];
-          if (citations.length > 0) {
-            for (const c of citations) citationsEl.appendChild(renderCitation(c));
-            show(sourcesEl);
-          } else {
-            hide(sourcesEl);
-          }
+          const pages = citations.filter(c => c.type === "page");
+          const lessons = citations.filter(c => c.type !== "page");
+          for (const c of pages) pageCitationsEl.appendChild(renderCitation(c));
+          for (const c of lessons) citationsEl.appendChild(renderCitation(c));
+          if (pages.length > 0) show(pagesGroupEl); else hide(pagesGroupEl);
+          if (lessons.length > 0) show(lessonsGroupEl); else hide(lessonsGroupEl);
+          if (citations.length > 0) show(sourcesEl); else hide(sourcesEl);
 
           traceEl.textContent = buildTraceLine(data);
 
