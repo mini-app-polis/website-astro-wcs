@@ -72,12 +72,16 @@
               <div class="flex min-w-0 items-baseline gap-3">
                 <div class="font-mono text-sm text-slate-500">${position}</div>
                 <div class="min-w-0">
-                  <div class="truncate font-medium text-slate-100">${String(t.title ?? "—")}</div>
-                  <div class="truncate text-sm text-slate-400">${String(t.artist ?? "—")}</div>
+                  <div class="truncate font-medium text-slate-100" data-title></div>
+                  <div class="truncate text-sm text-slate-400" data-artist></div>
                 </div>
               </div>
               <div class="font-mono text-sm text-accent">${playText}</div>
             `;
+            // textContent, not innerHTML — titles and artists are arbitrary strings
+            // from the catalogue and must never be parsed as markup.
+            li.querySelector("[data-title]").textContent = String(t.title ?? "—");
+            li.querySelector("[data-artist]").textContent = String(t.artist ?? "—");
             listEl.appendChild(li);
           });
         } catch {

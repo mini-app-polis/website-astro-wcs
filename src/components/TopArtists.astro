@@ -66,7 +66,7 @@
             row.innerHTML = `
               <div class="flex items-center justify-between gap-4">
                 <div class="min-w-0">
-                  <div class="truncate font-medium text-slate-100">${String(a.artist ?? "—")}</div>
+                  <div class="truncate font-medium text-slate-100" data-artist></div>
                 </div>
                 <div class="font-mono text-sm text-accent">${nf.format(Number(a.play_count) || 0)}</div>
               </div>
@@ -74,6 +74,9 @@
                 <div class="h-full bg-accent transition-[width] duration-500" style="width:${pct}%"></div>
               </div>
             `;
+            // textContent, not innerHTML — artist names are arbitrary strings
+            // from the catalogue and must never be parsed as markup.
+            row.querySelector("[data-artist]").textContent = String(a.artist ?? "—");
             listEl.appendChild(row);
           });
         } catch {

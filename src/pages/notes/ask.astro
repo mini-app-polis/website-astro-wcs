@@ -67,8 +67,7 @@ const apiBase = getApiBase();
 
         <div
           id="ask-answer"
-          class="text-base text-slate-100 leading-relaxed"
-          style="white-space: pre-wrap;"
+          class="text-base text-slate-100 leading-relaxed space-y-4"
         ></div>
 
         <div id="ask-sources-section" class="hidden border-t border-white/8 pt-6">
@@ -207,12 +206,19 @@ const apiBase = getApiBase();
           });
         }
 
-        function renderAnswer(text) {
-          answerEl.innerHTML = "";
-          const parts = text.split(/(\[\d+\])/g);
-          for (const part of parts) {
-            const m = part.match(/^\[(\d+)\]$/);
-            if (m) {
+        // The agent writes light markdown: paragraphs, **bold**, *italic*,
+        // `code`, simple headings and lists. It is built from DOM nodes, never
+        // innerHTML, so nothing in the answer can inject markup.
+        const INLINE = /(\[\d+\]|\*\*[^*]+\*\*|\*[^*\s][^*]*\*|`[^`]+`)/g;
+        const BULLET = /^\s*[-*\u2022]\s+/;
+        const NUMBERED = /^\s*\d+[.)]\s+/;
+        const HEADING = /^\s*#{1,6}\s+/;
+
+        function appendInline(parent, text) {
+          for (const part of text.split(INLINE)) {
+            if (!part) continue;
+            let m;
+            if ((m = part.match(/^\[(\d+)\]$/))) {
               const sup = document.createElement("sup");
               sup.className = "ml-0.5";
               const a = document.createElement("a");
@@ -221,10 +227,73 @@ const apiBase = getApiBase();
               a.className =
                 "text-accent hover:underline font-mono text-xs no-underline";
               sup.appendChild(a);
-              answerEl.appendChild(sup);
+              parent.appendChild(sup);
+            } else if ((m = part.match(/^\*\*([^*]+)\*\*$/))) {
+              const strong = document.createElement("strong");
+              strong.className = "font-semibold text-slate-50";
+              appendInline(strong, m[1]);
+              parent.appendChild(strong);
+            } else if ((m = part.match(/^\*([^*]+)\*$/))) {
+              const em = document.createElement("em");
+              appendInline(em, m[1]);
+              parent.appendChild(em);
+            } else if ((m = part.match(/^`([^`]+)`$/))) {
+              const code = document.createElement("code");
+              code.className = "font-mono text-sm text-slate-200";
+              code.textContent = m[1];
+              parent.appendChild(code);
             } else {
-              answerEl.appendChild(document.createTextNode(part));
+              parent.appendChild(document.createTextNode(part));
             }
+          }
+        }
+
+        function renderAnswer(text) {
+          answerEl.replaceChildren();
+          const lines = text.replace(/\r\n/g, "\n").split("\n");
+          let para = null;
+          let list = null;
+          const endBlocks = () => {
+            para = null;
+            list = null;
+          };
+          for (const line of lines) {
+            if (!line.trim()) {
+              endBlocks();
+              continue;
+            }
+            const ordered = NUMBERED.test(line);
+            if (ordered || BULLET.test(line)) {
+              const tag = ordered ? "OL" : "UL";
+              if (!list || list.tagName !== tag) {
+                list = document.createElement(tag);
+                list.className = ordered
+                  ? "list-decimal pl-6 space-y-1"
+                  : "list-disc pl-6 space-y-1";
+                answerEl.appendChild(list);
+              }
+              para = null;
+              const li = document.createElement("li");
+              appendInline(li, line.replace(ordered ? NUMBERED : BULLET, ""));
+              list.appendChild(li);
+              continue;
+            }
+            list = null;
+            if (HEADING.test(line)) {
+              const h = document.createElement("p");
+              h.className = "font-semibold text-slate-50";
+              appendInline(h, line.replace(HEADING, ""));
+              answerEl.appendChild(h);
+              para = null;
+              continue;
+            }
+            if (para) {
+              para.appendChild(document.createElement("br"));
+            } else {
+              para = document.createElement("p");
+              answerEl.appendChild(para);
+            }
+            appendInline(para, line);
           }
         }
 
