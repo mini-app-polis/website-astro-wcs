@@ -2,13 +2,13 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import { getSessionToken, handleDenial } from "../lib/session";
 
-// Curator work started from an admin wiki page rather than a terminal
-// (MINI-103): "Rebuild this page" sends one request to the API, which puts the
+// Curator work started from an admin wiki page rather than a terminal:
+// "Rebuild this page" sends one request to the API, which puts the
 // job on the curator's queue; the worker runs it like any other wiki job. It
 // is free — it rebuilds the page document from what the curator has already
 // stored and calls no model. The paid passes are not offered here.
 //
-// There is no "Rebuild every page" any more (MINI-109). Pages rebuild
+// There is no "Rebuild every page" any more. Pages rebuild
 // themselves: every curator job rebuilds the pages it changed, a local run
 // does the same, and each curator deploy asks the API for one rebuild of every
 // page. The API operation stays, for that deploy job and as an escape hatch.

@@ -1,6 +1,6 @@
 /** @jsxImportSource preact */
 /**
- * The wiki's page documents (wiki-curator-cog ADR-006, MINI-96/97).
+ * The wiki's page documents (wiki-curator-cog ADR-006).
  *
  * Pages are built by the curator and stored in api-kaianolevine-com, which
  * serves them filtered to the sources the caller can see. This module is the
@@ -77,7 +77,7 @@ export type WikiPage = {
   referenced_by: WikiLink[];
   sources: WikiCitation[];
   evidence_sources: string[];
-  /** Every slug folded into this page (MINI-100). */
+  /** Every slug folded into this page. */
   folded?: string[];
   /** Set when the page was asked for under a slug folded into it: that slug. */
   requested_slug?: string | null;

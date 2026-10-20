@@ -2,7 +2,7 @@
 import { useState } from "preact/hooks";
 import { getSessionToken, handleDenial } from "../lib/session";
 
-// A note written from a wiki page (MINI-98). It goes through the same
+// A note written from a wiki page. It goes through the same
 // pipeline as a note dropped in Drive as "<date> <instructor> > Note -
 // <title>": the API puts it on transcription-cog's queue, the extraction
 // reads it with the note prompt, and it is stored as a correction source,
