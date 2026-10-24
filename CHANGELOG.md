@@ -1,3 +1,11 @@
+## [2.12.2](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.12.1...v2.12.2) (2026-10-24)
+
+
+### Bug Fixes
+
+* **deps:** patch zod, http-cache-semantics, fast-uri and undici ([71f417e](https://github.com/mini-app-polis/website-astro-wcs/commit/71f417e29af573c8b513ba6398068ac84b354285))
+* **security:** check the scheme of API-supplied citation and playlist links ([534932b](https://github.com/mini-app-polis/website-astro-wcs/commit/534932b333e803897021566c22fd8b8e5c1fced4))
+
 ## [2.12.1](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.12.0...v2.12.1) (2026-10-20)
 
 
