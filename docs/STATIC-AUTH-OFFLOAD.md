@@ -138,8 +138,8 @@ twice over: it is documented as a diagnostic mirror of verify and resolve, so
 making it load-bearing would freeze a debugging tool into a contract, and it
 returns roles, which is the wrong currency for a client to hold at all.
 Adding roles to `GET /v1/wcs/me` was implemented and reverted for the same
-reason, plus a concrete cost — it orphans `get_current_owner`, which
-`tests/evals/test_harness.py` overrides to stub auth.
+reason, plus a concrete cost — it left unused an API dependency that the
+API's own evaluation tests rely on to stub auth.
 
 ### The one place this is not yet resolved
 

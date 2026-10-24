@@ -93,6 +93,7 @@ const apiBase = getApiBase();
 
       <script type="module">
   import { requireSession, guardedFetch } from "../../lib/session";
+  import { safeUrl } from "../../lib/url";
         const BASE = document.documentElement.dataset.apiUrl || "";
         const SESSION_TOKEN = await requireSession(BASE);
 
@@ -310,10 +311,12 @@ const apiBase = getApiBase();
           li.appendChild(marker);
 
           // Card body — wrap in <a> when we have a source_url so the whole
-          // card is clickable (matches the /notes browser cards).
-          const linkable = !!c.source_url;
+          // card is clickable (matches the /notes browser cards). A url that
+          // fails the scheme check leaves the card unlinked.
+          const sourceUrl = safeUrl(c.source_url);
+          const linkable = sourceUrl !== null;
           const body = document.createElement(linkable ? "a" : "div");
-          if (linkable) body.href = c.source_url;
+          if (linkable) body.href = sourceUrl;
           body.className =
             "flex-1 min-w-0 flex flex-col gap-2 rounded-lg border border-white/8 bg-surface/40 px-4 py-3" +
             (linkable

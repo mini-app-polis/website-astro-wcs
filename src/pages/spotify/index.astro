@@ -46,6 +46,7 @@ import Page from "../../layouts/Page.astro";
   </div>
 
   <script type="module">
+    import { safeUrl } from "../../lib/url";
     // api.kaianolevine.com exposes Spotify playlist snapshots at /v1/spotify/playlists
     const root = document.querySelector("[data-spotify-playlists]");
     if (!root) throw new Error("Spotify root not found");
@@ -80,10 +81,14 @@ import Page from "../../layouts/Page.astro";
         grid.innerHTML = "";
 
         sorted.forEach((pl, i) => {
-          const card = document.createElement("a");
-          card.href = pl.url ?? "#";
-          card.target = "_blank";
-          card.rel = "noreferrer";
+          // Linked only when the url passes the scheme check.
+          const href = safeUrl(pl.url);
+          const card = document.createElement(href === null ? "div" : "a");
+          if (href !== null) {
+            card.href = href;
+            card.target = "_blank";
+            card.rel = "noreferrer";
+          }
           card.className =
             "group flex items-center justify-between rounded-xl border border-white/[0.07] bg-surface px-5 py-3 transition-colors hover:border-accent/20 hover:bg-surface2 reveal";
           card.style.setProperty("--d", `${i * 60}ms`);
