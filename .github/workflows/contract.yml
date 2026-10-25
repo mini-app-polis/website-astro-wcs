@@ -2,7 +2,7 @@ name: Contract
 
 # The live contract suite (tests/contract): every call this site makes to
 # api-kaianolevine-com, checked against the development API for the fields
-# the site reads and the access rules it relies on (TEST-016, ADR-012).
+# the site reads and the access rules it relies on (TEST-016, ecosystem-standards ADR-0012).
 #
 # Read-only — see tests/contract/harness.mjs — so it needs no key, refuses
 # any production host, and does not share the contract-dev-kaiano-api
