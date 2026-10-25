@@ -1,6 +1,6 @@
 /** @jsxImportSource preact */
 /**
- * The wiki's page documents (wiki-curator-cog ADR-006).
+ * The wiki's page documents (wiki-curator-cog ADR-0006).
  *
  * Pages are built by the curator and stored in api-kaianolevine-com, which
  * serves them filtered to the sources the caller can see. This module is the
