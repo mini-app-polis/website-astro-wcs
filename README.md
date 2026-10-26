@@ -25,7 +25,7 @@ npm run build          # verify build succeeds
 ## Environment variables
 
 Every variable the site reads is listed, with what it does and whether it
-is required, in [`.env.example`](.env.example). All are read at build time and baked into the static output. `KAIANO_API_BASE_URL` is injected into `<html data-api-url>`; client-side fetches read it from there. Access to notes and admin pages is decided by the API's scope checks, not by anything in this site.
+is required, in [`.env.example`](.env.example). All are read at build time and baked into the static output, and `astro build` stops when a required one is unset. `PUBLIC_API_URL` is injected into `<html data-api-url>`; client-side fetches read it from there. Access to notes and admin pages is decided by the API's scope checks, not by anything in this site.
 
 ## Pages
 

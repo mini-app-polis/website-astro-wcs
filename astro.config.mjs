@@ -2,9 +2,10 @@ import { defineConfig } from "astro/config";
 import tailwindcss from "@tailwindcss/vite";
 import clerk from "@clerk/astro";
 import preact from "@astrojs/preact";
+import requireEnv from "./integrations/require-env.mjs";
 
 // Static. No adapter, no server runtime, no bindings — the same shape as the
-// other three sites in the fleet.
+// fleet's other sites.
 //
 // This site used to be output: "server" with @astrojs/cloudflare, because auth
 // was enforced in page frontmatter. That is what chained hosting to the Astro
@@ -25,7 +26,7 @@ export default defineConfig({
   redirects: {
     "/book-now": "/booking/lessons",
   },
-  integrations: [clerk(), preact()],
+  integrations: [requireEnv(["PUBLIC_API_URL", "PUBLIC_TURNSTILE_SITE_KEY"]), clerk(), preact()],
   vite: {
     plugins: [tailwindcss()],
   },

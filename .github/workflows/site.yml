@@ -14,9 +14,9 @@ name: site
 #   - carries this environment's Clerk key — pk_test_ on dev, pk_live_ on
 #     main — and never the other one.
 # All of it is read-only, so it is safe against production.
-# KAIANO_API_BASE_URL and PUBLIC_CLERK_PUBLISHABLE_KEY are baked in at build
-# time from the Pages settings, so a wrong value shows up here and nowhere
-# else — CI builds with the repository's variables, not Pages'.
+# PUBLIC_API_URL and PUBLIC_CLERK_PUBLISHABLE_KEY are baked in at build time
+# from the Pages settings, so a wrong value shows up here and nowhere else —
+# CI builds with its own values, not Pages'.
 #
 # It runs on pushes. Not on the promotion pull request to main: its head is
 # dev's latest commit, already tested by the push run, whose result the pull
@@ -125,7 +125,7 @@ jobs:
 
           html=$(get /) || fail "$SITE/ did not load."
           api=$(grep -oE 'data-api-url="[^"]*"' <<<"$html" | head -n 1 | sed -E 's/^data-api-url="(.*)"$/\1/' || true)
-          [ -n "$api" ] || fail "$SITE/ is built with no API URL (data-api-url) — KAIANO_API_BASE_URL is unset in Pages."
+          [ -n "$api" ] || fail "$SITE/ is built with no API URL (data-api-url) — PUBLIC_API_URL is unset in Pages."
           [ "${api%/}" = "$API" ] || fail "$SITE/ is built to call $api; this environment needs $API."
 
           for path in /sets/ /live/ /about/; do

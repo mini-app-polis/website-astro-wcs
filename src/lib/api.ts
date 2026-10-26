@@ -76,7 +76,7 @@ export function getApiBase(runtimeUrl?: string): string {
   if (runtimeUrl) return runtimeUrl;
   if (typeof document === "undefined") {
     // SSR
-    const url = import.meta.env.KAIANO_API_BASE_URL as string | undefined;
+    const url = import.meta.env.PUBLIC_API_URL as string | undefined;
     return url ?? "";
   }
   // Client — injected on <html data-api-url>

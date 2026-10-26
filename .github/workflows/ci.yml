@@ -37,11 +37,18 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Type check
+        run: npm run check
+
       - name: Build
         run: npm run build
         env:
-          KAIANO_API_BASE_URL: ${{ vars.KAIANO_API_BASE_URL }}
-          PUBLIC_TURNSTILE_SITE_KEY: ${{ vars.PUBLIC_TURNSTILE_SITE_KEY }}
+          # The build stops without these. CI only proves the site builds and
+          # type-checks, so it points at the development API and uses
+          # Cloudflare's test site key, which passes every challenge. Pages
+          # builds carry the real values, set by infra.
+          PUBLIC_API_URL: https://dev-api.kaianolevine.com
+          PUBLIC_TURNSTILE_SITE_KEY: 1x00000000000000000000AA
           # Consumed at build time through import.meta.env and baked into the
           # client bundle. Without it the build succeeds and ships a site where
           # Clerk never initialises, so nobody can sign in.
