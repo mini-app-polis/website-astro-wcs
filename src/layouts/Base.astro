@@ -17,11 +17,11 @@ const {
   ogType = "website",
 } = Astro.props;
 
-const canonicalUrl = new URL(Astro.url.pathname, "https://wcs.kaianolevine.com").href;
-const ogImageUrl = new URL(ogImage, "https://wcs.kaianolevine.com").href;
+const canonicalUrl = new URL(Astro.url.pathname, Astro.site).href;
+const ogImageUrl = new URL(ogImage, Astro.site).href;
 const pageTitle = title === "Kaiano Levine" ? title : `${title} — Kaiano Levine`;
 
-const apiUrl = import.meta.env.KAIANO_API_BASE_URL ?? "";
+const apiUrl = import.meta.env.PUBLIC_API_URL ?? "";
 ---
 
 <!doctype html>

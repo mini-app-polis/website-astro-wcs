@@ -58,7 +58,7 @@ import Page from "../../layouts/Page.astro";
 
     async function loadPlaylists() {
       if (!BASE) {
-        showError("API not configured — set KAIANO_API_BASE_URL.");
+        showError("API not configured — set PUBLIC_API_URL.");
         return;
       }
       try {
