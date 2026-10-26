@@ -1,3 +1,10 @@
+## [2.12.4](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.12.3...v2.12.4) (2026-10-26)
+
+
+### Bug Fixes
+
+* read PUBLIC_API_URL, drop the hard-coded production fallbacks, and type-check in CI ([d7fec57](https://github.com/mini-app-polis/website-astro-wcs/commit/d7fec5713ad76e32b349341703d34cc635a02c06))
+
 ## [2.12.3](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.12.2...v2.12.3) (2026-10-25)
 
 
