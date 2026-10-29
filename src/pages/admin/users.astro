@@ -119,8 +119,8 @@ const apiBase = getApiBase();
           body: JSON.stringify({ is_admin: !user.is_admin }),
         });
         if (!res.ok) {
-          // Do not move the UI on a failed write. A 404 or 422 used to flip the
-          // pill anyway, so the row claimed a role change that never happened.
+          // Do not move the UI on a failed write: flipping the pill on a 404 or
+          // 422 would make the row claim a role change that never happened.
           adminBtn.textContent = "Failed — retry";
           adminBtn.disabled = false;
           return;
@@ -175,11 +175,10 @@ const apiBase = getApiBase();
 
     listEl.appendChild(panel);
 
-    // guardedFetch, not fetch: these were the only two calls on the site still
-    // using raw fetch, so a 401 here degraded to "No notes found." instead of
-    // sending the admin to sign in. And the whole block is wrapped, because an
-    // unhandled rejection used to leave "Loading grants…" on screen forever —
-    // a gateway error page makes .json() throw.
+    // guardedFetch, not fetch, so a 401 here sends the admin to sign in rather
+    // than degrading to "No notes found." And the whole block is wrapped,
+    // because an unhandled rejection would leave "Loading grants…" on screen
+    // forever — a gateway error page makes .json() throw.
     let grants = [];
     let notes = [];
     try {

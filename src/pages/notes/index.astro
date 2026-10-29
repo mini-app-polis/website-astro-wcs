@@ -97,8 +97,7 @@ const apiBase = getApiBase();
 
         // Signed out: stop here. <Show when="signed-out"> is already rendering
         // the private-section prompt, and fetching without a token would earn a
-        // 401 and bounce the visitor to /sign-in instead of showing it. The
-        // server used to make this decision by not rendering the browser at all.
+        // 401 and bounce the visitor to /sign-in instead of showing it.
         const signedOut = !SESSION_TOKEN;
         const loadingEl = document.getElementById("notes-loading");
         const errorEl   = document.getElementById("notes-error");
