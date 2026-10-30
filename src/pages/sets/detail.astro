@@ -5,17 +5,11 @@ import { getApiBase } from "../../lib/api";
 
 // A container, not a prerendered page.
 //
-// This used to be sets/[id].astro with getStaticPaths, emitting one HTML file
-// per set from a build-time call to /v1/sets. Three costs came with that: the
-// build could not run without the API — an outage or a bad query blocked
-// deploys of the whole site, including changes unrelated to sets — a new set
-// did not appear until someone rebuilt, and the page count grew with the
-// catalogue.
-//
-// Now the shell is static and the set arrives at request time, which is what
-// the data actually is. Nothing about the catalogue is baked in, so the build
-// depends on nothing but this repo. Same shape as the note routes, and the
-// sets index (SetsList.astro) already worked this way.
+// The shell is static and the set arrives at request time, which is what the
+// data actually is. Nothing about the catalogue is baked in, so the build
+// depends on nothing but this repo: an API outage cannot block deploys, a new
+// set appears without a rebuild, and the page count does not grow with the
+// catalogue. Same shape as the note routes and the sets index (SetsList.astro).
 const apiBase = getApiBase();
 ---
 
