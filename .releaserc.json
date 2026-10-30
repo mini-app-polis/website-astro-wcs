@@ -11,9 +11,9 @@
       }
     ],
     [
-      "@semantic-release/npm",
+      "@semantic-release/exec",
       {
-        "npmPublish": false
+        "prepareCmd": "npm version ${nextRelease.version} --no-git-tag-version --allow-same-version"
       }
     ],
     [
