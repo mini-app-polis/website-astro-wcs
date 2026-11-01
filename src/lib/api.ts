@@ -1,3 +1,5 @@
+import { logger } from "./logger";
+
 // ---------------------------------------------------------------------------
 // API types
 // ---------------------------------------------------------------------------
@@ -72,6 +74,11 @@ export interface LivePlay {
 // Fetch helpers
 // ---------------------------------------------------------------------------
 
+/**
+ * Resolve the API base URL: `runtimeUrl` when given; otherwise PUBLIC_API_URL
+ * during SSR, or the `data-api-url` attribute on <html> in the browser.
+ * Returns "" when none is set.
+ */
 export function getApiBase(runtimeUrl?: string): string {
   if (runtimeUrl) return runtimeUrl;
   if (typeof document === "undefined") {
@@ -87,18 +94,18 @@ async function apiFetch<T>(path: string, fallback: T, baseUrl?: string): Promise
   try {
     const base = getApiBase(baseUrl);
     if (!base) {
-      console.warn("[api] no base URL, returning fallback for", path);
+      logger.warn({ event: "api_base_url_missing", category: "api", context: { path } });
       return fallback;
     }
     const res = await fetch(`${base.replace(/\/$/, "")}${path}`);
     if (!res.ok) {
-      console.warn("[api] bad response:", res.status, path);
+      logger.warn({ event: "api_bad_response", category: "api", context: { path, status: res.status } });
       return fallback;
     }
     const json = await res.json();
     return ((json && "data" in json ? json.data : undefined) ?? fallback) as T;
   } catch (e) {
-    console.error("[api] error:", e, path);
+    logger.error({ event: "api_request_failed", category: "api", context: { path }, error: e });
     return fallback;
   }
 }
@@ -107,6 +114,7 @@ async function apiFetch<T>(path: string, fallback: T, baseUrl?: string): Promise
 // Endpoint functions
 // ---------------------------------------------------------------------------
 
+/** Fetch the headline stats (set, play and track totals, years active, most-played artist); zeroed stats on failure. */
 export const getOverview = (baseUrl?: string) =>
   apiFetch<StatsOverview>("/v1/stats/overview", {
     total_sets: 0,
@@ -116,6 +124,7 @@ export const getOverview = (baseUrl?: string) =>
     most_played_artist: "",
   }, baseUrl);
 
+/** Fetch the list of DJ sets, filtered by `params` as query-string parameters; [] on failure. */
 export const getSets = (params: Record<string, string | number> = {}, baseUrl?: string) => {
   const qs = new URLSearchParams(
     Object.entries(params).map(([k, v]) => [k, String(v)]),
@@ -123,17 +132,22 @@ export const getSets = (params: Record<string, string | number> = {}, baseUrl?: 
   return apiFetch<SetListItem[]>(`/v1/sets${qs ? `?${qs}` : ""}`, [], baseUrl);
 };
 
+/** Fetch one set and its tracks by id; null on failure. */
 export const getSetDetail = (id: string, baseUrl?: string) =>
   apiFetch<SetDetail | null>(`/v1/sets/${id}`, null, baseUrl);
 
+/** Fetch the `limit` most-played artists with their play counts; [] on failure. */
 export const getTopArtists = (limit = 20, baseUrl?: string) =>
   apiFetch<ArtistStat[]>(`/v1/stats/top-artists?limit=${limit}`, [], baseUrl);
 
+/** Fetch the `limit` most-played tracks with their play counts; [] on failure. */
 export const getTopTracks = (limit = 20, baseUrl?: string) =>
   apiFetch<TrackStat[]>(`/v1/stats/top-tracks?limit=${limit}`, [], baseUrl);
 
+/** Fetch set and track counts per year; [] on failure. */
 export const getByYear = (baseUrl?: string) =>
   apiFetch<ByYear[]>("/v1/stats/by-year", [], baseUrl);
 
+/** Fetch the `limit` most recent live plays; [] on failure. */
 export const getLivePlays = (limit = 50, baseUrl?: string) =>
   apiFetch<LivePlay[]>(`/v1/live-plays/recent?limit=${limit}`, [], baseUrl);
