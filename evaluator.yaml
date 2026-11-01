@@ -6,8 +6,8 @@ type: static-site
 traits:
   - cloudflare-pages
   # Deployed via Cloudflare Pages Git integration (auto-deploy on push to main).
-  # The trait removes the CI obligation; ci.yml is carried anyway, to build,
-  # type-check and scan the site before it reaches Cloudflare.
+  # The trait records how the site ships; it exempts no rules. ci.yml builds,
+  # type-checks and scans the site before it reaches Cloudflare.
 
 # TEST-001/002/003/004 covered by static-site type scoping.
 # XSTACK-001 covered by static-site type scoping (no server-side logic).
