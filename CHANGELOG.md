@@ -1,3 +1,10 @@
+## [2.12.5](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.12.4...v2.12.5) (2026-11-01)
+
+
+### Bug Fixes
+
+* **api:** log through a structured logger module and document API helpers ([dd20c91](https://github.com/mini-app-polis/website-astro-wcs/commit/dd20c91262b1a96ccfaa18b54b71b93a9f2870f6))
+
 ## [2.12.4](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.12.3...v2.12.4) (2026-10-26)
 
 
