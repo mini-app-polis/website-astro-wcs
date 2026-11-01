@@ -11,15 +11,15 @@
     "test:contract": "node --test \"tests/contract/*.test.mjs\""
   },
   "dependencies": {
-    "@astrojs/preact": "6.1.0",
-    "@clerk/astro": "4.1.14",
+    "@astrojs/preact": "6.1.1",
+    "@clerk/astro": "4.1.17",
     "@tailwindcss/vite": "^4.1.18",
-    "astro": "7.4.0",
+    "astro": "7.4.2",
     "preact": "^10.29.2",
     "tailwindcss": "^4.1.18"
   },
   "devDependencies": {
-    "@astrojs/check": "0.9.10",
+    "@astrojs/check": "0.9.12",
     "typescript": "^6.0.3"
   }
 }
