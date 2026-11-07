@@ -39,6 +39,7 @@ export const REASON_TEXT: Record<string, string> = {
   same_name: "the same name in one folder",
 };
 
+/** The reasons a group was made, worded for the page and joined by commas. */
 export function reasonsText(reasons: string[]): string {
   return reasons.map((r) => REASON_TEXT[r] ?? r).join(", ");
 }
@@ -74,12 +75,14 @@ export function resolveBody(group: DuplicateGroup, keeperId: string) {
   };
 }
 
+/** A length in seconds as m:ss ("2:12"); a dash when unknown. */
 export function minutes(secs: number | null): string {
   if (secs == null) return "—";
   const whole = Math.round(secs);
   return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, "0")}`;
 }
 
+/** A size in bytes as megabytes to one decimal ("8.4 MB"); a dash when unknown. */
 export function megabytes(bytes: number | null): string {
   if (bytes == null) return "—";
   return `${(bytes / 1_000_000).toFixed(1)} MB`;
