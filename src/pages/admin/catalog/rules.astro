@@ -1,0 +1,14 @@
+---
+import Page from "../../../layouts/Page.astro";
+import CatalogRules from "../../../components/CatalogRules";
+import { getApiBase } from "../../../lib/api";
+
+// The catalog's display rules. No gate here, by design: reading the rules is
+// public, and saving them is the API's decision (catalog.tracks.write); a
+// refusal is shown where the save would be. See docs/STATIC-AUTH-OFFLOAD.md.
+const apiBase = getApiBase();
+---
+
+<Page title="Display Rules" subtitle="How every song's parts are written out">
+  <CatalogRules client:load apiBase={apiBase ?? ""} />
+</Page>
