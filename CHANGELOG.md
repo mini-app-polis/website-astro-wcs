@@ -1,3 +1,10 @@
+# [2.15.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.14.0...v2.15.0) (2026-11-07)
+
+
+### Features
+
+* **admin:** link the unidentified files page from the admin menu ([e258146](https://github.com/mini-app-polis/website-astro-wcs/commit/e258146223b3a524c115e8148e7a0d24e772dcd3))
+
 # [2.14.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.13.0...v2.14.0) (2026-11-07)
 
 
