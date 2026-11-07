@@ -1,3 +1,10 @@
+# [2.16.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.15.0...v2.16.0) (2026-11-07)
+
+
+### Features
+
+* **admin:** the unidentified page shows each file's tags and why it is unidentified ([860eeca](https://github.com/mini-app-polis/website-astro-wcs/commit/860eeca8844e2fe42d98c2be30c900e3660559f1))
+
 # [2.15.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.14.0...v2.15.0) (2026-11-07)
 
 
