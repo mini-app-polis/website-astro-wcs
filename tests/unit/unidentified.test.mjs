@@ -3,7 +3,7 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { entryBody, guessFromPath } from "../../src/lib/unidentified.ts";
+import { entryBody, guessFromPath, startingParts, tagsText } from "../../src/lib/unidentified.ts";
 
 test("a guess reads 'Title - Artist' names", () => {
   assert.deepEqual(guessFromPath("Pop/Temple - Thomas Gold.mp3"), {
@@ -36,4 +36,17 @@ test("the entry leaves out empty fields and sends numbers", () => {
     }),
     { title: "Temple", artist: "Thomas Gold", genre: "House", bpm: 124, release_year: 2019 },
   );
+});
+
+test("the form starts from the file's tags, then its name", () => {
+  const parts = startingParts("Pop/temple_thomasgold.mp3", { title: "Temple", bpm: "124" });
+  assert.equal(parts.title, "Temple");
+  assert.equal(parts.artist, "thomasgold");
+  assert.equal(parts.bpm, "124");
+  assert.equal(startingParts("Pop/a_b.mp3", null).title, "a");
+});
+
+test("tags read as one line, and none when empty", () => {
+  assert.equal(tagsText({ title: "Temple", artist: "T. Gold", bpm: "124" }), "Temple — T. Gold · 124 BPM");
+  assert.equal(tagsText({}), "none");
 });

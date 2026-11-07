@@ -2,7 +2,7 @@
 import { useEffect, useState } from "preact/hooks";
 import { getSessionToken } from "../lib/session";
 import { megabytes, minutes } from "../lib/duplicates";
-import { entryBody, guessFromPath, type EntryForm } from "../lib/unidentified";
+import { entryBody, startingParts, tagsText, type EntryForm, type Tags } from "../lib/unidentified";
 
 // The owner's page for library files the nightly run could not identify
 // (deejay-cog ADR-0008, decision 2: no entry from an unconfident
@@ -22,6 +22,8 @@ type LibraryFile = {
   edit_label: string | null;
   comment_backup: string | null;
   first_seen: string;
+  tags?: Tags | null;
+  identify_note?: string | null;
 };
 
 type Listed = { id: string; title: string; artist: string; play_count: number };
@@ -48,16 +50,10 @@ function FileCard({
   link: (file: LibraryFile, body: Record<string, unknown>) => Promise<string | null>;
 }) {
   const [tab, setTab] = useState<"none" | "find" | "new">("none");
-  const [query, setQuery] = useState(guessFromPath(file.path).title);
+  const start = startingParts(file.path, file.tags);
+  const [query, setQuery] = useState(start.title);
   const [results, setResults] = useState<Listed[]>([]);
-  const [form, setForm] = useState<EntryForm>({
-    ...guessFromPath(file.path),
-    remix: "",
-    genre: "",
-    bpm: "",
-    release_year: "",
-    label: "",
-  });
+  const [form, setForm] = useState<EntryForm>(start);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -105,6 +101,12 @@ function FileCard({
           {file.edit_label ? ` · ${file.edit_label}` : ""} · found{" "}
           {new Date(file.first_seen).toLocaleDateString()}
         </p>
+        {file.tags && (
+          <p class="mt-1 text-xs text-slate-300">Tags: {tagsText(file.tags)}</p>
+        )}
+        {file.identify_note && (
+          <p class="mt-1 text-xs text-amber-200/80">{file.identify_note}</p>
+        )}
         {file.comment_backup && (
           <p class="mt-1 text-xs text-slate-500">Comment: {file.comment_backup}</p>
         )}
