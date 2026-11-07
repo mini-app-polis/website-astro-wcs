@@ -1,3 +1,10 @@
+## [2.17.1](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.17.0...v2.17.1) (2026-11-07)
+
+
+### Bug Fixes
+
+* **reconcile:** a save the API cannot be reached for says so instead of staying on Saving ([2d4da2c](https://github.com/mini-app-polis/website-astro-wcs/commit/2d4da2cbb19365980896b1587c7a3b15b8332342))
+
 # [2.17.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.16.0...v2.17.0) (2026-11-07)
 
 
