@@ -1,0 +1,22 @@
+---
+import Page from "../../../layouts/Page.astro";
+import CatalogReconcile from "../../../components/CatalogReconcile";
+import { getApiBase } from "../../../lib/api";
+
+// The owner's reconcile review. No gate here, by design: authorization is
+// the API's decision (catalog.tracks.write), made once at the enforcement
+// point and audited there. The page asks the API for the differences, and a
+// refusal is what a visitor without the scope sees. See
+// docs/STATIC-AUTH-OFFLOAD.md.
+const apiBase = getApiBase();
+---
+
+<Page title="Reconcile" subtitle="Where library files differ from the catalog">
+  <p class="mb-6 text-sm text-slate-400">
+    Every hour the reconcile compares the next library files with their catalog entries and reports
+    what differs. Approve a whole kind of difference, or an "Other" difference one file at a time,
+    then save: the next hourly run writes the catalog's value over the file (approved fill-ups go up
+    to the catalog instead). Anything left unapproved stays as it is in the file.
+  </p>
+  <CatalogReconcile client:load apiBase={apiBase ?? ""} />
+</Page>
