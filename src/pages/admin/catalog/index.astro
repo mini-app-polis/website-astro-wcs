@@ -1,0 +1,21 @@
+---
+import Page from "../../../layouts/Page.astro";
+import CatalogEditor from "../../../components/CatalogEditor";
+import { getApiBase } from "../../../lib/api";
+
+// The owner's catalog editor. No gate here, by design: authorization is the
+// API's decision (catalog.tracks.write), made once at the enforcement point
+// and audited there. The editor asks the API before it shows the form, and a
+// refusal is what a visitor without the scope sees. See
+// docs/STATIC-AUTH-OFFLOAD.md.
+const apiBase = getApiBase();
+---
+
+<Page title="Catalog Editor" subtitle="Edit a song's parts and owned fields">
+  <p class="mb-6 text-sm text-slate-400">
+    How a song is shown is written out from its parts by the
+    <a class="text-accent hover:underline" href="/admin/catalog/rules">display rules</a>.
+    An edit reaches every linked file on the next nightly sync.
+  </p>
+  <CatalogEditor client:load apiBase={apiBase ?? ""} />
+</Page>
