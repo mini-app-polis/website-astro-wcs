@@ -1,3 +1,10 @@
+# [2.13.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.12.6...v2.13.0) (2026-11-07)
+
+
+### Features
+
+* **admin:** catalog editor and display rules pages ([ef4b64e](https://github.com/mini-app-polis/website-astro-wcs/commit/ef4b64e26a11fbaa9a613cb069dd7cf0c0f46858))
+
 ## [2.12.6](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.12.5...v2.12.6) (2026-11-01)
 
 
