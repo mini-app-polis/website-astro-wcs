@@ -1,3 +1,10 @@
+# [2.14.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.13.0...v2.14.0) (2026-11-07)
+
+
+### Features
+
+* **admin:** duplicates and unidentified files pages ([8834a6b](https://github.com/mini-app-polis/website-astro-wcs/commit/8834a6bb056329d39df3ee5a7394d4c95f4b2103))
+
 # [2.13.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.12.6...v2.13.0) (2026-11-07)
 
 
