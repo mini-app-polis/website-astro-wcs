@@ -159,11 +159,18 @@ export default function CatalogReconcile({ apiBase }: Props) {
   async function save() {
     setBusy(true);
     setMessage("");
-    const res = await authed("/v1/catalog/library/reconcile/approvals", {
-      method: "PUT",
-      body: JSON.stringify(approvalsBody(draft)),
-    });
-    setBusy(false);
+    let res: Response;
+    try {
+      res = await authed("/v1/catalog/library/reconcile/approvals", {
+        method: "PUT",
+        body: JSON.stringify(approvalsBody(draft)),
+      });
+    } catch {
+      setMessage("The API could not be reached: nothing was saved.");
+      return;
+    } finally {
+      setBusy(false);
+    }
     if (!res.ok) {
       const body = await res.json().catch(() => null);
       setMessage(body?.error?.message ?? `The API answered ${res.status}: nothing was saved.`);
