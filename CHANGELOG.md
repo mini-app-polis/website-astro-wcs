@@ -1,3 +1,10 @@
+# [2.17.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.16.0...v2.17.0) (2026-11-07)
+
+
+### Features
+
+* **admin:** reconcile review page for approving library reconcile differences ([53ca7fa](https://github.com/mini-app-polis/website-astro-wcs/commit/53ca7fa735d85fb889c322b63300504d47bb3491))
+
 # [2.16.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.15.0...v2.16.0) (2026-11-07)
 
 
