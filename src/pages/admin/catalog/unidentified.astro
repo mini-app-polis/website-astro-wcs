@@ -1,0 +1,20 @@
+---
+import Page from "../../../layouts/Page.astro";
+import CatalogUnidentified from "../../../components/CatalogUnidentified";
+import { getApiBase } from "../../../lib/api";
+
+// The owner's page for library files the nightly run could not identify. No
+// gate here, by design: authorization is the API's decision
+// (catalog.tracks.write), made once at the enforcement point and audited
+// there. See docs/STATIC-AUTH-OFFLOAD.md.
+const apiBase = getApiBase();
+---
+
+<Page title="Unidentified Files" subtitle="Library files the nightly run could not identify">
+  <p class="mb-6 text-sm text-slate-400">
+    The nightly run links a file to the catalog only when it is sure which song it is. Link each
+    of these to an entry, or make a new one from its parts; its tags are written from the catalog
+    on the next nightly sync.
+  </p>
+  <CatalogUnidentified client:load apiBase={apiBase ?? ""} />
+</Page>
