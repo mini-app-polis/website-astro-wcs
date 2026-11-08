@@ -1,3 +1,10 @@
+## [2.17.3](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.17.2...v2.17.3) (2026-11-08)
+
+
+### Bug Fixes
+
+* **nav:** open desktop submenus on tap, so a tablet can reach them ([99971e7](https://github.com/mini-app-polis/website-astro-wcs/commit/99971e799182850bc9aeb10c183602b54ffa7edd))
+
 ## [2.17.2](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.17.1...v2.17.2) (2026-11-08)
 
 
