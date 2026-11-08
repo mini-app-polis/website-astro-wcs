@@ -122,19 +122,23 @@ function isActive(href: string) {
           <div
             class={`group relative ${hiddenForAdminOnly ? "hidden" : ""}`}
             data-admin-only={item.adminOnly ? "true" : undefined}
+            data-submenu
           >
             <button
               type="button"
+              aria-haspopup="true"
+              aria-expanded="false"
+              data-submenu-toggle
               class={`flex items-center gap-1 rounded-full px-3 py-1.5 transition-colors ${
                 anyActive ? "text-accent" : "text-slate-300 hover:text-slate-100"
               }`}
             >
               {item.label}
-              <svg class="h-3 w-3 opacity-50 transition-transform group-hover:rotate-180" viewBox="0 0 12 12" fill="none">
+              <svg class="h-3 w-3 opacity-50 transition-transform group-hover:rotate-180 group-data-open:rotate-180" viewBox="0 0 12 12" fill="none">
                 <path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </button>
-            <div class="invisible absolute right-0 top-full z-50 mt-1.5 min-w-[160px] rounded-xl border border-white/10 bg-surface/95 p-1.5 opacity-0 shadow-soft backdrop-blur transition-all group-hover:visible group-hover:opacity-100">
+            <div class="invisible absolute right-0 top-full z-50 mt-1.5 min-w-[160px] rounded-xl border border-white/10 bg-surface/95 p-1.5 opacity-0 shadow-soft backdrop-blur transition-all group-hover:visible group-hover:opacity-100 group-data-open:visible group-data-open:opacity-100">
               {item.submenu.map((sub) => (
                 <a
                   href={sub.href}
@@ -278,6 +282,41 @@ function isActive(href: string) {
   // Close on Escape
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") closeDrawer();
+  });
+
+  // Desktop submenus. Hover opens them with a mouse; a touch screen at
+  // desktop width (a tablet) has no hover, so a tap (or Enter/Space) on the
+  // parent toggles its panel through data-open. One is open at a time; a tap
+  // outside or Escape closes it.
+  const submenus = Array.from(document.querySelectorAll<HTMLElement>("[data-submenu]"));
+
+  function setOpen(menu: HTMLElement, open: boolean) {
+    menu.toggleAttribute("data-open", open);
+    menu.querySelector("[data-submenu-toggle]")?.setAttribute("aria-expanded", String(open));
+  }
+
+  function closeSubmenus(except?: HTMLElement) {
+    submenus.forEach((menu) => {
+      if (menu !== except) setOpen(menu, false);
+    });
+  }
+
+  submenus.forEach((menu) => {
+    menu.querySelector("[data-submenu-toggle]")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const open = !menu.hasAttribute("data-open");
+      closeSubmenus(menu);
+      setOpen(menu, open);
+    });
+  });
+
+  document.addEventListener("click", (e) => {
+    const target = e.target as Node | null;
+    if (!submenus.some((menu) => target && menu.contains(target))) closeSubmenus();
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeSubmenus();
   });
 </script>
 
