@@ -1,3 +1,10 @@
+# [2.18.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.17.3...v2.18.0) (2026-11-09)
+
+
+### Features
+
+* **admin:** link each library file on the catalog pages to its Drive page ([31e4625](https://github.com/mini-app-polis/website-astro-wcs/commit/31e462556c1f4b1878568416112344ca240ff6ca))
+
 ## [2.17.3](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.17.2...v2.17.3) (2026-11-08)
 
 
