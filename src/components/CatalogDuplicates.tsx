@@ -1,6 +1,7 @@
 /** @jsxImportSource preact */
 import { useEffect, useState } from "preact/hooks";
 import { getSessionToken } from "../lib/session";
+import { driveFileUrl } from "../lib/url";
 import {
   type DuplicateFile,
   type DuplicateGroup,
@@ -39,7 +40,9 @@ function FileLine({ f }: { f: DuplicateFile }) {
   return (
     <div class="min-w-0">
       <p class="truncate font-mono text-xs text-slate-200" title={f.path ?? f.drive_file_id}>
-        {f.path ?? f.drive_file_id}
+        <a href={driveFileUrl(f.drive_file_id)} class="hover:underline" target="_blank" rel="noopener noreferrer">
+          {f.path ?? f.drive_file_id}
+        </a>
       </p>
       <p class="text-xs text-slate-400">
         {megabytes(f.size_bytes)} · {minutes(f.duration_secs)}

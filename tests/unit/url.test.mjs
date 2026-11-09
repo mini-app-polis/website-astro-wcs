@@ -3,7 +3,7 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { safeUrl } from "../../src/lib/url.ts";
+import { driveFileUrl, safeUrl } from "../../src/lib/url.ts";
 
 test("safeUrl returns http and https URLs unchanged", () => {
   assert.equal(safeUrl("https://open.spotify.com/playlist/x"), "https://open.spotify.com/playlist/x");
@@ -34,4 +34,12 @@ test("safeUrl rejects null, undefined and non-strings", () => {
   assert.equal(safeUrl(null), null);
   assert.equal(safeUrl(undefined), null);
   assert.equal(safeUrl(42), null);
+});
+
+test("driveFileUrl is the file's Drive page, its id encoded", () => {
+  assert.equal(
+    driveFileUrl("1FQxbGS9T8VsDrSeilUWhQ-aMYRhHddI5"),
+    "https://drive.google.com/file/d/1FQxbGS9T8VsDrSeilUWhQ-aMYRhHddI5/view",
+  );
+  assert.equal(driveFileUrl("a/b"), "https://drive.google.com/file/d/a%2Fb/view");
 });

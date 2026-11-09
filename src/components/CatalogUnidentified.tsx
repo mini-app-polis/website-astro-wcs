@@ -1,6 +1,7 @@
 /** @jsxImportSource preact */
 import { useEffect, useState } from "preact/hooks";
 import { getSessionToken } from "../lib/session";
+import { driveFileUrl } from "../lib/url";
 import { megabytes, minutes } from "../lib/duplicates";
 import { entryBody, startingParts, tagsText, type EntryForm, type Tags } from "../lib/unidentified";
 
@@ -95,7 +96,11 @@ function FileCard({
   return (
     <li class="space-y-3 rounded-lg border border-white/10 bg-white/[0.02] p-4">
       <div>
-        <p class="font-mono text-xs text-slate-200">{file.path}</p>
+        <p class="font-mono text-xs text-slate-200">
+          <a href={driveFileUrl(file.drive_file_id)} class="hover:underline" target="_blank" rel="noopener noreferrer">
+            {file.path}
+          </a>
+        </p>
         <p class="text-xs text-slate-400">
           {megabytes(file.size_bytes)} · {minutes(file.duration_secs)}
           {file.edit_label ? ` · ${file.edit_label}` : ""} · found{" "}
