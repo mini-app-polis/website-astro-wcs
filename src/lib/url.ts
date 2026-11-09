@@ -16,3 +16,9 @@ export function safeUrl(value: unknown): string | null {
   }
   return parsed.protocol === "http:" || parsed.protocol === "https:" ? trimmed : null;
 }
+
+/** Google Drive's page for a library file, where it plays in the browser:
+ * the admin pages link each file to it so the owner can hear what it is. */
+export function driveFileUrl(fileId: string): string {
+  return `https://drive.google.com/file/d/${encodeURIComponent(fileId)}/view`;
+}

@@ -1,6 +1,7 @@
 /** @jsxImportSource preact */
 import { useEffect, useState } from "preact/hooks";
 import { getSessionToken } from "../lib/session";
+import { driveFileUrl } from "../lib/url";
 import {
   type Approvals,
   type ReconcileDifference,
@@ -45,7 +46,9 @@ function Line({ d, children }: { d: ReconcileDifference; children?: preact.Compo
       {children}
       <div class="min-w-0">
         <p class="truncate font-mono text-slate-200" title={d.path}>
-          {fileName(d.path)}
+          <a href={driveFileUrl(d.drive_file_id)} class="hover:underline" target="_blank" rel="noopener noreferrer">
+            {fileName(d.path)}
+          </a>
         </p>
         <p class="text-slate-400">
           {d.field}: <span class="text-slate-300">{shown(d.file_value)}</span> →{" "}
