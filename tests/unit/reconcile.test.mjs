@@ -1,6 +1,6 @@
 // The reconcile review page's approvals: kinds approved whole (never
-// "other"), other differences by file and field, and the body the page
-// saves. Runs on Node's built-in type stripping (Node >= 22.18).
+// "other"), other differences by file and field, each for the catalog or
+// for the file, and the body the page saves. Runs on Node's built-in type stripping (Node >= 22.18).
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -9,11 +9,17 @@ import {
   byKind,
   changed,
   covers,
+  fileCanWin,
   idleKinds,
   kindLabel,
+  kindSide,
   shown,
+  sideLabel,
+  sideOf,
   withFile,
+  withFileSide,
   withKind,
+  withKindSide,
 } from "../../src/lib/reconcile.ts";
 
 function diff(id, field, kind, extra = {}) {
@@ -82,6 +88,8 @@ test("the saved body is sorted, so the same approvals compare unchanged", () => 
   assert.deepEqual(approvalsBody(draft), {
     kinds: ["fill_up", "year_filled"],
     files: { a: ["artist", "year"], b: ["title"] },
+    file_wins_kinds: [],
+    file_wins_files: {},
   });
   const saved = { kinds: ["fill_up", "year_filled"], files: { a: ["artist", "year"], b: ["title"] }, updated_at: "x" };
   assert.equal(changed(saved, draft), false);
@@ -98,4 +106,56 @@ test("values and kinds as the page words them", () => {
   assert.equal(shown("2020"), "2020");
   assert.equal(kindLabel("year_later"), "Later year");
   assert.equal(kindLabel("brand_new"), "brand_new");
+});
+
+test("a kind or a file's field is approved for one side at a time", () => {
+  let a = withKindSide(none, "year_later", "file");
+  assert.equal(kindSide(a, "year_later"), "file");
+  assert.deepEqual([a.kinds, a.file_wins_kinds], [[], ["year_later"]]);
+  a = withKindSide(a, "year_later", "catalog");
+  assert.deepEqual([a.kinds, a.file_wins_kinds], [["year_later"], []]);
+  a = withKindSide(a, "year_later", null);
+  assert.equal(kindSide(a, "year_later"), null);
+
+  let f = withFileSide(none, "f1", "artist", "file");
+  assert.equal(sideOf(f, diff("f1", "artist", "other")), "file");
+  f = withFileSide(f, "f1", "artist", "catalog");
+  assert.deepEqual([f.files, f.file_wins_files], [{ f1: ["artist"] }, {}]);
+  f = withFileSide(f, "f1", "artist", null);
+  assert.deepEqual([f.files, f.file_wins_files], [{}, {}]);
+});
+
+test("the file cannot win where it has nothing to send up", () => {
+  for (const kind of ["fill_up", "year_filled", "genre_filled", "other"]) {
+    assert.equal(withKindSide(none, kind, "file"), none);
+  }
+  assert.equal(fileCanWin("year_later"), true);
+  assert.equal(fileCanWin("other", "title"), true);
+  assert.equal(fileCanWin("other", "catalog_id"), false);
+  assert.equal(withFileSide(none, "f1", "catalog_id", "file"), none);
+});
+
+test("a difference approved for the file is covered, and saved under the file's side", () => {
+  const draft = {
+    kinds: ["genre_remapped"],
+    files: {},
+    file_wins_kinds: ["year_later", "bpm_differs"],
+    file_wins_files: { b: ["title"], a: ["artist", "artist"] },
+  };
+  assert.equal(covers(draft, diff("x", "year", "year_later")), true);
+  assert.equal(covers(draft, diff("a", "artist", "other")), true);
+  assert.equal(covers(draft, diff("a", "title", "other")), false);
+  assert.deepEqual(approvalsBody(draft), {
+    kinds: ["genre_remapped"],
+    files: {},
+    file_wins_kinds: ["bpm_differs", "year_later"],
+    file_wins_files: { a: ["artist"], b: ["title"] },
+  });
+});
+
+test("kinds approved for the file with nothing open are still listed", () => {
+  const approvals = { kinds: ["fill_up"], files: {}, file_wins_kinds: ["year_later"] };
+  assert.deepEqual(idleKinds(approvals, []), ["fill_up", "year_later"]);
+  assert.equal(sideLabel("file"), "File wins");
+  assert.equal(sideLabel(null), "Not decided");
 });

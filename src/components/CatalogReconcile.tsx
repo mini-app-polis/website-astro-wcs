@@ -6,25 +6,33 @@ import {
   type Approvals,
   type ReconcileDifference,
   type Review,
+  type Side,
   KINDS,
   approvalsBody,
   byKind,
   changed,
   covers,
+  fileCanWin,
   fileName,
   idleKinds,
   kindLabel,
+  kindSide,
   shown,
-  withFile,
-  withKind,
+  sideLabel,
+  sideOf,
+  withFileSide,
+  withKindSide,
 } from "../lib/reconcile";
 
 // The owner's reconcile review (deejay-cog ADR-0008, step 3): every open
 // difference between a library file and its catalog entry, as the hourly
 // reconcile last reported it, grouped by kind. The owner approves whole
-// kinds, or "other" differences one file and field at a time, and saves;
-// the next write run writes what is approved with the catalog's value (or
-// sends approved fill-ups to the catalog). Nothing here writes music. Reading
+// kinds, or "other" differences one file and field at a time, for one side
+// or the other, and saves. The next write run settles each approved
+// difference: catalog wins, its value is written over the file; file wins,
+// the file's value goes up to the catalog and the file is not written
+// (approved fill-ups go up to the catalog too). Either way the two then
+// match. Nothing here writes music. Reading
 // and saving need catalog.tracks.write: the API decides, and a refusal is
 // what a visitor without it sees.
 
@@ -59,6 +67,55 @@ function Line({ d, children }: { d: ReconcileDifference; children?: preact.Compo
   );
 }
 
+const SIDE_BTN = "px-3 py-1 text-xs transition-colors first:rounded-l-full last:rounded-r-full";
+
+/** Not decided, catalog wins, or file wins: one choice, as a segmented control. */
+function SideChoice({
+  value,
+  fileAllowed,
+  label,
+  onChange,
+}: {
+  value: Side | null;
+  fileAllowed: boolean;
+  label: string;
+  onChange: (side: Side | null) => void;
+}) {
+  const options: (Side | null)[] = [null, "catalog", "file"];
+  return (
+    <div role="radiogroup" aria-label={label} class="inline-flex shrink-0 overflow-hidden rounded-full border border-white/15">
+      {options.map((side) => {
+        const on = side === value;
+        // The file's side is shown but not offered where the file has nothing
+        // to send up, so every row's choices line up.
+        const off = side === "file" && !fileAllowed;
+        const tone = off
+          ? "cursor-not-allowed text-slate-600"
+          : !on
+          ? "text-slate-400 hover:text-slate-200"
+          : side === "file"
+            ? "bg-sky-500/20 text-sky-200"
+            : side === "catalog"
+              ? "bg-emerald-500/20 text-emerald-200"
+              : "bg-white/10 text-slate-200";
+        return (
+          <button
+            type="button"
+            role="radio"
+            aria-checked={on}
+            disabled={off}
+            title={off ? "The file has nothing here to send up to the catalog." : undefined}
+            class={`${SIDE_BTN} ${tone}`}
+            onClick={() => onChange(side)}
+          >
+            {sideLabel(side)}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function KindSection({
   kind,
   diffs,
@@ -73,7 +130,7 @@ function KindSection({
   const [all, setAll] = useState(false);
   const meta = KINDS.find((k) => k.kind === kind);
   const isOther = kind === "other";
-  const on = draft.kinds.includes(kind);
+  const side = kindSide(draft, kind);
   const list = all ? diffs : diffs.slice(0, SHOWN);
   const files = new Set(diffs.map((d) => d.drive_file_id)).size;
   return (
@@ -89,22 +146,23 @@ function KindSection({
           {meta && <p class="text-xs text-slate-400">{meta.means}</p>}
         </div>
         {!isOther && (
-          <label class="flex items-center gap-2 text-sm text-slate-200">
-            <input type="checkbox" checked={on} onChange={(e) => setDraft(withKind(draft, kind, e.currentTarget.checked))} />
-            Approve this kind
-          </label>
+          <SideChoice
+            value={side}
+            fileAllowed={fileCanWin(kind)}
+            label={`Approve ${kindLabel(kind)}`}
+            onChange={(next) => setDraft(withKindSide(draft, kind, next))}
+          />
         )}
       </div>
       <ul class="space-y-2">
         {list.map((d) =>
           isOther ? (
             <Line d={d}>
-              <input
-                type="checkbox"
-                class="mt-0.5"
-                aria-label={`Approve ${d.field} of ${fileName(d.path)}`}
-                checked={covers(draft, d)}
-                onChange={(e) => setDraft(withFile(draft, d.drive_file_id, d.field, e.currentTarget.checked))}
+              <SideChoice
+                value={sideOf(draft, d)}
+                fileAllowed={fileCanWin(d.kind, d.field)}
+                label={`Approve ${d.field} of ${fileName(d.path)}`}
+                onChange={(next) => setDraft(withFileSide(draft, d.drive_file_id, d.field, next))}
               />
             </Line>
           ) : (
@@ -180,7 +238,7 @@ export default function CatalogReconcile({ apiBase }: Props) {
       return;
     }
     await load();
-    setMessage("Saved. The next hourly reconcile writes what is approved.");
+    setMessage("Saved. The next hourly reconcile settles what is approved, for the side chosen.");
   }
 
   if (state.kind === "loading") return <p class="text-sm text-slate-500">Loading…</p>;
@@ -225,10 +283,15 @@ export default function CatalogReconcile({ apiBase }: Props) {
         <div class="space-y-2 rounded-lg border border-white/10 p-4">
           <p class="text-sm text-slate-300">Also approved, with nothing open now:</p>
           {idle.map((kind) => (
-            <label class="flex items-center gap-2 text-sm text-slate-300">
-              <input type="checkbox" checked onChange={(e) => setDraft(withKind(draft, kind, e.currentTarget.checked))} />
+            <div class="flex flex-wrap items-center justify-between gap-2 text-sm text-slate-300">
               {kindLabel(kind)}
-            </label>
+              <SideChoice
+                value={kindSide(draft, kind)}
+                fileAllowed={fileCanWin(kind)}
+                label={`Approve ${kindLabel(kind)}`}
+                onChange={(next) => setDraft(withKindSide(draft, kind, next))}
+              />
+            </div>
           ))}
         </div>
       )}
