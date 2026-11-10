@@ -1,3 +1,10 @@
+## [2.18.1](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.18.0...v2.18.1) (2026-11-10)
+
+
+### Bug Fixes
+
+* **reconcile:** BPM kind descriptions match the 1.5 BPM rounding rule ([f9ef565](https://github.com/mini-app-polis/website-astro-wcs/commit/f9ef565f987427c29cc17e9c29bbfe54f9546a94))
+
 # [2.18.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.17.3...v2.18.0) (2026-11-09)
 
 
