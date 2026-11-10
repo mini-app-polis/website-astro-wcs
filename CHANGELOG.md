@@ -1,3 +1,10 @@
+# [2.19.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.18.1...v2.19.0) (2026-11-10)
+
+
+### Features
+
+* **reconcile:** choose which side wins for each difference on the review page ([a5e11dd](https://github.com/mini-app-polis/website-astro-wcs/commit/a5e11dda3387bfb6777ea6d043b309999626e2ff))
+
 ## [2.18.1](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.18.0...v2.18.1) (2026-11-10)
 
 
