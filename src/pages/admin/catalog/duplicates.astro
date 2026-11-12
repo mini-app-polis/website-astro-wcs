@@ -12,10 +12,11 @@ const apiBase = getApiBase();
 
 <Page title="Duplicates" subtitle="Copies of one song in the music library">
   <p class="mb-6 text-sm text-slate-400">
-    The nightly run groups library files that look like copies of one song. Pick the copy to
-    keep: the copies' catalog entries merge into its entry, and the other copies go to Drive's
-    trash (recoverable for 30 days) on the next nightly run. Different edits and release labels
-    are kept on purpose and never trashed.
+    The nightly run groups library files on one song. Decide each file: keep it on the entry
+    (several files, such as Clean and Explicit, can share one), give it a version entry of its
+    own, or send it to Drive's trash (recoverable for 30 days) on the next nightly run. A group
+    whose files all stay is kept together and not shown again unless its files change. A
+    different edit defaults to its own version; trashing one takes a separate confirmation.
   </p>
   <CatalogDuplicates client:load apiBase={apiBase ?? ""} />
 </Page>
