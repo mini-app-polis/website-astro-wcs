@@ -1,3 +1,10 @@
+# [2.20.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.19.0...v2.20.0) (2026-11-12)
+
+
+### Features
+
+* **duplicates:** decide each file (keep, own version or trash) and show paths from the library's root ([d8cb2d8](https://github.com/mini-app-polis/website-astro-wcs/commit/d8cb2d8f77c564d3d5e7a4a7fe44e5efa11f15db))
+
 # [2.19.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.18.1...v2.19.0) (2026-11-10)
 
 
