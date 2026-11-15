@@ -8,6 +8,9 @@
 // approved for the catalog, its value is written over the file (kinds,
 // files); approved for the file, the file's value goes up to the catalog
 // entry and the file is not written (file_wins_kinds, file_wins_files).
+// One file's differences of a kind can be approved on their own, either way
+// (kinds_by_file, file_wins_kinds_by_file): for that file this comes ahead of
+// the kind's approval, so one file can go the other way from its kind.
 // Left unapproved, a difference is simply not decided yet.
 
 export type ReconcileDifference = {
@@ -33,6 +36,8 @@ export type Approvals = {
   files: Record<string, string[]>;
   file_wins_kinds?: string[];
   file_wins_files?: Record<string, string[]>;
+  kinds_by_file?: Record<string, string[]>;
+  file_wins_kinds_by_file?: Record<string, string[]>;
   updated_at?: string | null;
   updated_by?: string | null;
 };
@@ -115,11 +120,20 @@ export function kindSide(approvals: Approvals, kind: string): Side | null {
   return null;
 }
 
-/** Which side ``approvals`` let win for a difference: by its kind, or for
- * "other" by its file and field (as the reconcile's write run reads them);
- * null when it is not approved. */
+/** Which side one file's differences of a kind are approved for on their
+ * own, ahead of the kind's approval, or null when the file follows its kind. */
+export function fileKindSide(approvals: Approvals, fileId: string, kind: string): Side | null {
+  if ((approvals.kinds_by_file?.[fileId] ?? []).includes(kind)) return "catalog";
+  if ((approvals.file_wins_kinds_by_file?.[fileId] ?? []).includes(kind)) return "file";
+  return null;
+}
+
+/** Which side ``approvals`` let win for a difference: by its file's own
+ * approval of its kind, then by its kind, or for "other" by its file and
+ * field (as the reconcile's write run reads them); null when it is not
+ * approved. */
 export function sideOf(approvals: Approvals, d: ReconcileDifference): Side | null {
-  if (d.kind !== "other") return kindSide(approvals, d.kind);
+  if (d.kind !== "other") return fileKindSide(approvals, d.drive_file_id, d.kind) ?? kindSide(approvals, d.kind);
   if ((approvals.files[d.drive_file_id] ?? []).includes(d.field)) return "catalog";
   if ((approvals.file_wins_files?.[d.drive_file_id] ?? []).includes(d.field)) return "file";
   return null;
@@ -184,6 +198,26 @@ export function withFile(approvals: Approvals, fileId: string, field: string, on
   return withFileSide(approvals, fileId, field, on ? "catalog" : null);
 }
 
+/** The approvals with one file's differences of a kind approved for
+ * ``side`` ahead of the kind's approval, or set back to follow the kind
+ * (null); a file left with no kinds is dropped. "other" is approved by field
+ * (withFileSide), and a kind the file's side does not take is not approved
+ * for it. */
+export function withFileKindSide(
+  approvals: Approvals,
+  fileId: string,
+  kind: string,
+  side: Side | null,
+): Approvals {
+  if (kind === "other") return approvals;
+  if (side === "file" && !fileCanWin(kind)) return approvals;
+  return {
+    ...approvals,
+    kinds_by_file: withField(approvals.kinds_by_file ?? {}, fileId, kind, side === "catalog"),
+    file_wins_kinds_by_file: withField(approvals.file_wins_kinds_by_file ?? {}, fileId, kind, side === "file"),
+  };
+}
+
 function sortedFiles(files: Record<string, string[]>): Record<string, string[]> {
   const out: Record<string, string[]> = {};
   for (const id of Object.keys(files).sort()) {
@@ -201,12 +235,16 @@ export function approvalsBody(approvals: Approvals): {
   files: Record<string, string[]>;
   file_wins_kinds: string[];
   file_wins_files: Record<string, string[]>;
+  kinds_by_file: Record<string, string[]>;
+  file_wins_kinds_by_file: Record<string, string[]>;
 } {
   return {
     kinds: [...new Set(approvals.kinds)].sort(),
     files: sortedFiles(approvals.files),
     file_wins_kinds: [...new Set(approvals.file_wins_kinds ?? [])].sort(),
     file_wins_files: sortedFiles(approvals.file_wins_files ?? {}),
+    kinds_by_file: sortedFiles(approvals.kinds_by_file ?? {}),
+    file_wins_kinds_by_file: sortedFiles(approvals.file_wins_kinds_by_file ?? {}),
   };
 }
 
@@ -221,6 +259,36 @@ export function idleKinds(approvals: Approvals, diffs: ReconcileDifference[]): s
   const open = new Set(diffs.map((d) => d.kind));
   const approved = [...approvals.kinds, ...(approvals.file_wins_kinds ?? [])];
   return [...new Set(approved)].filter((k) => !open.has(k)).sort();
+}
+
+/** One file's kind approvals, for either side, with no open difference of
+ * that kind on that file now: the page still lists them, so they can be
+ * taken back. Sorted by file, then kind. */
+export function idleFileKinds(
+  approvals: Approvals,
+  diffs: ReconcileDifference[],
+): { drive_file_id: string; kind: string }[] {
+  const open = new Set(diffs.map((d) => `${d.drive_file_id}|${d.kind}`));
+  const out: { drive_file_id: string; kind: string }[] = [];
+  for (const byFile of [approvals.kinds_by_file ?? {}, approvals.file_wins_kinds_by_file ?? {}]) {
+    for (const [id, kinds] of Object.entries(byFile)) {
+      for (const kind of kinds) {
+        if (!open.has(`${id}|${kind}`)) out.push({ drive_file_id: id, kind });
+      }
+    }
+  }
+  return out.sort((a, b) => a.drive_file_id.localeCompare(b.drive_file_id) || a.kind.localeCompare(b.kind));
+}
+
+/** A Drive file's id from its link (".../file/d/<id>/view", "...?id=<id>")
+ * or the id itself; null when the text holds neither. */
+export function driveFileId(text: string): string | null {
+  const value = text.trim();
+  const inPath = value.match(/\/d\/([A-Za-z0-9_-]{10,})/);
+  if (inPath) return inPath[1];
+  const inQuery = value.match(/[?&]id=([A-Za-z0-9_-]{10,})/);
+  if (inQuery) return inQuery[1];
+  return /^[A-Za-z0-9_-]{10,}$/.test(value) ? value : null;
 }
 
 /** How the page words a side. */
