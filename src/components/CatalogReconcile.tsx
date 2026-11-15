@@ -12,14 +12,18 @@ import {
   byKind,
   changed,
   covers,
+  driveFileId,
   fileCanWin,
+  fileKindSide,
   fileName,
+  idleFileKinds,
   idleKinds,
   kindLabel,
   kindSide,
   shown,
   sideLabel,
   sideOf,
+  withFileKindSide,
   withFileSide,
   withKindSide,
 } from "../lib/reconcile";
@@ -28,7 +32,8 @@ import {
 // difference between a library file and its catalog entry, as the hourly
 // reconcile last reported it, grouped by kind. The owner approves whole
 // kinds, or "other" differences one file and field at a time, for one side
-// or the other, and saves. The next write run settles each approved
+// or the other, and saves. One file's difference of any other kind can be
+// approved on its own too, ahead of its kind's approval for that file. The next write run settles each approved
 // difference: catalog wins, its value is written over the file; file wins,
 // the file's value goes up to the catalog and the file is not written
 // (approved fill-ups go up to the catalog too). Either way the two then
@@ -69,16 +74,19 @@ function Line({ d, children }: { d: ReconcileDifference; children?: preact.Compo
 
 const SIDE_BTN = "px-3 py-1 text-xs transition-colors first:rounded-l-full last:rounded-r-full";
 
-/** Not decided, catalog wins, or file wins: one choice, as a segmented control. */
+/** Not decided (or ``noneLabel``), catalog wins, or file wins: one choice,
+ * as a segmented control. */
 function SideChoice({
   value,
   fileAllowed,
   label,
+  noneLabel,
   onChange,
 }: {
   value: Side | null;
   fileAllowed: boolean;
   label: string;
+  noneLabel?: string;
   onChange: (side: Side | null) => void;
 }) {
   const options: (Side | null)[] = [null, "catalog", "file"];
@@ -108,7 +116,7 @@ function SideChoice({
             class={`${SIDE_BTN} ${tone}`}
             onClick={() => onChange(side)}
           >
-            {sideLabel(side)}
+            {side === null && noneLabel ? noneLabel : sideLabel(side)}
           </button>
         );
       })}
@@ -166,7 +174,15 @@ function KindSection({
               />
             </Line>
           ) : (
-            <Line d={d} />
+            <Line d={d}>
+              <SideChoice
+                value={fileKindSide(draft, d.drive_file_id, d.kind)}
+                fileAllowed={fileCanWin(d.kind)}
+                label={`Approve ${kindLabel(d.kind)} for ${fileName(d.path)} alone`}
+                noneLabel="As the kind"
+                onChange={(next) => setDraft(withFileKindSide(draft, d.drive_file_id, d.kind, next))}
+              />
+            </Line>
           ),
         )}
       </ul>
@@ -176,6 +192,89 @@ function KindSection({
         </button>
       )}
     </li>
+  );
+}
+
+/** One file's kind approvals with nothing open now, to take back, and a
+ * form to approve one file's kind before its difference is reported (the
+ * file by its Drive link or id). */
+function FileKinds({
+  draft,
+  diffs,
+  setDraft,
+}: {
+  draft: Approvals;
+  diffs: ReconcileDifference[];
+  setDraft: (a: Approvals) => void;
+}) {
+  const [link, setLink] = useState("");
+  const [kind, setKind] = useState("year_later");
+  const [side, setSide] = useState<Side | null>("catalog");
+  const idle = idleFileKinds(draft, diffs);
+  const fileId = driveFileId(link);
+  const kinds = KINDS.filter((k) => k.kind !== "other");
+  return (
+    <div class="space-y-3 rounded-lg border border-white/10 p-4">
+      <p class="text-sm text-slate-300">One file's kind, approved on its own (ahead of the kind's approval for that file):</p>
+      {idle.length > 0 && (
+        <ul class="space-y-2">
+          {idle.map((a) => (
+            <li class="flex flex-wrap items-center justify-between gap-2 text-sm text-slate-300">
+              <span>
+                <a href={driveFileUrl(a.drive_file_id)} class="font-mono text-xs hover:underline" target="_blank" rel="noopener noreferrer">
+                  {a.drive_file_id}
+                </a>{" "}
+                {kindLabel(a.kind)}
+              </span>
+              <SideChoice
+                value={fileKindSide(draft, a.drive_file_id, a.kind)}
+                fileAllowed={fileCanWin(a.kind)}
+                label={`Approve ${kindLabel(a.kind)} for ${a.drive_file_id} alone`}
+                noneLabel="As the kind"
+                onChange={(next) => setDraft(withFileKindSide(draft, a.drive_file_id, a.kind, next))}
+              />
+            </li>
+          ))}
+        </ul>
+      )}
+      <div class="flex flex-wrap items-center gap-2 text-sm">
+        <input
+          class="min-w-0 flex-1 rounded-full border border-white/15 bg-white/[0.03] px-3 py-1 text-xs text-slate-200"
+          placeholder="The file's Drive link or id"
+          aria-label="The file's Drive link or id"
+          value={link}
+          onInput={(e) => setLink((e.target as HTMLInputElement).value)}
+        />
+        <select
+          class="rounded-full border border-white/15 bg-slate-950 px-3 py-1 text-xs text-slate-200"
+          aria-label="Kind"
+          value={kind}
+          onChange={(e) => setKind((e.target as HTMLSelectElement).value)}
+        >
+          {kinds.map((k) => (
+            <option value={k.kind}>{k.label}</option>
+          ))}
+        </select>
+        <SideChoice
+          value={side}
+          fileAllowed={fileCanWin(kind)}
+          label="Side for this file's kind"
+          noneLabel="As the kind"
+          onChange={setSide}
+        />
+        <button
+          class={BTN}
+          disabled={fileId === null || (side === "file" && !fileCanWin(kind))}
+          onClick={() => {
+            if (fileId === null) return;
+            setDraft(withFileKindSide(draft, fileId, kind, side));
+            setLink("");
+          }}
+        >
+          Add
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -279,6 +378,7 @@ export default function CatalogReconcile({ apiBase }: Props) {
           <KindSection key={g.kind} kind={g.kind} diffs={g.diffs} draft={draft} setDraft={setDraft} />
         ))}
       </ul>
+      <FileKinds draft={draft} diffs={review.differences} setDraft={setDraft} />
       {idle.length > 0 && (
         <div class="space-y-2 rounded-lg border border-white/10 p-4">
           <p class="text-sm text-slate-300">Also approved, with nothing open now:</p>

@@ -9,7 +9,10 @@ import {
   byKind,
   changed,
   covers,
+  driveFileId,
   fileCanWin,
+  fileKindSide,
+  idleFileKinds,
   idleKinds,
   kindLabel,
   kindSide,
@@ -17,6 +20,7 @@ import {
   sideLabel,
   sideOf,
   withFile,
+  withFileKindSide,
   withFileSide,
   withKind,
   withKindSide,
@@ -90,6 +94,8 @@ test("the saved body is sorted, so the same approvals compare unchanged", () => 
     files: { a: ["artist", "year"], b: ["title"] },
     file_wins_kinds: [],
     file_wins_files: {},
+    kinds_by_file: {},
+    file_wins_kinds_by_file: {},
   });
   const saved = { kinds: ["fill_up", "year_filled"], files: { a: ["artist", "year"], b: ["title"] }, updated_at: "x" };
   assert.equal(changed(saved, draft), false);
@@ -150,6 +156,8 @@ test("a difference approved for the file is covered, and saved under the file's 
     files: {},
     file_wins_kinds: ["bpm_differs", "year_later"],
     file_wins_files: { a: ["artist"], b: ["title"] },
+    kinds_by_file: {},
+    file_wins_kinds_by_file: {},
   });
 });
 
@@ -158,4 +166,53 @@ test("kinds approved for the file with nothing open are still listed", () => {
   assert.deepEqual(idleKinds(approvals, []), ["fill_up", "year_later"]);
   assert.equal(sideLabel("file"), "File wins");
   assert.equal(sideLabel(null), "Not decided");
+});
+
+test("one file's catalog wins comes ahead of its kind approved for the file", () => {
+  const approvals = withFileKindSide(
+    { kinds: [], files: {}, file_wins_kinds: ["year_later"] },
+    "f1",
+    "year_later",
+    "catalog",
+  );
+  assert.equal(sideOf(approvals, diff("f1", "year", "year_later")), "catalog");
+  // Every other file of the kind keeps the kind's approval.
+  assert.equal(sideOf(approvals, diff("f2", "year", "year_later")), "file");
+  assert.equal(fileKindSide(approvals, "f2", "year_later"), null);
+  assert.deepEqual(approvalsBody(approvals).kinds_by_file, { f1: ["year_later"] });
+  assert.deepEqual(approvalsBody(approvals).file_wins_kinds, ["year_later"]);
+});
+
+test("one file's kind goes one way at a time, and back to its kind", () => {
+  let a = withFileKindSide(none, "f1", "genre_remapped", "file");
+  assert.deepEqual([a.kinds_by_file, a.file_wins_kinds_by_file], [{}, { f1: ["genre_remapped"] }]);
+  a = withFileKindSide(a, "f1", "genre_remapped", "catalog");
+  assert.deepEqual([a.kinds_by_file, a.file_wins_kinds_by_file], [{ f1: ["genre_remapped"] }, {}]);
+  a = withFileKindSide(a, "f1", "genre_remapped", null);
+  assert.deepEqual([a.kinds_by_file, a.file_wins_kinds_by_file], [{}, {}]);
+  // other is approved by field; a kind the file cannot win is not approved for it.
+  assert.equal(withFileKindSide(none, "f1", "other", "catalog"), none);
+  assert.equal(withFileKindSide(none, "f1", "year_filled", "file"), none);
+});
+
+test("one file's kind approvals with nothing open are still listed", () => {
+  const approvals = {
+    kinds: [],
+    files: {},
+    kinds_by_file: { f2: ["year_later"], f1: ["year_later"] },
+    file_wins_kinds_by_file: { f1: ["bpm_differs"] },
+  };
+  assert.deepEqual(idleFileKinds(approvals, [diff("f1", "year", "year_later")]), [
+    { drive_file_id: "f1", kind: "bpm_differs" },
+    { drive_file_id: "f2", kind: "year_later" },
+  ]);
+});
+
+test("a Drive file's id from its link or the id itself", () => {
+  const id = "1AbC_dEf-GhIjKlMnOp";
+  assert.equal(driveFileId(`https://drive.google.com/file/d/${id}/view?usp=sharing`), id);
+  assert.equal(driveFileId(`https://drive.google.com/open?id=${id}`), id);
+  assert.equal(driveFileId(` ${id} `), id);
+  assert.equal(driveFileId("not a link"), null);
+  assert.equal(driveFileId(""), null);
 });
