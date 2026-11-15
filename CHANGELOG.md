@@ -1,3 +1,15 @@
+# [2.21.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.20.0...v2.21.0) (2026-11-15)
+
+
+### Bug Fixes
+
+* **deps:** bump astro to 7.4.12 for GHSA-mh32-jxcr-mh9f and GHSA-r3h5-4585-7x3w ([7a57f69](https://github.com/mini-app-polis/website-astro-wcs/commit/7a57f6957892f779c2c5b624bfc3a3baa866eab2))
+
+
+### Features
+
+* **reconcile:** approve one file's difference of any kind for the file or the catalog ([1d8bd5f](https://github.com/mini-app-polis/website-astro-wcs/commit/1d8bd5feb24f877b600b58408e9d9e6c3e099a31))
+
 # [2.20.0](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.19.0...v2.20.0) (2026-11-12)
 
 
