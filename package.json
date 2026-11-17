@@ -1,6 +1,6 @@
 {
   "name": "website-astro-wcs",
-  "version": "2.21.1",
+  "version": "2.21.2",
   "private": true,
   "scripts": {
     "dev": "astro dev",
