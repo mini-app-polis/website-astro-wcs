@@ -1,18 +1,17 @@
 # Time-boxed ignores for advisories that cannot be fixed from this repo.
 #
-# http-cache-semantics: every version through 4.2.0, the newest published,
-# can hand one user's cached Set-Cookie to another through a shared cache
-# (GHSA-ch52-4w7c-c8xp, 2026-09-18). It arrives only through `astro`, which
-# uses it to cache remote images during `astro build`. This site is static
-# output served by Cloudflare Pages: the package runs only at build time, in
-# CI and in the Pages build, never in a shared cache in front of users.
+# picomatch: every version through 4.0.7, the newest published, can be made
+# to backtrack exponentially by a glob pattern like +(*) (GHSA-fc5q-39xc-vjpf,
+# 2026-11). It arrives only through astro and vite, which match the files of
+# this repository against globs written in its own config during the build.
+# This site is static output served by Cloudflare Pages: the package runs only
+# at build time, in CI and in the Pages build, on patterns nobody outside the
+# repository supplies.
 #
-# To clear: once http-cache-semantics publishes a fix (and astro's ^4.2.0
-# range takes it), run `npm update http-cache-semantics` and delete the
-# entry. `ignoreUntil` makes the scan fail again on that date if nobody has,
-# so this cannot go stale silently.
+# To clear: once picomatch publishes a fix, run `npm update picomatch` and
+# delete the entry. `ignoreUntil` makes the scan fail again on that date.
 
 [[IgnoredVulns]]
-id = "GHSA-ch52-4w7c-c8xp"
-ignoreUntil = 2026-11-02
-reason = "http-cache-semantics <=4.2.0, no fixed release; build-time only via astro remote-image caching, never serves users from a shared cache"
+id = "GHSA-fc5q-39xc-vjpf"
+ignoreUntil = 2027-01-17
+reason = "picomatch <=4.0.7, no fixed release; build-time only via astro and vite matching the repository's own globs, never on user input"
