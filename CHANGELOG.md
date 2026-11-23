@@ -1,3 +1,10 @@
+## [2.21.3](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.21.2...v2.21.3) (2026-11-23)
+
+
+### Bug Fixes
+
+* **deps:** bump the minor-and-patch group with 2 updates ([828e297](https://github.com/mini-app-polis/website-astro-wcs/commit/828e29795382cb5edfd216b839354a38ea9a1bff))
+
 ## [2.21.2](https://github.com/mini-app-polis/website-astro-wcs/compare/v2.21.1...v2.21.2) (2026-11-17)
 
 
